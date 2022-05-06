@@ -3,21 +3,31 @@ package xyz.kubasz.personalspace;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.*;
+import cpw.mods.fml.common.registry.GameRegistry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@Mod(modid = Tags.MODID, version = Tags.VERSION, name = Tags.MODNAME, acceptedMinecraftVersions = "[1.7.10]")
-public class MyMod {
+@Mod(modid = Tags.MODID, version = Tags.VERSION, name = Tags.MODNAME, acceptedMinecraftVersions = "[1.7.10]",
+    dependencies = "after:utilityworlds")
+public class PersonalSpaceMod {
 
-    private static Logger LOG = LogManager.getLogger(Tags.MODID);
+    @Mod.Instance(Tags.MODID)
+    public static PersonalSpaceMod INSTANCE;
+
+    static Logger LOG = LogManager.getLogger(Tags.MODID);
 
     @SidedProxy(clientSide= Tags.GROUPNAME + ".ClientProxy", serverSide=Tags.GROUPNAME + ".CommonProxy")
     public static CommonProxy proxy;
+
+    public static PortalBlock BLOCK_PORTAL;
 
     @Mod.EventHandler
     // preInit "Run before anything else. Read your config, create blocks, items,
     // etc, and register them with the GameRegistry."
     public void preInit(FMLPreInitializationEvent event) {
+        BLOCK_PORTAL = new PortalBlock();
+        GameRegistry.registerBlock(BLOCK_PORTAL, "personalPortal");
+        GameRegistry.registerTileEntityWithAlternatives(PortalTileEntity.class, "personalspace:personalPortal", "uw_portal_te");
         proxy.preInit(event);
     }
 
@@ -57,6 +67,33 @@ public class MyMod {
     @Mod.EventHandler
     public void serverStopped(FMLServerStoppedEvent event) {
         proxy.serverStopped(event);
+    }
+
+    @Mod.EventHandler
+    public void missingMapping(FMLMissingMappingsEvent event) {
+        for (FMLMissingMappingsEvent.MissingMapping mapping : event.getAll()) {
+            if (mapping.type == GameRegistry.Type.BLOCK) {
+                switch (mapping.name) {
+                    case "utilityworlds:uw_portal_mining":
+                    case "utilityworlds:uw_portal_void":
+                    case "utilityworlds:uw_portal_garden":
+                    case "utilityworlds:uw_portal_return":
+                        mapping.remap(GameRegistry.findBlock(Tags.MODID, "personalPortal"));
+                        break;
+                    default:
+                }
+            } else if (mapping.type == GameRegistry.Type.ITEM) {
+                switch (mapping.name) {
+                    case "utilityworlds:uw_portal_mining":
+                    case "utilityworlds:uw_portal_void":
+                    case "utilityworlds:uw_portal_garden":
+                    case "utilityworlds:uw_portal_return":
+                        mapping.remap(GameRegistry.findItem(Tags.MODID, "personalPortal"));
+                        break;
+                    default:
+                }
+            }
+        }
     }
 
     public static void debug(String message) {

@@ -7,10 +7,7 @@ public class CommonProxy {
     // preInit "Run before anything else. Read your config, create blocks, items,
     // etc, and register them with the GameRegistry."
     public void preInit(FMLPreInitializationEvent event) 	{
-        Config.syncronizeConfiguration(event.getSuggestedConfigurationFile());
-
-        MyMod.info(Config.greeting);
-        MyMod.info("I am " + Tags.MODNAME + " at version " + Tags.VERSION + " and group name " + Tags.GROUPNAME);
+        Config.synchronizeConfiguration(event.getSuggestedConfigurationFile());
     }
 
     // load "Do your mod setup. Build whatever data structures you care about. Register recipes."

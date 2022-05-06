@@ -1,5 +1,6 @@
 // Add your dependencies here
 
 dependencies {
-
+    compile("com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:rv3-beta-83-GTNH:dev")
+    compile("com.github.GTNewHorizons:NotEnoughItems:2.2.12-GTNH:dev")
 }
