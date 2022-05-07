@@ -1,1 +1,13 @@
 tile.personalSpacePortal.name=Personal Dimension Portal
+
+chat.overworldPersonalDimension=Personal dimensions can only be created from the overworld
+
+gui.personalWorld.skyColor.red=Sky Color - Red: 
+gui.personalWorld.skyColor.green=Sky Color - Green: 
+gui.personalWorld.skyColor.blue=Sky Color - Blue: 
+gui.personalWorld.starBrightness=Star brightness: 
+
+gui.personalWorld.vegetation.on=Generating foliage: Yes
+gui.personalWorld.vegetation.off=Generating foliage: No
+gui.personalWorld.trees.on=Generating trees: Yes
+gui.personalWorld.trees.off=Generating trees: No

@@ -27,7 +27,7 @@ public class PersonalChunkProvider implements IChunkProvider {
     private Random random;
     private WorldGenTrees treeGen = new WorldGenTrees(false, 4, 0, 0, false);
 
-    PersonalChunkProvider(PersonalWorldProvider world, long seed) {
+    public PersonalChunkProvider(PersonalWorldProvider world, long seed) {
         this.world = world;
         this.seed = seed;
         this.random = new Random(seed);
@@ -56,6 +56,7 @@ public class PersonalChunkProvider implements IChunkProvider {
                 ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[yChunk];
                 if (ebs == null) {
                     ebs = new ExtendedBlockStorage(y, true);
+                    chunk.getBlockStorageArray()[yChunk] = ebs;
                 }
                 for (int z = 0; z < 16; ++z) {
                     for (int x = 0; x < 16; ++x) {
@@ -72,6 +73,10 @@ public class PersonalChunkProvider implements IChunkProvider {
             int platformLevel = this.world.getAverageGroundLevel();
             int yChunk = platformLevel >> 4;
             ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[yChunk];
+            if (ebs == null) {
+                ebs = new ExtendedBlockStorage(y, true);
+                chunk.getBlockStorageArray()[yChunk] = ebs;
+            }
             for (int z = 4; z < 15 - 4; z++) {
                 for (int x = 4; x < 15 - 4; x++) {
                     ebs.func_150818_a(x, platformLevel & 15, z, Blocks.double_stone_slab);

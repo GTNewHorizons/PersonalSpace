@@ -2,6 +2,7 @@ package xyz.kubasz.personalspace.world;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.WorldProvider;
@@ -16,7 +17,7 @@ import net.minecraft.world.chunk.IChunkProvider;
 public class PersonalWorldProvider extends WorldProvider {
     DimensionConfig config;
 
-    PersonalWorldProvider() {
+    public PersonalWorldProvider() {
         // Called by Forge, followed by setDimension
     }
 
@@ -24,7 +25,6 @@ public class PersonalWorldProvider extends WorldProvider {
     public void setDimension(int dim) {
         // Called by Forge/Vanilla immediately after the constructor
         super.setDimension(dim);
-        this.config = DimensionConfig.getForDimension(dim);
     }
 
     public DimensionConfig getConfig() {
@@ -37,6 +37,7 @@ public class PersonalWorldProvider extends WorldProvider {
     }
 
     public void registerWorldChunkManager() {
+        this.config = DimensionConfig.getForDimension(this.dimensionId, this.worldObj.isRemote);
         this.worldChunkMgr = new WorldChunkManagerHell(BiomeGenBase.plains, 0.0F);
     }
 
@@ -52,6 +53,21 @@ public class PersonalWorldProvider extends WorldProvider {
         float green = (float) (baseColor >> 8 & 255) / 255.0F;
         float blue = (float) (baseColor & 255) / 255.0F;
         return Vec3.createVectorHelper(red, green, blue);
+    }
+
+    @Override
+    public ChunkCoordinates getSpawnPoint() {
+        return new ChunkCoordinates(8, getConfig().getGroundLevel() + 1, 8);
+    }
+
+    @Override
+    public ChunkCoordinates getRandomizedSpawnPoint() {
+        return getSpawnPoint();
+    }
+
+    @Override
+    public Vec3 getSkyColor(Entity cameraEntity, float partialTicks) {
+        return getFogColor(0.0f, partialTicks);
     }
 
     public boolean canRespawnHere() {
@@ -77,7 +93,7 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @SideOnly(Side.CLIENT)
     public boolean doesXZShowFog(int x, int z) {
-        return true;
+        return false;
     }
 
     @Override
@@ -87,7 +103,7 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public double getVoidFogYFactor() {
-        return 0.001F;
+        return 1.0F;
     }
 
     @Override
@@ -113,6 +129,11 @@ public class PersonalWorldProvider extends WorldProvider {
     @Override
     public float getStarBrightness(float par1) {
         return config.getStarBrightness();
+    }
+
+    @Override
+    public float calculateCelestialAngle(long p_76563_1_, float p_76563_3_) {
+        return 0.0f;
     }
 
     @Override

@@ -1,19 +1,28 @@
 package xyz.kubasz.personalspace.world;
 
+import codechicken.lib.data.MCDataInput;
+import codechicken.lib.data.MCDataOutput;
+import codechicken.lib.packet.PacketCustom;
 import cpw.mods.fml.common.registry.GameRegistry;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.gen.FlatLayerInfo;
 import net.minecraftforge.common.DimensionManager;
 import org.apache.commons.lang3.tuple.MutablePair;
+import xyz.kubasz.personalspace.CommonProxy;
 import xyz.kubasz.personalspace.Config;
 import xyz.kubasz.personalspace.PersonalSpaceMod;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 /**
@@ -21,32 +30,143 @@ import java.util.regex.Pattern;
  */
 public class DimensionConfig {
 
-    private String saveDirOverride = null;
+    private String saveDirOverride = "";
     private int skyColor = 0xc0d8ff;
     private float starBrightness = 1.0F;
-    private List<FlatLayerInfo> layers = Collections.emptyList();
-    private boolean generatingAe2Meteors = false;
     private boolean generatingVegetation = false;
     private boolean generatingTrees = false;
+    private boolean allowGenerationChanges = false;
+    private List<FlatLayerInfo> layers = Collections.emptyList();
+
+    private boolean needsSaving = true;
 
     public static final String PRESET_UW_VOID = "";
     public static final String PRESET_UW_GARDEN = "minecraft:bedrock;minecraft:dirt*3;minecraft:grass";
     public static final String PRESET_UW_MINING = "minecraft:bedrock*4;minecraft:stone*58;minecraft:dirt;minecraft:grass";
     public static final Pattern PRESET_VALIDATION_PATTERN = Pattern.compile("^([^:\\*;]+:[^:\\*;]+(\\*\\d+)?;)+([^:\\*;]+:[^:\\*;]+(\\*\\d+)?)$");
 
-    private static ConcurrentHashMap<Integer, DimensionConfig> dimensionConfigObjects = new ConcurrentHashMap<>();
-
     public DimensionConfig() {
     }
 
-    public void registerWithDimensionManager(int dimId) {
-        DimensionManager.registerProviderType(dimId, PersonalWorldProvider.class, false);
-        DimensionManager.registerDimension(dimId, dimId);
-        dimensionConfigObjects.put(dimId, this);
+    public void writeToPacket(MCDataOutput pkt) {
+        pkt.writeString(saveDirOverride);
+        pkt.writeInt(skyColor);
+        pkt.writeFloat(starBrightness);
+        pkt.writeBoolean(generatingVegetation);
+        pkt.writeBoolean(generatingTrees);
+        pkt.writeBoolean(allowGenerationChanges);
+        pkt.writeVarInt(layers.size());
+        for (FlatLayerInfo info : layers) {
+            pkt.writeVarInt(Block.getIdFromBlock(info.func_151536_b()));
+            pkt.writeVarInt(info.getLayerCount());
+        }
     }
 
-    public static DimensionConfig getForDimension(int dimId) {
-        return dimensionConfigObjects.get(dimId);
+    public void readFromPacket(MCDataInput pkt) {
+        this.saveDirOverride = pkt.readString();
+        this.needsSaving = true;
+        this.setSkyColor(pkt.readInt());
+        this.setStarBrightness(pkt.readFloat());
+        this.setGeneratingVegetation(pkt.readBoolean());
+        this.setGeneratingTrees(pkt.readBoolean());
+        this.setAllowGenerationChanges(pkt.readBoolean());
+        int layerCount = pkt.readVarInt();
+        ArrayList<FlatLayerInfo> layers = new ArrayList<>(layerCount);
+        int y = 0;
+        for (int layerI = 0; layerI < layerCount; ++layerI) {
+            int blockId = pkt.readVarInt();
+            int count = pkt.readVarInt();
+            FlatLayerInfo info = new FlatLayerInfo(count, Block.getBlockById(blockId));
+            info.setMinY(y);
+            layers.add(info);
+            y += count;
+        }
+        this.layers = layers;
+    }
+
+    public void writeToDataStream(DataOutputStream stream) throws IOException {
+        PacketCustom pc = new PacketCustom(PersonalSpaceMod.CHANNEL, 1);
+        writeToPacket(pc);
+        ByteBuf buf = pc.getByteBuf();
+        stream.writeInt(buf.writerIndex());
+        stream.write(buf.array(), 0, buf.writerIndex());
+        needsSaving = false;
+    }
+
+    public void readFromDataStream(DataInputStream stream) throws IOException {
+        int len = stream.readInt();
+        byte[] bytes = new byte[len];
+        if (stream.read(bytes) != len) {
+            throw new IOException("Couldn't read all bytes of DimensionConfig");
+        }
+        PacketCustom pc = new PacketCustom(Unpooled.wrappedBuffer(bytes));
+        readFromPacket(pc);
+    }
+
+    public static DimensionConfig fromPacket(MCDataInput pkt) {
+        DimensionConfig cfg = new DimensionConfig();
+        cfg.readFromPacket(pkt);
+        return cfg;
+    }
+
+    public static DimensionConfig fromDataStream(DataInputStream stream) throws IOException {
+        DimensionConfig cfg = new DimensionConfig();
+        cfg.readFromDataStream(stream);
+        cfg.needsSaving = false;
+        return cfg;
+    }
+
+    public void copyFrom(DimensionConfig source, boolean copySaveInfo, boolean copyVisualInfo, boolean copyGenerationInfo) {
+        this.needsSaving = true;
+        if (copySaveInfo) {
+            this.saveDirOverride = source.saveDirOverride;
+        }
+        if (copyVisualInfo) {
+            this.setSkyColor(source.getSkyColor());
+            this.setStarBrightness(source.getStarBrightness());
+        }
+        if (copyGenerationInfo) {
+            this.setAllowGenerationChanges(source.getAllowGenerationChanges());
+            this.setGeneratingTrees(source.isGeneratingTrees());
+            this.setGeneratingVegetation(source.isGeneratingVegetation());
+            this.layers = source.layers;
+        }
+    }
+
+    public void registerWithDimensionManager(int dimId, boolean isClient) {
+        if (!DimensionManager.isDimensionRegistered(dimId)) {
+            DimensionManager.registerProviderType(dimId, PersonalWorldProvider.class, false);
+            DimensionManager.registerDimension(dimId, dimId);
+        }
+        synchronized (CommonProxy.getDimensionConfigObjects(isClient)) {
+            if (!CommonProxy.getDimensionConfigObjects(isClient).containsKey(dimId)) {
+                CommonProxy.getDimensionConfigObjects(isClient).put(dimId, this);
+            } else {
+                CommonProxy.getDimensionConfigObjects(isClient).get(dimId).copyFrom(this, false, true, true);
+            }
+        }
+    }
+
+    public static int nextFreeDimId() {
+        AtomicInteger nextIdV = new AtomicInteger(Config.firstDimensionId);
+        CommonProxy.getDimensionConfigObjects(false).forEachKey(id -> {
+            if (nextIdV.get() <= id) {
+                nextIdV.set(id + 1);
+            }
+            return true;
+        });
+        int nextId = nextIdV.get();
+        while (DimensionManager.isDimensionRegistered(nextId) && nextId < Integer.MAX_VALUE - 1) {
+            ++nextId;
+        }
+        assert !DimensionManager.isDimensionRegistered(nextId);
+        return nextId;
+    }
+
+    public static DimensionConfig getForDimension(int dimId, boolean isClient) {
+        synchronized (CommonProxy.getDimensionConfigObjects(isClient)) {
+            return CommonProxy.getDimensionConfigObjects(isClient).get(dimId);
+        }
     }
 
     public String getSaveDir(int dimId) {
@@ -58,7 +178,10 @@ public class DimensionConfig {
     }
 
     public void setStarBrightness(float starBrightness) {
-        this.starBrightness = MathHelper.clamp_float(starBrightness, 0.0F, 1.0F);
+        if (starBrightness != this.starBrightness) {
+            this.needsSaving = true;
+            this.starBrightness = MathHelper.clamp_float(starBrightness, 0.0F, 1.0F);
+        }
     }
 
     public int getSkyColor() {
@@ -66,15 +189,10 @@ public class DimensionConfig {
     }
 
     public void setSkyColor(int skyColor) {
-        this.skyColor = MathHelper.clamp_int(skyColor, 0, 0xFFFFFF);
-    }
-
-    public boolean isGeneratingAe2Meteors() {
-        return generatingAe2Meteors;
-    }
-
-    public void setGeneratingAe2Meteors(boolean generatingAe2Meteors) {
-        this.generatingAe2Meteors = generatingAe2Meteors;
+        if (skyColor != this.skyColor) {
+            this.needsSaving = true;
+            this.skyColor = MathHelper.clamp_int(skyColor, 0, 0xFFFFFF);
+        }
     }
 
     public boolean isGeneratingVegetation() {
@@ -82,7 +200,10 @@ public class DimensionConfig {
     }
 
     public void setGeneratingVegetation(boolean generatingVegetation) {
-        this.generatingVegetation = generatingVegetation;
+        if (this.generatingVegetation != generatingVegetation) {
+            this.needsSaving = true;
+            this.generatingVegetation = generatingVegetation;
+        }
     }
 
     public boolean isGeneratingTrees() {
@@ -90,7 +211,25 @@ public class DimensionConfig {
     }
 
     public void setGeneratingTrees(boolean generatingTrees) {
-        this.generatingTrees = generatingTrees;
+        if (this.generatingTrees != generatingTrees) {
+            this.needsSaving = true;
+            this.generatingTrees = generatingTrees;
+        }
+    }
+
+    public boolean getAllowGenerationChanges() {
+        return allowGenerationChanges;
+    }
+
+    public void setAllowGenerationChanges(boolean allowGenerationChanges) {
+        if (this.allowGenerationChanges != allowGenerationChanges) {
+            this.needsSaving = true;
+            this.allowGenerationChanges = allowGenerationChanges;
+        }
+    }
+
+    public boolean needsSaving() {
+        return needsSaving;
     }
 
     public static List<FlatLayerInfo> parseLayers(String preset) {
@@ -148,6 +287,9 @@ public class DimensionConfig {
                 continue;
             }
             GameRegistry.UniqueIdentifier block = GameRegistry.findUniqueIdentifierFor(info.func_151536_b());
+            if (block == null) {
+                block = new GameRegistry.UniqueIdentifier("minecraft:air");
+            }
             b.append(block.modId);
             b.append(':');
             b.append(block.name);
