@@ -107,13 +107,13 @@ public class PersonalSpaceMod {
     @Mod.EventHandler
     public void serverAboutToStart(FMLServerAboutToStartEvent event) {
         proxy.serverAboutToStart(event);
+        loadDimensionConfigs();
     }
 
     @Mod.EventHandler
     // register server commands in this event handler
     public void serverStarting(FMLServerStartingEvent event) {
         proxy.serverStarting(event);
-        loadDimensionConfigs();
         event.registerServerCommand(new PersonalSpaceCommand());
     }
 

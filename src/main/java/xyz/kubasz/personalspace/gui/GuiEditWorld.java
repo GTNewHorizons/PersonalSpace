@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.MathHelper;
+import org.lwjgl.opengl.GL11;
 import xyz.kubasz.personalspace.CommonProxy;
 import xyz.kubasz.personalspace.Config;
 import xyz.kubasz.personalspace.block.PortalTileEntity;
@@ -121,6 +122,10 @@ public class GuiEditWorld extends GuiScreen {
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         this.drawDefaultBackground();
+        GL11.glPushMatrix();
+        GL11.glTranslatef(this.guiLeft, this.guiTop, 0.0f);
+        mouseX -= guiLeft;
+        mouseY -= guiTop;
         int skyR = MathHelper.clamp_int(skyRed.getValueInt(), 0, 255);
         int skyG = MathHelper.clamp_int(skyGreen.getValueInt(), 0, 255);
         int skyB = MathHelper.clamp_int(skyBlue.getValueInt(), 0, 255);
@@ -155,6 +160,7 @@ public class GuiEditWorld extends GuiScreen {
         GuiDraw.drawRect(8, 8, 32, 72, 0xFF000000 | desiredConfig.getSkyColor());
         int starBright = MathHelper.clamp_int((int) (desiredConfig.getStarBrightness() * 255.0F), 0, 255);
         GuiDraw.drawRect(8, this.starBrightness.yPosition, 32, 20, 0xFF000000 | starBright * 0x010101);
+        GL11.glPopMatrix();
     }
 
     @Override
@@ -167,17 +173,23 @@ public class GuiEditWorld extends GuiScreen {
 
     @Override
     protected void mouseClicked(int x, int y, int button) {
+        x -= guiLeft;
+        y -= guiTop;
         super.mouseClicked(x, y, button);
         this.presetEntry.mouseClicked(x, y, button);
     }
 
     @Override
     protected void mouseMovedOrUp(int x, int y, int button) {
+        x -= guiLeft;
+        y -= guiTop;
         super.mouseMovedOrUp(x, y, button);
     }
 
     @Override
     protected void mouseClickMove(int x, int y, int lastBtn, long timeDragged) {
+        x -= guiLeft;
+        y -= guiTop;
         super.mouseClickMove(x, y, lastBtn, timeDragged);
     }
 
