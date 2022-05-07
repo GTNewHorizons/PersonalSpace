@@ -77,7 +77,7 @@ public class PortalBlock extends Block implements ITileEntityProvider {
                 return true;
             }
         }
-        return false;
+        return true;
     }
 
     @Override

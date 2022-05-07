@@ -13,3 +13,5 @@ gui.personalWorld.vegetation.on=Generating foliage: Yes
 gui.personalWorld.vegetation.off=Generating foliage: No
 gui.personalWorld.trees.on=Generating trees: Yes
 gui.personalWorld.trees.off=Generating trees: No
+
+commands.pspace.usage=/pspace (give-portal [DIM] [X] [Y] [Z])|(tpx DIM [X Y Z] [player])|(ls)

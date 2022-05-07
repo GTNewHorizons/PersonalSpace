@@ -14,7 +14,6 @@ import xyz.kubasz.personalspace.Config;
 import xyz.kubasz.personalspace.block.PortalTileEntity;
 import xyz.kubasz.personalspace.net.Packets;
 import xyz.kubasz.personalspace.world.DimensionConfig;
-import xyz.kubasz.personalspace.world.PersonalWorldProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -92,12 +91,15 @@ public class GuiEditWorld extends GuiScreen {
         this.generateVegetation = new GuiButtonExt(5, 8, this.ySize, 200, 20, "veg");
         addButton(this.generateVegetation);
 
-        this.presetEntry = new GuiTextField(fontRendererObj, 8, this.ySize, 400, 20);
-        this.presetEntry.setText(desiredConfig.getLayersAsString());
-        this.presetEntry.setMaxStringLength(4096);
-        this.ySize += 26;
-
         voidPresetName = I18n.format("gui.personalWorld.voidWorld");
+
+        this.presetEntry = new GuiTextField(fontRendererObj, 8, this.ySize, 400, 20);
+        this.presetEntry.setMaxStringLength(4096);
+        this.presetEntry.setText(desiredConfig.getLayersAsString());
+        if (this.presetEntry.getText().isEmpty()) {
+            this.presetEntry.setText(voidPresetName);
+        }
+        this.ySize += 26;
 
         int i = 9;
         for (String preset : Config.defaultPresets) {
@@ -152,7 +154,7 @@ public class GuiEditWorld extends GuiScreen {
         GuiDraw.gui.setZLevel(99.f);
         GuiDraw.drawRect(8, 8, 32, 72, 0xFF000000 | desiredConfig.getSkyColor());
         int starBright = MathHelper.clamp_int((int) (desiredConfig.getStarBrightness() * 255.0F), 0, 255);
-        GuiDraw.drawRect(8, this.starBrightness.yPosition, 32, 20, 0xFF000000 |  starBright * 0x010101);
+        GuiDraw.drawRect(8, this.starBrightness.yPosition, 32, 20, 0xFF000000 | starBright * 0x010101);
     }
 
     @Override

@@ -43,7 +43,7 @@ public class DimensionConfig {
     public static final String PRESET_UW_VOID = "";
     public static final String PRESET_UW_GARDEN = "minecraft:bedrock;minecraft:dirt*3;minecraft:grass";
     public static final String PRESET_UW_MINING = "minecraft:bedrock*4;minecraft:stone*58;minecraft:dirt;minecraft:grass";
-    public static final Pattern PRESET_VALIDATION_PATTERN = Pattern.compile("^([^:\\*;]+:[^:\\*;]+(\\*\\d+)?;)+([^:\\*;]+:[^:\\*;]+(\\*\\d+)?)$");
+    public static final Pattern PRESET_VALIDATION_PATTERN = Pattern.compile("^([^:\\*;]+:[^:\\*;]+(\\*\\d+)?;)*([^:\\*;]+:[^:\\*;]+(\\*\\d+)?)?$");
 
     public DimensionConfig() {
     }

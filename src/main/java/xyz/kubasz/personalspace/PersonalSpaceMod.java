@@ -21,7 +21,6 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.network.FMLNetworkEvent;
 import cpw.mods.fml.common.network.NetworkHandshakeEstablished;
 import cpw.mods.fml.common.network.NetworkRegistry;
-import cpw.mods.fml.common.network.internal.FMLNetworkHandler;
 import cpw.mods.fml.common.registry.GameRegistry;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraftforge.common.DimensionManager;
@@ -73,7 +72,7 @@ public class PersonalSpaceMod {
             PacketCustom.assignHandler(CHANNEL, (PacketCustom.IClientPacketHandler) Packets.INSTANCE::handleClientPacket);
         }
         PacketCustom.assignHandler(CHANNEL, (PacketCustom.IServerPacketHandler) Packets.INSTANCE::handleServerPacket);
-        NetworkRegistry.INSTANCE.newEventDrivenChannel(CHANNEL+"_event").register(this);
+        NetworkRegistry.INSTANCE.newEventDrivenChannel(CHANNEL + "_event").register(this);
         proxy.preInit(event);
         BLOCK_PORTAL = new PortalBlock();
         GameRegistry.registerBlock(BLOCK_PORTAL, "personalPortal");
@@ -115,6 +114,7 @@ public class PersonalSpaceMod {
     public void serverStarting(FMLServerStartingEvent event) {
         proxy.serverStarting(event);
         loadDimensionConfigs();
+        event.registerServerCommand(new PersonalSpaceCommand());
     }
 
     void loadDimensionConfigs() {
