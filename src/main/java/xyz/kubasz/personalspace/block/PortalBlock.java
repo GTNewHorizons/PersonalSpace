@@ -1,4 +1,4 @@
-package xyz.kubasz.personalspace;
+package xyz.kubasz.personalspace.block;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -12,7 +12,7 @@ import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
 
 public class PortalBlock extends Block implements ITileEntityProvider {
-    PortalBlock() {
+    public PortalBlock() {
         super(Material.rock);
         this.setBlockName("personalSpacePortal");
         this.setHardness(5.0F);
@@ -24,20 +24,17 @@ public class PortalBlock extends Block implements ITileEntityProvider {
     }
 
     @Override
-    public boolean renderAsNormalBlock()
-    {
+    public boolean renderAsNormalBlock() {
         return false;
     }
 
     @Override
-    public boolean isOpaqueCube()
-    {
+    public boolean isOpaqueCube() {
         return false;
     }
 
     @SideOnly(Side.CLIENT)
-    public IIcon getIcon(int side, int _meta)
-    {
+    public IIcon getIcon(int side, int _meta) {
         switch (side) {
             // top
             case 1:
