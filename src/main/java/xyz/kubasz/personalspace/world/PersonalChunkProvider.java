@@ -77,8 +77,8 @@ public class PersonalChunkProvider implements IChunkProvider {
                 ebs = new ExtendedBlockStorage(y, true);
                 chunk.getBlockStorageArray()[yChunk] = ebs;
             }
-            for (int z = 4; z < 15 - 4; z++) {
-                for (int x = 4; x < 15 - 4; x++) {
+            for (int z = 4; z < 13; z++) {
+                for (int x = 4; x < 13; x++) {
                     ebs.func_150818_a(x, platformLevel & 15, z, Blocks.double_stone_slab);
                 }
             }

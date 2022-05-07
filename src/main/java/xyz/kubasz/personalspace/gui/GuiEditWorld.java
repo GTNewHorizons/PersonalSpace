@@ -3,6 +3,7 @@ package xyz.kubasz.personalspace.gui;
 import codechicken.lib.gui.GuiDraw;
 import cpw.mods.fml.client.config.GuiButtonExt;
 import cpw.mods.fml.client.config.GuiSlider;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
@@ -34,6 +35,7 @@ public class GuiEditWorld extends GuiScreen {
     GuiButton save;
     GuiTextField presetEntry;
     List<GuiButton> presetButtons = new ArrayList<>();
+    String voidPresetName = "gui.personalWorld.voidWorld";
 
     public GuiEditWorld(PortalTileEntity tile) {
         super();
@@ -95,8 +97,13 @@ public class GuiEditWorld extends GuiScreen {
         this.presetEntry.setMaxStringLength(4096);
         this.ySize += 26;
 
+        voidPresetName = I18n.format("gui.personalWorld.voidWorld");
+
         int i = 9;
         for (String preset : Config.defaultPresets) {
+            if (preset.isEmpty()) {
+                preset = voidPresetName;
+            }
             presetButtons.add(new GuiButtonExt(++i, 8, this.ySize, 400, 20, preset));
             addButton(presetButtons.get(presetButtons.size() - 1));
         }
@@ -127,21 +134,25 @@ public class GuiEditWorld extends GuiScreen {
         }
         super.drawScreen(mouseX, mouseY, partialTicks);
         this.presetEntry.setEnabled(generationEnabled);
+        String actualText = this.presetEntry.getText();
+        if (voidPresetName.equals(actualText)) {
+            actualText = "";
+        }
         if (!generationEnabled) {
             this.presetEntry.setTextColor(0x909090);
-        } else if (!DimensionConfig.PRESET_VALIDATION_PATTERN.matcher(this.presetEntry.getText()).matches()) {
+        } else if (!DimensionConfig.PRESET_VALIDATION_PATTERN.matcher(actualText).matches()) {
             this.presetEntry.setTextColor(0xFF0000);
-        } else if (!DimensionConfig.canUseLayers(this.presetEntry.getText())) {
+        } else if (!DimensionConfig.canUseLayers(actualText)) {
             this.presetEntry.setTextColor(0xFFFF00);
         } else {
             this.presetEntry.setTextColor(0xA0FFA0);
-            this.desiredConfig.setLayers(this.presetEntry.getText());
+            this.desiredConfig.setLayers(actualText);
         }
         this.presetEntry.drawTextBox();
         GuiDraw.gui.setZLevel(99.f);
-        GuiDraw.drawRect(8, 8, 32, 72, desiredConfig.getSkyColor());
+        GuiDraw.drawRect(8, 8, 32, 72, 0xFF000000 | desiredConfig.getSkyColor());
         int starBright = MathHelper.clamp_int((int) (desiredConfig.getStarBrightness() * 255.0F), 0, 255);
-        GuiDraw.drawRect(8, this.starBrightness.yPosition, 32, 20, starBright * 0x010101);
+        GuiDraw.drawRect(8, this.starBrightness.yPosition, 32, 20, 0xFF000000 |  starBright * 0x010101);
     }
 
     @Override
@@ -172,6 +183,7 @@ public class GuiEditWorld extends GuiScreen {
     protected void actionPerformed(GuiButton button) {
         if (button == this.save) {
             Packets.INSTANCE.sendChangeWorldSettings(this.tile, desiredConfig).sendToServer();
+            Minecraft.getMinecraft().displayGuiScreen(null);
         } else if (button == this.generateTrees) {
             desiredConfig.setGeneratingTrees(!desiredConfig.isGeneratingTrees());
         } else if (button == this.generateVegetation) {

@@ -231,11 +231,12 @@ public class PortalTileEntity extends TileEntity {
             }
             // create new dimension
             targetDimId = DimensionConfig.nextFreeDimId();
+            sanitized.setAllowGenerationChanges(false);
             sanitized.registerWithDimensionManager(targetDimId, false);
             this.active = true;
             this.targetDimId = targetDimId;
             this.targetX = 8;
-            this.targetY = sanitized.getGroundLevel() + 1;
+            this.targetY = sanitized.getGroundLevel() + 2;
             this.targetZ = 8;
             markDirty();
 

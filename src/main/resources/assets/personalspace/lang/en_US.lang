@@ -2,6 +2,8 @@ tile.personalSpacePortal.name=Personal Dimension Portal
 
 chat.overworldPersonalDimension=Personal dimensions can only be created from the overworld
 
+gui.personalWorld.voidWorld=Void world
+
 gui.personalWorld.skyColor.red=Sky Color - Red: 
 gui.personalWorld.skyColor.green=Sky Color - Green: 
 gui.personalWorld.skyColor.blue=Sky Color - Blue: 

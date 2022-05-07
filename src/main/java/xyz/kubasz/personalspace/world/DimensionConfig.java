@@ -365,6 +365,9 @@ public class DimensionConfig {
     }
 
     public int getGroundLevel() {
+        if (layers.isEmpty()) {
+            return 128;
+        }
         int y = 0;
         for (FlatLayerInfo info : layers) {
             y += info.getLayerCount();
