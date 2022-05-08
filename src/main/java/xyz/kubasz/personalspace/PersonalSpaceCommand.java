@@ -13,6 +13,8 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
+import xyz.kubasz.personalspace.net.Packets;
+import xyz.kubasz.personalspace.world.DimensionConfig;
 import xyz.kubasz.personalspace.world.PersonalTeleporter;
 
 import java.util.List;
@@ -126,6 +128,18 @@ public class PersonalSpaceCommand extends CommandBase {
             entityitem.func_145797_a(player.getCommandSenderName());
             return;
         }
+        if (args[0].equalsIgnoreCase("allow-worldgen-change")) {
+            if (args.length < 2) {
+                throw new WrongUsageException("commands.pspace.usage");
+            }
+            int dim = parseInt(sender, args[1]);
+            DimensionConfig cfg = DimensionConfig.getForDimension(dim, false);
+            if (cfg == null) {
+                throw new CommandException("commands.pspace.badDimension");
+            }
+            cfg.setAllowGenerationChanges(true);
+            Packets.INSTANCE.sendWorldList().sendToClients();
+        }
 
         throw new WrongUsageException("commands.pspace.usage");
     }
@@ -137,7 +151,7 @@ public class PersonalSpaceCommand extends CommandBase {
         switch (args.length) {
             case 0:
             case 1:
-                return getListOfStringsMatchingLastWord(args, "ls", "where", "tpx", "give-portal");
+                return getListOfStringsMatchingLastWord(args, "ls", "where", "tpx", "give-portal", "allow-worldgen-change");
             case 2:
                 return getListOfStringsMatchingLastWord(args, this.getPlayers());
         }
