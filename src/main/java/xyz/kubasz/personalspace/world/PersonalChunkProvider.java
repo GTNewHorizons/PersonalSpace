@@ -55,7 +55,7 @@ public class PersonalChunkProvider implements IChunkProvider {
                 int yChunk = y >> 4;
                 ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[yChunk];
                 if (ebs == null) {
-                    ebs = new ExtendedBlockStorage(y, true);
+                    ebs = new ExtendedBlockStorage(y & ~15, true);
                     chunk.getBlockStorageArray()[yChunk] = ebs;
                 }
                 for (int z = 0; z < 16; ++z) {
@@ -74,7 +74,7 @@ public class PersonalChunkProvider implements IChunkProvider {
             int yChunk = platformLevel >> 4;
             ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[yChunk];
             if (ebs == null) {
-                ebs = new ExtendedBlockStorage(y, true);
+                ebs = new ExtendedBlockStorage(platformLevel & ~15, true);
                 chunk.getBlockStorageArray()[yChunk] = ebs;
             }
             for (int z = 4; z < 13; z++) {
