@@ -14,21 +14,22 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.IIcon;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 import xyz.kubasz.personalspace.PersonalSpaceMod;
 
 import java.util.ArrayList;
 
 public class PortalBlock extends Block implements ITileEntityProvider {
-    public PortalBlock() {
+    public PortalBlock(boolean isMigration) {
         super(Material.rock);
-        this.setBlockName("personalSpacePortal");
-        this.setHardness(5.0F);
-        this.setResistance(2000.0F);
+        this.setBlockName(isMigration ? "personalSpacePortalLegacy" : "personalSpacePortal");
+        this.setHardness(25.0F);
+        this.setResistance(6000000.0F);
         this.setBlockBounds(0.0F, 0.0F, 0.0F, 1.0F, 0.75F, 1.0F);
         this.setLightOpacity(0);
         this.setBlockTextureName("obsidian");
-        this.setCreativeTab(CreativeTabs.tabTransport);
+        this.setCreativeTab(isMigration ? null : CreativeTabs.tabTransport);
     }
 
     @Override
@@ -94,10 +95,9 @@ public class PortalBlock extends Block implements ITileEntityProvider {
         }
     }
 
-    @Override
-    public ArrayList<ItemStack> getDrops(World world, int x, int y, int z, int metadata, int fortune) {
-        ItemStack drop = new ItemStack(this);
-        TileEntity wte = world.getTileEntity(x, y, z);
+    ItemStack getItemStack(World w, int x, int y, int z) {
+        ItemStack drop = new ItemStack(PersonalSpaceMod.BLOCK_PORTAL);
+        TileEntity wte = w.getTileEntity(x, y, z);
         if (wte instanceof PortalTileEntity) {
             PortalTileEntity te = (PortalTileEntity) wte;
             NBTTagCompound tag = new NBTTagCompound();
@@ -107,8 +107,27 @@ public class PortalBlock extends Block implements ITileEntityProvider {
             tag.removeTag("z");
             drop.setTagCompound(tag);
         }
+        return drop;
+    }
+
+    @Override
+    public ArrayList<ItemStack> getDrops(World world, int x, int y, int z, int metadata, int fortune) {
         ArrayList<ItemStack> drops = new ArrayList<>(1);
-        drops.add(drop);
+        drops.add(getItemStack(world, x, y, z));
         return drops;
+    }
+
+    @Override
+    public ItemStack getPickBlock(MovingObjectPosition target, World world, int x, int y, int z, EntityPlayer player) {
+        return getItemStack(world, x, y, z);
+    }
+
+    @Override
+    public boolean removedByPlayer(World world, EntityPlayer player, int x, int y, int z, boolean willHarvest) {
+        if (willHarvest) {
+            dropBlockAsItem(world, x, y, z, getItemStack(world, x, y, z));
+        }
+        super.removedByPlayer(world, player, x, y, z, willHarvest);
+        return false;
     }
 }

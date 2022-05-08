@@ -1,6 +1,9 @@
 tile.personalSpacePortal.name=Personal Dimension Portal
+tile.personalSpacePortalLegacy.name=Legacy Personal Dimension Portal (UW Migration)
 
 chat.overworldPersonalDimension=Personal dimensions can only be created from the overworld
+chat.personalWorld.created=Personal dimension successfully created!
+chat.personalWorld.updated=Personal dimension successfully updated!
 
 gui.personalWorld.voidWorld=Void world
 

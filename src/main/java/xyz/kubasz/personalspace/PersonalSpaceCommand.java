@@ -55,11 +55,7 @@ public class PersonalSpaceCommand extends CommandBase {
                 throw new WrongUsageException("commands.pspace.usage");
             }
             EntityPlayerMP player = getPlayer(sender, args[1]);
-            String wname = player.worldObj.getProviderName();
-            if (wname == null) {
-                wname = "?";
-            }
-            sender.addChatMessage(new ChatComponentText(String.format("%d: %s", player.worldObj.provider.dimensionId, wname)));
+            sender.addChatMessage(new ChatComponentText(String.format("%d", player.worldObj.provider.dimensionId)));
             return;
         }
         if (args[0].equalsIgnoreCase("tpx")) {

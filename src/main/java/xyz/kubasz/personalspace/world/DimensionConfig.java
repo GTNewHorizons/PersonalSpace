@@ -197,6 +197,13 @@ public class DimensionConfig {
         }
     }
 
+    public void setSaveDirOverride(String override) {
+        if (override == null) {
+            override = "";
+        }
+        this.saveDirOverride = override;
+    }
+
     public String getSaveDir(int dimId) {
         return (saveDirOverride != null && saveDirOverride.length() > 0) ? saveDirOverride : String.format("PERSONAL_DIM_%d", dimId);
     }

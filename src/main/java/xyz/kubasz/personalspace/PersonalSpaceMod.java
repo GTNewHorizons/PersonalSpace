@@ -53,7 +53,7 @@ public class PersonalSpaceMod {
     @SidedProxy(clientSide = Tags.GROUPNAME + ".ClientProxy", serverSide = Tags.GROUPNAME + ".CommonProxy")
     public static CommonProxy proxy;
 
-    public static PortalBlock BLOCK_PORTAL;
+    public static PortalBlock BLOCK_PORTAL, BP_MIGRATION_2, BP_MIGRATION_3, BP_MIGRATION_4;
 
     public static final String CHANNEL = Tags.MODID;
 
@@ -68,8 +68,14 @@ public class PersonalSpaceMod {
         PacketCustom.assignHandler(CHANNEL, (PacketCustom.IServerPacketHandler) Packets.INSTANCE::handleServerPacket);
         NetworkRegistry.INSTANCE.newEventDrivenChannel(CHANNEL + "_event").register(this);
         proxy.preInit(event);
-        BLOCK_PORTAL = new PortalBlock();
+        BLOCK_PORTAL = new PortalBlock(false);
+        BP_MIGRATION_2 = new PortalBlock(true);
+        BP_MIGRATION_3 = new PortalBlock(true);
+        BP_MIGRATION_4 = new PortalBlock(true);
         GameRegistry.registerBlock(BLOCK_PORTAL, "personalPortal");
+        GameRegistry.registerBlock(BP_MIGRATION_2, "personalPortal_migration2");
+        GameRegistry.registerBlock(BP_MIGRATION_3, "personalPortal_migration3");
+        GameRegistry.registerBlock(BP_MIGRATION_4, "personalPortal_migration4");
         GameRegistry.registerTileEntityWithAlternatives(PortalTileEntity.class, "personalspace:personalPortal", "uw_portal_te");
     }
 
@@ -127,6 +133,7 @@ public class PersonalSpaceMod {
                     try {
                         DimensionConfig dimCfg = new DimensionConfig();
                         int dimId = dimCfg.syncWithFile(dimConfig, false, 0);
+                        dimCfg.setSaveDirOverride(dir.getName());
                         dimCfg.registerWithDimensionManager(dimId, false);
                     } catch (Exception e) {
                         LOG.error("Couldn't load personal dimension data from " + dimConfig.getPath(), e);
@@ -222,20 +229,32 @@ public class PersonalSpaceMod {
             if (mapping.type == GameRegistry.Type.BLOCK) {
                 switch (mapping.name) {
                     case "utilityworlds:uw_portal_mining":
-                    case "utilityworlds:uw_portal_void":
-                    case "utilityworlds:uw_portal_garden":
-                    case "utilityworlds:uw_portal_return":
                         mapping.remap(GameRegistry.findBlock(Tags.MODID, "personalPortal"));
+                        break;
+                    case "utilityworlds:uw_portal_void":
+                        mapping.remap(GameRegistry.findBlock(Tags.MODID, "personalPortal_migration2"));
+                        break;
+                    case "utilityworlds:uw_portal_garden":
+                        mapping.remap(GameRegistry.findBlock(Tags.MODID, "personalPortal_migration3"));
+                        break;
+                    case "utilityworlds:uw_portal_return":
+                        mapping.remap(GameRegistry.findBlock(Tags.MODID, "personalPortal_migration4"));
                         break;
                     default:
                 }
             } else if (mapping.type == GameRegistry.Type.ITEM) {
                 switch (mapping.name) {
                     case "utilityworlds:uw_portal_mining":
-                    case "utilityworlds:uw_portal_void":
-                    case "utilityworlds:uw_portal_garden":
-                    case "utilityworlds:uw_portal_return":
                         mapping.remap(GameRegistry.findItem(Tags.MODID, "personalPortal"));
+                        break;
+                    case "utilityworlds:uw_portal_void":
+                        mapping.remap(GameRegistry.findItem(Tags.MODID, "personalPortal_migration2"));
+                        break;
+                    case "utilityworlds:uw_portal_garden":
+                        mapping.remap(GameRegistry.findItem(Tags.MODID, "personalPortal_migration3"));
+                        break;
+                    case "utilityworlds:uw_portal_return":
+                        mapping.remap(GameRegistry.findItem(Tags.MODID, "personalPortal_migration4"));
                         break;
                     default:
                 }

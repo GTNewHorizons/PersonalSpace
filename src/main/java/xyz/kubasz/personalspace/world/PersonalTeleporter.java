@@ -17,7 +17,7 @@ public class PersonalTeleporter extends Teleporter {
 
     @Override
     public void placeInPortal(Entity entity, double x, double y, double z, float yaw) {
-        entity.setLocationAndAngles(this.x, this.y, this.z, yaw, 0.0F);
+        entity.setLocationAndAngles(this.x + 0.2, this.y + 0.1, this.z + 0.2, yaw, 0.0F);
         entity.motionX = 0.0F;
         entity.motionY = 0.0F;
         entity.motionZ = 0.0F;

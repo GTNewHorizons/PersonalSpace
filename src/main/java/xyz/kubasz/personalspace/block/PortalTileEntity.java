@@ -7,6 +7,7 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
 import xyz.kubasz.personalspace.CommonProxy;
@@ -28,11 +29,15 @@ public class PortalTileEntity extends TileEntity {
 
     @Override
     public void readFromNBT(NBTTagCompound tag) {
-        super.readFromNBT(tag);
+        if (tag.hasKey("x") || tag.hasKey("y") || tag.hasKey("z")) {
+            super.readFromNBT(tag);
+        }
         boolean isLegacy = false;
         if (tag.hasKey("isReturnPortal")) {
             isLegacy = true;
-            targetDimId = 0;
+            if (tag.getBoolean("isReturnPortal")) {
+                this.targetDimId = 0;
+            }
         }
         if (tag.hasKey("remoteDimensionId")) {
             isLegacy = true;
@@ -86,6 +91,8 @@ public class PortalTileEntity extends TileEntity {
         }
 
         if (isLegacy) {
+            this.active = true;
+            PersonalSpaceMod.LOG.info("Migrated old UW portal to dim {} : target {},{},{}", targetDimId, targetX, targetY, targetZ);
             markDirty();
         }
     }
@@ -188,6 +195,7 @@ public class PortalTileEntity extends TileEntity {
         }
         DimensionConfig sanitized = new DimensionConfig();
         sanitized.copyFrom(unsafeConfig, false, true, true);
+        boolean createdNewDim = false;
         int targetDimId = 0;
         if (this.worldObj.provider instanceof PersonalWorldProvider) {
             targetDimId = this.worldObj.provider.dimensionId;
@@ -215,9 +223,15 @@ public class PortalTileEntity extends TileEntity {
             this.targetY = sanitized.getGroundLevel() + 2;
             this.targetZ = 8;
             markDirty();
+            createdNewDim = true;
 
             linkOtherPortal(true);
         }
         Packets.INSTANCE.sendWorldList().sendToClients();
+        if (createdNewDim) {
+            player.addChatMessage(new ChatComponentTranslation("chat.personalWorld.created"));
+        } else {
+            player.addChatMessage(new ChatComponentTranslation("chat.personalWorld.updated"));
+        }
     }
 }
