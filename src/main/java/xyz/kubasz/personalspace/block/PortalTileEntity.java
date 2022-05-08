@@ -1,7 +1,6 @@
 package xyz.kubasz.personalspace.block;
 
 import cpw.mods.fml.common.registry.GameRegistry;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
@@ -25,7 +24,6 @@ public class PortalTileEntity extends TileEntity {
     public int targetZ = 8;
 
     public PortalTileEntity() {
-        PersonalSpaceMod.info("Made new PS Portal tile entity");
     }
 
     @Override
@@ -117,25 +115,9 @@ public class PortalTileEntity extends TileEntity {
     @Override
     public void onDataPacket(NetworkManager net, S35PacketUpdateTileEntity pkt) {
         if (worldObj.isRemote) {
-            boolean wasActive = this.active;
             readFromNBT(pkt.func_148857_g());
-            if (wasActive != this.active) {
-                PersonalSpaceMod.proxy.closePortalGui(this);
-            }
+            PersonalSpaceMod.proxy.closePortalGui(this);
         }
-    }
-
-    public boolean isUseableByPlayer(EntityPlayer entityplayer) {
-        if (worldObj == null) {
-            return true;
-        }
-        if (worldObj.getTileEntity(xCoord, yCoord, zCoord) != this) {
-            return false;
-        }
-        if (worldObj != entityplayer.worldObj) {
-            return false;
-        }
-        return entityplayer.getDistanceSq((double) xCoord + 0.5D, (double) yCoord + 0.5D, (double) zCoord + 0.5D) <= 64.0D;
     }
 
     public void transport(EntityPlayerMP player) {
@@ -182,19 +164,13 @@ public class PortalTileEntity extends TileEntity {
                 otherPortal.markDirty();
             }
         } else if (spawnNewPortal) {
-            GameRegistry.generateWorld(otherX >> 4, otherZ >> 4, world, world.getChunkProvider(), world.getChunkProvider());
             world.setBlock(otherX, otherY, otherZ, PersonalSpaceMod.BLOCK_PORTAL);
-            PortalTileEntity otherPortal = new PortalTileEntity();
-            otherPortal.worldObj = world;
-            otherPortal.xCoord = otherX;
-            otherPortal.yCoord = otherY;
-            otherPortal.zCoord = otherZ;
+            PortalTileEntity otherPortal = (PortalTileEntity) world.getTileEntity(otherX, otherY, otherZ);
             otherPortal.active = true;
             otherPortal.targetDimId = worldObj.provider.dimensionId;
             otherPortal.targetX = xCoord;
             otherPortal.targetY = yCoord + 1;
             otherPortal.targetZ = zCoord;
-            world.setTileEntity(otherX, otherY, otherZ, otherPortal);
             otherPortal.markDirty();
         }
     }
