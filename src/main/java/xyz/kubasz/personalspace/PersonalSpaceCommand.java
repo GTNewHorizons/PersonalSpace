@@ -1,17 +1,19 @@
 package xyz.kubasz.personalspace;
 
 import net.minecraft.command.CommandBase;
+import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.JsonToNBT;
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTException;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.ChunkCoordinates;
+import net.minecraft.world.WorldServer;
+import net.minecraftforge.common.DimensionManager;
+import xyz.kubasz.personalspace.world.PersonalTeleporter;
 
 import java.util.List;
 
@@ -33,54 +35,113 @@ public class PersonalSpaceCommand extends CommandBase {
     }
 
     public void processCommand(ICommandSender sender, String[] args) {
-        if (args.length < 2) {
+        if (args.length < 1 || sender == null) {
             throw new WrongUsageException("commands.pspace.usage");
-        } else {
-            EntityPlayerMP entityplayermp = getPlayer(sender, args[0]);
-            Item item = getItemByText(sender, args[1]);
-            int i = 1;
-            int j = 0;
-
-            if (args.length >= 3) {
-                i = parseIntBounded(sender, args[2], 1, 64);
+        }
+        if (args[0].equalsIgnoreCase("ls")) {
+            CommonProxy.getDimensionConfigObjects(false).forEachEntry((dimId, dimCfg) -> {
+                if (dimCfg == null) {
+                    return true;
+                }
+                sender.addChatMessage(new ChatComponentText(String.format("%d: %s", dimId, dimCfg.getSaveDir(dimId))));
+                return true;
+            });
+            return;
+        }
+        if (args[0].equalsIgnoreCase("where")) {
+            if (args.length < 2) {
+                throw new WrongUsageException("commands.pspace.usage");
             }
-
-            if (args.length >= 4) {
-                j = parseInt(sender, args[3]);
+            EntityPlayerMP player = getPlayer(sender, args[1]);
+            String wname = player.worldObj.getProviderName();
+            if (wname == null) {
+                wname = "?";
             }
-
-            ItemStack itemstack = new ItemStack(item, i, j);
-
-            if (args.length >= 5) {
-                String s = func_147178_a(sender, args, 4).getUnformattedText();
-
-                try {
-                    NBTBase nbtbase = JsonToNBT.func_150315_a(s);
-
-                    if (!(nbtbase instanceof NBTTagCompound)) {
-                        func_152373_a(sender, this, "commands.give.tagError", "Not a valid tag");
-                        return;
-                    }
-
-                    itemstack.setTagCompound((NBTTagCompound) nbtbase);
-                } catch (NBTException nbtexception) {
-                    func_152373_a(sender, this, "commands.give.tagError", nbtexception.getMessage());
-                    return;
+            sender.addChatMessage(new ChatComponentText(String.format("%d: %s", player.worldObj.provider.dimensionId, wname)));
+            return;
+        }
+        if (args[0].equalsIgnoreCase("tpx")) {
+            if (args.length < 3) {
+                throw new WrongUsageException("commands.pspace.usage");
+            }
+            EntityPlayerMP player = getPlayer(sender, args[1]);
+            int dim = parseInt(sender, args[2]);
+            if (!DimensionManager.isDimensionRegistered(dim)) {
+                throw new CommandException("commands.pspace.badDimension");
+            }
+            WorldServer dimWorld = DimensionManager.getWorld(dim);
+            if (dimWorld == null) {
+                DimensionManager.initDimension(dim);
+                dimWorld = DimensionManager.getWorld(dim);
+                if (dimWorld == null) {
+                    throw new CommandException("commands.pspace.badDimension");
                 }
             }
-
-            EntityItem entityitem = entityplayermp.dropPlayerItemWithRandomChoice(itemstack, false);
-            entityitem.delayBeforeCanPickup = 0;
-            entityitem.func_145797_a(entityplayermp.getCommandSenderName());
-            func_152373_a(sender, this, "commands.give.success", itemstack.func_151000_E(), Integer.valueOf(i), entityplayermp.getCommandSenderName());
+            ChunkCoordinates target = dimWorld.getSpawnPoint();
+            target.posY = dimWorld.getTopSolidOrLiquidBlock(target.posX, target.posZ) + 1;
+            double x = target.posX, y = target.posY, z = target.posZ;
+            if (args.length >= 6) {
+                ChunkCoordinates coords = sender.getPlayerCoordinates();
+                x = func_110666_a(sender, x, args[3]);
+                y = func_110666_a(sender, y, args[4]);
+                z = func_110666_a(sender, z, args[5]);
+            }
+            PersonalTeleporter tp = new PersonalTeleporter(dimWorld, (int) x, (int) y, (int) z);
+            player.mcServer.getConfigurationManager().transferPlayerToDimension(player, dim, tp);
+            return;
         }
+        if (args[0].equalsIgnoreCase("give-portal")) {
+            if (args.length < 3) {
+                throw new WrongUsageException("commands.pspace.usage");
+            }
+            EntityPlayerMP player = getPlayer(sender, args[1]);
+            int dim = parseInt(sender, args[2]);
+            if (!DimensionManager.isDimensionRegistered(dim)) {
+                throw new CommandException("commands.pspace.badDimension");
+            }
+            WorldServer dimWorld = DimensionManager.getWorld(dim);
+            if (dimWorld == null) {
+                DimensionManager.initDimension(dim);
+                dimWorld = DimensionManager.getWorld(dim);
+                if (dimWorld == null) {
+                    throw new CommandException("commands.pspace.badDimension");
+                }
+            }
+            ChunkCoordinates target = dimWorld.getSpawnPoint();
+            target.posY = dimWorld.getTopSolidOrLiquidBlock(target.posX, target.posZ) + 1;
+            double x = target.posX, y = target.posY, z = target.posZ;
+            if (args.length >= 6) {
+                ChunkCoordinates coords = sender.getPlayerCoordinates();
+                x = func_110666_a(sender, x, args[3]);
+                y = func_110666_a(sender, y, args[4]);
+                z = func_110666_a(sender, z, args[5]);
+            }
+            ItemStack itemstack = new ItemStack(PersonalSpaceMod.BLOCK_PORTAL, 1, 0);
+            NBTTagCompound tag = new NBTTagCompound();
+            tag.setBoolean("active", true);
+            tag.setIntArray("target", new int[]{dim, (int) x, (int) y, (int) z});
+            itemstack.setTagCompound(tag);
+            EntityItem entityitem = player.dropPlayerItemWithRandomChoice(itemstack, false);
+            entityitem.delayBeforeCanPickup = 0;
+            entityitem.func_145797_a(player.getCommandSenderName());
+            return;
+        }
+
+        throw new WrongUsageException("commands.pspace.usage");
     }
 
     /**
      * Adds the strings available in this command to the given list of tab completion options.
      */
-    public List addTabCompletionOptions(ICommandSender sender, String[] args) {
-        return args.length == 1 ? getListOfStringsMatchingLastWord(args, this.getPlayers()) : (args.length == 2 ? getListOfStringsFromIterableMatchingLastWord(args, Item.itemRegistry.getKeys()) : null);
+    public List<String> addTabCompletionOptions(ICommandSender sender, String[] args) {
+        switch (args.length) {
+            case 0:
+            case 1:
+                return getListOfStringsMatchingLastWord(args, "ls", "where", "tpx", "give-portal");
+            case 2:
+                return getListOfStringsMatchingLastWord(args, this.getPlayers());
+        }
+        return null;
     }
 
     protected String[] getPlayers() {
@@ -91,7 +152,7 @@ public class PersonalSpaceCommand extends CommandBase {
      * Return whether the specified command parameter index is a username parameter.
      */
     public boolean isUsernameIndex(String[] args, int idx) {
-        return idx == 0;
+        return idx == 1;
     }
 
 }
