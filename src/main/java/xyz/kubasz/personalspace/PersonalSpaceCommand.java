@@ -135,6 +135,7 @@ public class PersonalSpaceCommand extends CommandBase {
             }
             cfg.setAllowGenerationChanges(true);
             Packets.INSTANCE.sendWorldList().sendToClients();
+            return;
         }
 
         throw new WrongUsageException("commands.pspace.usage");
