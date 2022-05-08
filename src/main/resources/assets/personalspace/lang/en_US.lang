@@ -14,5 +14,5 @@ gui.personalWorld.vegetation.off=Generating foliage: No
 gui.personalWorld.trees.on=Generating trees: Yes
 gui.personalWorld.trees.off=Generating trees: No
 
-commands.pspace.usage=/pspace (give-portal player DIM [X] [Y] [Z])|(tpx player DIM [X Y Z])|(ls)|(where player)
+commands.pspace.usage=/pspace (give-portal player DIM [X] [Y] [Z])|(tpx player DIM [X Y Z])|(ls)|(where player)|(allow-worldgen-change DIM)
 commands.pspace.badDimension=The specified dimension doesn't exist

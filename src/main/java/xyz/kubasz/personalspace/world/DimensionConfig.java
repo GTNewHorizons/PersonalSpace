@@ -2,23 +2,20 @@ package xyz.kubasz.personalspace.world;
 
 import codechicken.lib.data.MCDataInput;
 import codechicken.lib.data.MCDataOutput;
-import codechicken.lib.packet.PacketCustom;
 import cpw.mods.fml.common.registry.GameRegistry;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.gen.FlatLayerInfo;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.config.Property;
 import org.apache.commons.lang3.tuple.MutablePair;
 import xyz.kubasz.personalspace.CommonProxy;
 import xyz.kubasz.personalspace.Config;
 import xyz.kubasz.personalspace.PersonalSpaceMod;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -84,35 +81,66 @@ public class DimensionConfig {
         this.layers = layers;
     }
 
-    public void writeToDataStream(DataOutputStream stream) throws IOException {
-        PacketCustom pc = new PacketCustom(PersonalSpaceMod.CHANNEL, 1);
-        writeToPacket(pc);
-        ByteBuf buf = pc.getByteBuf();
-        stream.writeInt(buf.writerIndex());
-        stream.write(buf.array(), 0, buf.writerIndex());
-        needsSaving = false;
-    }
-
-    public void readFromDataStream(DataInputStream stream) throws IOException {
-        int len = stream.readInt();
-        byte[] bytes = new byte[len];
-        if (stream.read(bytes) != len) {
-            throw new IOException("Couldn't read all bytes of DimensionConfig");
+    /**
+     * @return Loaded dimension ID
+     */
+    public int syncWithFile(File file, boolean write, int dimId) {
+        final String VISUAL = "visual";
+        final String WORLDGEN = "worldgen";
+        Configuration cfg = new Configuration(file);
+        Property cur;
+        cur = cfg.get(VISUAL, "skyColor", skyColor, "", 0, 0xFFFFFF);
+        if (write) {
+            cur.set(skyColor);
+        } else {
+            setSkyColor(cur.getInt());
         }
-        PacketCustom pc = new PacketCustom(Unpooled.wrappedBuffer(bytes));
-        readFromPacket(pc);
+        cur = cfg.get(VISUAL, "starBrightness", starBrightness, "", 0.0F, 1.0F);
+        if (write) {
+            cur.set(starBrightness);
+        } else {
+            setStarBrightness((float) cur.getDouble());
+        }
+        cur = cfg.get(WORLDGEN, "generatingTrees", generatingTrees, "");
+        if (write) {
+            cur.set(generatingTrees);
+        } else {
+            setGeneratingTrees(cur.getBoolean());
+        }
+        cur = cfg.get(WORLDGEN, "generatingVegetation", generatingVegetation, "");
+        if (write) {
+            cur.set(generatingVegetation);
+        } else {
+            setGeneratingVegetation(cur.getBoolean());
+        }
+        cur = cfg.get(WORLDGEN, "allowGenerationChanges", allowGenerationChanges, "One-time-use permission to change generation settings on the world");
+        if (write) {
+            cur.set(allowGenerationChanges);
+        } else {
+            setAllowGenerationChanges(cur.getBoolean());
+        }
+        cur = cfg.get(WORLDGEN, "layers", getLayersAsString());
+        if (write) {
+            cur.set(getLayersAsString());
+        } else {
+            setLayers(cur.getString());
+        }
+        cur = cfg.get(WORLDGEN, "dimId", dimId);
+        if (write) {
+            cur.set(dimId);
+        } else {
+            dimId = cur.getInt();
+        }
+        if (write) {
+            cfg.save();
+        }
+        needsSaving = false;
+        return dimId;
     }
 
     public static DimensionConfig fromPacket(MCDataInput pkt) {
         DimensionConfig cfg = new DimensionConfig();
         cfg.readFromPacket(pkt);
-        return cfg;
-    }
-
-    public static DimensionConfig fromDataStream(DataInputStream stream) throws IOException {
-        DimensionConfig cfg = new DimensionConfig();
-        cfg.readFromDataStream(stream);
-        cfg.needsSaving = false;
         return cfg;
     }
 

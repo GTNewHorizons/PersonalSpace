@@ -35,13 +35,7 @@ import xyz.kubasz.personalspace.net.Packets;
 import xyz.kubasz.personalspace.world.DimensionConfig;
 import xyz.kubasz.personalspace.world.PersonalWorldProvider;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -49,7 +43,7 @@ import java.util.Objects;
     dependencies = "after:utilityworlds;after:appliedenergistics2-core")
 public class PersonalSpaceMod {
 
-    public static final String DIM_METADATA_FILE = "personalspace_metadata.dat";
+    public static final String DIM_METADATA_FILE = "personalspace_metadata.cfg";
 
     @Mod.Instance(Tags.MODID)
     public static PersonalSpaceMod INSTANCE;
@@ -130,11 +124,9 @@ public class PersonalSpaceMod {
                 }
                 File dimConfig = new File(dir, DIM_METADATA_FILE);
                 if (dimConfig.exists() && dimConfig.isFile()) {
-                    try (FileInputStream fis = new FileInputStream(dimConfig);
-                         BufferedInputStream bis = new BufferedInputStream(fis);
-                         DataInputStream dis = new DataInputStream(bis)) {
-                        int dimId = dis.readInt();
-                        DimensionConfig dimCfg = DimensionConfig.fromDataStream(dis);
+                    try {
+                        DimensionConfig dimCfg = new DimensionConfig();
+                        int dimId = dimCfg.syncWithFile(dimConfig, false, 0);
                         dimCfg.registerWithDimensionManager(dimId, false);
                     } catch (Exception e) {
                         LOG.error("Couldn't load personal dimension data from " + dimConfig.getPath(), e);
@@ -174,12 +166,7 @@ public class PersonalSpaceMod {
                 }
             }
             File dataFile = new File(saveDir, DIM_METADATA_FILE);
-            try (FileOutputStream fos = new FileOutputStream(dataFile);
-                 BufferedOutputStream bos = new BufferedOutputStream(fos);
-                 DataOutputStream dos = new DataOutputStream(bos)) {
-                dos.writeInt(provider.dimensionId);
-                config.writeToDataStream(dos);
-            }
+            config.syncWithFile(dataFile, true, provider.dimensionId);
         } catch (Exception e) {
             LOG.fatal("Couldn't save personal dimension data for " + event.world.provider.getDimensionName(), e);
         }
