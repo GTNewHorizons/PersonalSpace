@@ -57,7 +57,7 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public ChunkCoordinates getSpawnPoint() {
-        return new ChunkCoordinates(8, getConfig().getGroundLevel() + 1, 8);
+        return new ChunkCoordinates(8, getConfig().getGroundLevel() + 2, 8);
     }
 
     @Override

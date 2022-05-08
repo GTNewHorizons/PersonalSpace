@@ -200,6 +200,19 @@ public class PersonalSpaceMod {
     @Mod.EventHandler
     public void serverStopped(FMLServerStoppedEvent event) {
         proxy.serverStopped(event);
+        synchronized (CommonProxy.getDimensionConfigObjects(false)) {
+            CommonProxy.getDimensionConfigObjects(false).forEachEntry((dimId, dimCfg) -> {
+                if (DimensionManager.isDimensionRegistered(dimId)) {
+                    DimensionManager.unregisterDimension(dimId);
+                    DimensionManager.unregisterProviderType(dimId);
+                }
+                return true;
+            });
+            CommonProxy.getDimensionConfigObjects(false).clear();
+        }
+        synchronized (CommonProxy.getDimensionConfigObjects(true)) {
+            CommonProxy.getDimensionConfigObjects(true).clear();
+        }
     }
 
     @SubscribeEvent
