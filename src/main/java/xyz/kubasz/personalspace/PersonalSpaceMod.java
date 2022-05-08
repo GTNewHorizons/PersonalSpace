@@ -119,9 +119,7 @@ public class PersonalSpaceMod {
 
     void loadDimensionConfigs() {
         try {
-            synchronized (CommonProxy.getDimensionConfigObjects(false)) {
-                CommonProxy.getDimensionConfigObjects(false).clear();
-            }
+            deregisterServerDimensions();
             File saveDir = DimensionManager.getCurrentSaveRootDirectory();
             if (saveDir == null || !saveDir.isDirectory()) {
                 return;
@@ -197,9 +195,7 @@ public class PersonalSpaceMod {
         proxy.serverStopping(event);
     }
 
-    @Mod.EventHandler
-    public void serverStopped(FMLServerStoppedEvent event) {
-        proxy.serverStopped(event);
+    private void deregisterServerDimensions() {
         synchronized (CommonProxy.getDimensionConfigObjects(false)) {
             CommonProxy.getDimensionConfigObjects(false).forEachEntry((dimId, dimCfg) -> {
                 if (DimensionManager.isDimensionRegistered(dimId)) {
@@ -210,6 +206,12 @@ public class PersonalSpaceMod {
             });
             CommonProxy.getDimensionConfigObjects(false).clear();
         }
+    }
+
+    @Mod.EventHandler
+    public void serverStopped(FMLServerStoppedEvent event) {
+        proxy.serverStopped(event);
+        deregisterServerDimensions();
         synchronized (CommonProxy.getDimensionConfigObjects(true)) {
             CommonProxy.getDimensionConfigObjects(true).clear();
         }
