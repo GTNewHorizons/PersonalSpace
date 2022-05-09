@@ -6,6 +6,7 @@ import xyz.kubasz.personalspace.world.DimensionConfig;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.stream.Collectors;
 
 public class Config {
 
@@ -26,6 +27,22 @@ public class Config {
             "minecraft:netherrack"
         };
 
+        public static final String[] allowedBiomes = new String[]{
+            "Plains",
+            "Ocean",
+            "Desert",
+            "Extreme Hills",
+            "Forest",
+            "Taiga",
+            "Swampland",
+            "River",
+            "MushroomIsland",
+            "Swampland",
+            "Jungle",
+            "Savanna",
+            "Mesa"
+        };
+
         public static final int firstDimensionId = 180;
     }
 
@@ -35,6 +52,7 @@ public class Config {
 
     public static String[] defaultPresets = Arrays.copyOf(Defaults.defaultPresets, Defaults.defaultPresets.length);
     public static HashSet<String> allowedBlocks = new HashSet<>(Arrays.asList(Defaults.allowedBlocks));
+    public static HashSet<String> allowedBiomes = new HashSet<>(Arrays.asList(Defaults.allowedBiomes));
     public static int firstDimensionId;
 
     public static void synchronizeConfiguration(File configFile) {
@@ -47,6 +65,10 @@ public class Config {
         allowedBlocks = new HashSet<>(Arrays.asList(configuration.getStringList(
             Categories.general, "allowedBlocks", Defaults.allowedBlocks,
             "List of blocks allowed in the user-specified presets, keep in mind these are used in world generation, so will be available in infinite quantities for the player.")));
+
+        allowedBiomes = Arrays.stream(configuration.getStringList(
+            Categories.general, "allowedBiomes", Defaults.allowedBiomes,
+            "List of biomes allowed for the personal dimensions.")).map(String::toLowerCase).collect(Collectors.toCollection(HashSet::new));
 
         firstDimensionId = configuration.getInt("firstDimensionId", Categories.general, Defaults.firstDimensionId, 0, Integer.MAX_VALUE,
             "First dimension ID to use for newly generated worlds");

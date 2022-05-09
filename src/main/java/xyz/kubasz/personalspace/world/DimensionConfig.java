@@ -6,6 +6,7 @@ import cpw.mods.fml.common.registry.GameRegistry;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.MathHelper;
+import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.gen.FlatLayerInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.config.Configuration;
@@ -33,6 +34,7 @@ public class DimensionConfig {
     private boolean generatingVegetation = false;
     private boolean generatingTrees = false;
     private boolean allowGenerationChanges = false;
+    private String biomeId = "Plains";
     private List<FlatLayerInfo> layers = Collections.emptyList();
 
     private boolean needsSaving = true;
@@ -49,6 +51,7 @@ public class DimensionConfig {
         pkt.writeString(saveDirOverride);
         pkt.writeInt(skyColor);
         pkt.writeFloat(starBrightness);
+        pkt.writeVarInt(getRawBiomeId());
         pkt.writeBoolean(generatingVegetation);
         pkt.writeBoolean(generatingTrees);
         pkt.writeBoolean(allowGenerationChanges);
@@ -64,6 +67,7 @@ public class DimensionConfig {
         this.needsSaving = true;
         this.setSkyColor(pkt.readInt());
         this.setStarBrightness(pkt.readFloat());
+        this.setBiomeId(BiomeGenBase.getBiomeGenArray()[pkt.readVarInt()].biomeName);
         this.setGeneratingVegetation(pkt.readBoolean());
         this.setGeneratingTrees(pkt.readBoolean());
         this.setAllowGenerationChanges(pkt.readBoolean());
@@ -100,6 +104,12 @@ public class DimensionConfig {
             cur.set(starBrightness);
         } else {
             setStarBrightness((float) cur.getDouble());
+        }
+        cur = cfg.get(WORLDGEN, "biomeId", getBiomeId());
+        if (write) {
+            cur.set(getBiomeId());
+        } else {
+            setBiomeId(cur.getString());
         }
         cur = cfg.get(WORLDGEN, "generatingTrees", generatingTrees, "");
         if (write) {
@@ -155,6 +165,7 @@ public class DimensionConfig {
         }
         if (copyGenerationInfo) {
             this.setAllowGenerationChanges(source.getAllowGenerationChanges());
+            this.setBiomeId(source.getBiomeId());
             this.setGeneratingTrees(source.isGeneratingTrees());
             this.setGeneratingVegetation(source.isGeneratingVegetation());
             this.layers = source.layers;
@@ -249,6 +260,30 @@ public class DimensionConfig {
         if (this.generatingTrees != generatingTrees) {
             this.needsSaving = true;
             this.generatingTrees = generatingTrees;
+        }
+    }
+
+    public String getBiomeId() {
+        return biomeId;
+    }
+
+    public int getRawBiomeId() {
+        BiomeGenBase biomes[] = BiomeGenBase.getBiomeGenArray();
+        for (int i = 0; i < biomes.length; i++) {
+            if (biomes[i] != null && biomes[i].biomeName != null && biomes[i].biomeName.equalsIgnoreCase(biomeId)) {
+                return i;
+            }
+        }
+        return 1;
+    }
+
+    public void setBiomeId(String biomeId) {
+        if (biomeId == null) {
+            biomeId = "Plains";
+        }
+        if (!this.biomeId.equalsIgnoreCase(biomeId)) {
+            this.needsSaving = true;
+            this.biomeId = biomeId;
         }
     }
 
@@ -356,6 +391,13 @@ public class DimensionConfig {
             }
         }
         return true;
+    }
+
+    public static boolean canUseBiome(String biome) {
+        if (biome.equalsIgnoreCase("Plains")) {
+            return true;
+        }
+        return Config.allowedBiomes.contains(biome.toLowerCase());
     }
 
     /**

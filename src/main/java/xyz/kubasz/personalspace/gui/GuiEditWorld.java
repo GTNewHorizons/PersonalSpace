@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.MathHelper;
+import net.minecraft.world.biome.BiomeGenBase;
 import org.lwjgl.opengl.GL11;
 import xyz.kubasz.personalspace.CommonProxy;
 import xyz.kubasz.personalspace.Config;
@@ -30,11 +31,13 @@ public class GuiEditWorld extends GuiScreen {
     GuiSlider skyGreen;
     GuiSlider skyBlue;
     GuiSlider starBrightness;
+    GuiTextField biome;
     GuiButton generateTrees;
     GuiButton generateVegetation;
     GuiButton save;
     GuiTextField presetEntry;
     List<GuiButton> presetButtons = new ArrayList<>();
+    List<GuiTextField> textFields = new ArrayList<>();
     String voidPresetName = "gui.personalWorld.voidWorld";
 
     public GuiEditWorld(PortalTileEntity tile) {
@@ -59,8 +62,8 @@ public class GuiEditWorld extends GuiScreen {
     @Override
     public void updateScreen() {
         super.updateScreen();
-        if (presetEntry != null) {
-            presetEntry.updateCursorCounter();
+        for (GuiTextField tf : textFields) {
+            tf.updateCursorCounter();
         }
         if (!this.mc.thePlayer.isEntityAlive() || this.mc.thePlayer.isDead) {
             this.mc.thePlayer.closeScreen();
@@ -87,6 +90,14 @@ public class GuiEditWorld extends GuiScreen {
         this.starBrightness = new GuiSlider(3, 48, this.ySize, 200, 20, I18n.format("gui.personalWorld.starBrightness"), "", 0.0F, 1.0F, desiredConfig.getStarBrightness(), true, true);
         addButton(this.starBrightness);
 
+        GuiButtonExt lblBiome = new GuiButtonExt(-1, 48, this.ySize, 200, 20, I18n.format("gui.personalWorld.biome"));
+        lblBiome.enabled = false;
+        addButton(lblBiome);
+        this.biome = new GuiTextField(fontRendererObj, 8, this.ySize, 400, 20);
+        this.biome.setMaxStringLength(4096);
+        this.biome.setText(desiredConfig.getBiomeId());
+        this.textFields.add(this.biome);
+        this.ySize += 26;
         this.generateTrees = new GuiButtonExt(4, 8, this.ySize, 200, 20, "trees");
         addButton(this.generateTrees);
         this.generateVegetation = new GuiButtonExt(5, 8, this.ySize, 200, 20, "veg");
@@ -100,6 +111,7 @@ public class GuiEditWorld extends GuiScreen {
         if (this.presetEntry.getText().isEmpty()) {
             this.presetEntry.setText(voidPresetName);
         }
+        this.textFields.add(this.presetEntry);
         this.ySize += 26;
 
         int i = 9;
@@ -155,7 +167,19 @@ public class GuiEditWorld extends GuiScreen {
             this.presetEntry.setTextColor(0xA0FFA0);
             this.desiredConfig.setLayers(actualText);
         }
-        this.presetEntry.drawTextBox();
+        this.desiredConfig.setBiomeId(this.biome.getText());
+        if (!generationEnabled) {
+            this.biome.setTextColor(0x909090);
+        } else if (!this.desiredConfig.getBiomeId().equalsIgnoreCase(BiomeGenBase.getBiome(this.desiredConfig.getRawBiomeId()).biomeName)) {
+            this.biome.setTextColor(0xFF0000);
+        } else if (!DimensionConfig.canUseBiome(this.desiredConfig.getBiomeId())) {
+            this.biome.setTextColor(0xFFFF00);
+        } else {
+            this.biome.setTextColor(0xA0FFA0);
+        }
+        for (GuiTextField tf : textFields) {
+            tf.drawTextBox();
+        }
         GuiDraw.gui.setZLevel(99.f);
         GuiDraw.drawRect(8, 8, 32, 72, 0xFF000000 | desiredConfig.getSkyColor());
         int starBright = MathHelper.clamp_int((int) (desiredConfig.getStarBrightness() * 255.0F), 0, 255);
@@ -166,8 +190,10 @@ public class GuiEditWorld extends GuiScreen {
     @Override
     protected void keyTyped(char character, int key) {
         super.keyTyped(character, key);
-        if (this.presetEntry.isFocused()) {
-            this.presetEntry.textboxKeyTyped(character, key);
+        for (GuiTextField tf : textFields) {
+            if (tf.isFocused()) {
+                tf.textboxKeyTyped(character, key);
+            }
         }
     }
 
@@ -176,7 +202,9 @@ public class GuiEditWorld extends GuiScreen {
         x -= guiLeft;
         y -= guiTop;
         super.mouseClicked(x, y, button);
-        this.presetEntry.mouseClicked(x, y, button);
+        for (GuiTextField tf : textFields) {
+            tf.mouseClicked(x, y, button);
+        }
     }
 
     @Override
