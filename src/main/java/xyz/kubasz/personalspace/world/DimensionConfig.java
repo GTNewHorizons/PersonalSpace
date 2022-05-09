@@ -332,7 +332,7 @@ public class DimensionConfig {
             blockCount = MathHelper.clamp_int(blockCount, 1, 255);
             Block block = GameRegistry.findBlock(blockName[0], blockName[1]);
             if (block == null) {
-                block = Blocks.dirt;
+                return Collections.emptyList();
             }
             FlatLayerInfo info = new FlatLayerInfo(blockCount, block, 0);
             info.setMinY(currY);
@@ -380,10 +380,16 @@ public class DimensionConfig {
     }
 
     public static boolean canUseLayers(String preset) {
+        if (preset == null) {
+            preset = "";
+        }
         if (preset.equals(PRESET_UW_GARDEN) || preset.equals(PRESET_UW_VOID) || preset.equals(PRESET_UW_MINING)) {
             return true;
         }
         List<FlatLayerInfo> infos = parseLayers(preset);
+        if (infos.isEmpty() && !preset.trim().isEmpty()) {
+            return false;
+        }
         for (FlatLayerInfo info : infos) {
             String block = GameRegistry.findUniqueIdentifierFor(info.func_151536_b()).toString();
             if (!Config.allowedBlocks.contains(block)) {
