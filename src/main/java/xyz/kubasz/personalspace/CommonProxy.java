@@ -60,7 +60,6 @@ public class CommonProxy {
     }
 
     public void serverStopped(FMLServerStoppedEvent event) {
-        getDimensionConfigObjects(false).clear();
     }
 
     public void openPortalGui(World world, int x, int y, int z) {

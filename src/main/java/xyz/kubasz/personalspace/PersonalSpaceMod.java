@@ -4,6 +4,7 @@ import appeng.api.AEApi;
 import appeng.api.IAppEngApi;
 import appeng.api.features.IWorldGen;
 import codechicken.lib.packet.PacketCustom;
+import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Optional;
@@ -30,6 +31,7 @@ import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xyz.kubasz.personalspace.block.PortalBlock;
+import xyz.kubasz.personalspace.block.PortalItem;
 import xyz.kubasz.personalspace.block.PortalTileEntity;
 import xyz.kubasz.personalspace.net.Packets;
 import xyz.kubasz.personalspace.world.DimensionConfig;
@@ -72,10 +74,10 @@ public class PersonalSpaceMod {
         BP_MIGRATION_2 = new PortalBlock(true);
         BP_MIGRATION_3 = new PortalBlock(true);
         BP_MIGRATION_4 = new PortalBlock(true);
-        GameRegistry.registerBlock(BLOCK_PORTAL, "personalPortal");
-        GameRegistry.registerBlock(BP_MIGRATION_2, "personalPortal_migration2");
-        GameRegistry.registerBlock(BP_MIGRATION_3, "personalPortal_migration3");
-        GameRegistry.registerBlock(BP_MIGRATION_4, "personalPortal_migration4");
+        GameRegistry.registerBlock(BLOCK_PORTAL, PortalItem.class, "personalPortal");
+        GameRegistry.registerBlock(BP_MIGRATION_2, PortalItem.class, "personalPortal_migration2");
+        GameRegistry.registerBlock(BP_MIGRATION_3, PortalItem.class, "personalPortal_migration3");
+        GameRegistry.registerBlock(BP_MIGRATION_4, PortalItem.class, "personalPortal_migration4");
         GameRegistry.registerTileEntityWithAlternatives(PortalTileEntity.class, "personalspace:personalPortal", "uw_portal_te");
     }
 
@@ -135,6 +137,7 @@ public class PersonalSpaceMod {
                         int dimId = dimCfg.syncWithFile(dimConfig, false, 0);
                         dimCfg.setSaveDirOverride(dir.getName());
                         dimCfg.registerWithDimensionManager(dimId, false);
+                        LOG.info("Loaded PersonalSpace world {} (at {})", dimId, dir.getName());
                     } catch (Exception e) {
                         LOG.error("Couldn't load personal dimension data from " + dimConfig.getPath(), e);
                     }
@@ -144,6 +147,7 @@ public class PersonalSpaceMod {
                 MutablePair<DimensionConfig, Integer> dc = DimensionConfig.fromUtilityWorldsWorld(dir.getName());
                 if (dc != null) {
                     dc.getLeft().registerWithDimensionManager(dc.getRight(), false);
+                    LOG.info("Migrated world {} (at {}) from utilityworlds", dc.getRight(), dir.getName());
                 }
             }
         } catch (Exception e) {
@@ -193,8 +197,11 @@ public class PersonalSpaceMod {
         synchronized (CommonProxy.getDimensionConfigObjects(false)) {
             CommonProxy.getDimensionConfigObjects(false).forEachEntry((dimId, dimCfg) -> {
                 if (DimensionManager.isDimensionRegistered(dimId)) {
+                    FMLLog.info("Deregistering PersonalSpace dimension %d", dimId);
                     DimensionManager.unregisterDimension(dimId);
-                    DimensionManager.unregisterProviderType(dimId);
+                    if (DimensionManager.unregisterProviderType(dimId).length > 0) {
+                        FMLLog.severe("PersonalSpace dimension id %d has other dimension ids registered for the same provider", dimId);
+                    }
                 }
                 return true;
             });
