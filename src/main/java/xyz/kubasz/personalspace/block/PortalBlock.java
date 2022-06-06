@@ -13,9 +13,11 @@ import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.ForgeDirection;
 import xyz.kubasz.personalspace.PersonalSpaceMod;
 
 import java.util.ArrayList;
@@ -88,11 +90,18 @@ public class PortalBlock extends Block implements ITileEntityProvider {
             return;
         }
         PortalTileEntity te = (PortalTileEntity) wte;
+        double dx = placer.posX - (double)x;
+        double dz = placer.posZ - (double)z;
+        if (Math.abs(dx) > Math.abs(dz)) {
+            te.facing = (dx > 0) ? ForgeDirection.EAST : ForgeDirection.WEST;
+        } else {
+            te.facing = (dz > 0) ? ForgeDirection.SOUTH : ForgeDirection.NORTH;
+        }
         if (fromItem.hasTagCompound()) {
             te.readFromNBT(fromItem.getTagCompound());
-            te.markDirty();
             te.linkOtherPortal(false);
         }
+        te.markDirty();
     }
 
     ItemStack getItemStack(World w, int x, int y, int z) {
@@ -105,6 +114,7 @@ public class PortalBlock extends Block implements ITileEntityProvider {
             tag.removeTag("x");
             tag.removeTag("y");
             tag.removeTag("z");
+            tag.removeTag("facing");
             drop.setTagCompound(tag);
         }
         return drop;

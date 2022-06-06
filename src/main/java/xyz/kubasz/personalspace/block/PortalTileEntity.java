@@ -10,6 +10,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.common.util.ForgeDirection;
 import xyz.kubasz.personalspace.CommonProxy;
 import xyz.kubasz.personalspace.PersonalSpaceMod;
 import xyz.kubasz.personalspace.net.Packets;
@@ -18,11 +19,14 @@ import xyz.kubasz.personalspace.world.PersonalTeleporter;
 import xyz.kubasz.personalspace.world.PersonalWorldProvider;
 
 public class PortalTileEntity extends TileEntity {
+    public static final ForgeDirection DEFAULT_FACING = ForgeDirection.NORTH;
+
     public boolean active = false;
     public int targetDimId = 0;
     public int targetX = 8;
     public int targetY = 8;
     public int targetZ = 8;
+    public ForgeDirection facing = DEFAULT_FACING;
 
     public PortalTileEntity() {
     }
@@ -55,22 +59,20 @@ public class PortalTileEntity extends TileEntity {
             byte remoteDir = tag.getByte("remoteDir");
             switch (remoteDir) {
                 case 0:
-                    this.targetX += 1;
-                    this.targetZ -= 1;
+                    this.facing = ForgeDirection.NORTH;
                     break;
                 case 1:
-                    this.targetX += 2;
-                    this.targetZ += 1;
+                    this.facing = ForgeDirection.EAST;
                     break;
                 case 3:
-                    this.targetX -= 1;
-                    this.targetZ += 1;
+                    this.facing = ForgeDirection.WEST;
                     break;
                 default:
-                    this.targetX += 1;
-                    this.targetZ += 2;
+                    this.facing = ForgeDirection.SOUTH;
                     break;
             }
+            this.targetX += 1;
+            this.targetZ += 1;
         }
         if (tag.hasKey("localDimensionId")) {
             isLegacy = true;
@@ -89,11 +91,17 @@ public class PortalTileEntity extends TileEntity {
             this.targetY = t_array[2];
             this.targetZ = t_array[3];
         }
+        if (tag.hasKey("facing")) {
+            facing = ForgeDirection.getOrientation(tag.getInteger("facing"));
+        }
 
         if (isLegacy) {
             this.active = true;
             PersonalSpaceMod.LOG.info("Migrated old UW portal to dim {} : target {},{},{}", targetDimId, targetX, targetY, targetZ);
             markDirty();
+        }
+        if (facing == ForgeDirection.UNKNOWN) {
+            facing = ForgeDirection.NORTH;
         }
     }
 
@@ -110,6 +118,7 @@ public class PortalTileEntity extends TileEntity {
         super.writeToNBT(tag);
         tag.setBoolean("active", this.active);
         tag.setIntArray("target", new int[]{this.targetDimId, this.targetX, this.targetY, this.targetZ});
+        tag.setInteger("facing", this.facing.ordinal());
     }
 
     @Override
@@ -159,25 +168,23 @@ public class PortalTileEntity extends TileEntity {
         if (!world.blockExists(otherX, otherY, otherZ)) {
             GameRegistry.generateWorld(otherX >> 4, otherZ >> 4, world, world.getChunkProvider(), world.getChunkProvider());
         }
+        PortalTileEntity otherPortal = null;
+
         if (world.getBlock(otherX, otherY, otherZ) == PersonalSpaceMod.BLOCK_PORTAL) {
             TileEntity wte = world.getTileEntity(otherX, otherY, otherZ);
             if (wte instanceof PortalTileEntity) {
-                PortalTileEntity otherPortal = (PortalTileEntity) wte;
-                otherPortal.active = true;
-                otherPortal.targetDimId = worldObj.provider.dimensionId;
-                otherPortal.targetX = xCoord;
-                otherPortal.targetY = yCoord + 1;
-                otherPortal.targetZ = zCoord;
-                otherPortal.markDirty();
+                otherPortal = (PortalTileEntity) wte;
             }
         } else if (spawnNewPortal) {
             world.setBlock(otherX, otherY, otherZ, PersonalSpaceMod.BLOCK_PORTAL);
-            PortalTileEntity otherPortal = (PortalTileEntity) world.getTileEntity(otherX, otherY, otherZ);
+            otherPortal = (PortalTileEntity) world.getTileEntity(otherX, otherY, otherZ);
+        }
+        if (otherPortal != null) {
             otherPortal.active = true;
             otherPortal.targetDimId = worldObj.provider.dimensionId;
-            otherPortal.targetX = xCoord;
-            otherPortal.targetY = yCoord + 1;
-            otherPortal.targetZ = zCoord;
+            otherPortal.targetX = xCoord + facing.offsetX;
+            otherPortal.targetY = yCoord + facing.offsetY;
+            otherPortal.targetZ = zCoord + facing.offsetZ;
             otherPortal.markDirty();
         }
     }
@@ -222,9 +229,9 @@ public class PortalTileEntity extends TileEntity {
             sanitized.registerWithDimensionManager(targetDimId, false);
             this.active = true;
             this.targetDimId = targetDimId;
-            this.targetX = 8;
-            this.targetY = sanitized.getGroundLevel() + 2;
-            this.targetZ = 8;
+            this.targetX = 8 + DEFAULT_FACING.offsetX;
+            this.targetY = sanitized.getGroundLevel() + 1 + DEFAULT_FACING.offsetY;
+            this.targetZ = 8 + DEFAULT_FACING.offsetZ;
             markDirty();
             createdNewDim = true;
 

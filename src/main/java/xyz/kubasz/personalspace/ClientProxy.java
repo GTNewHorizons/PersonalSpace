@@ -1,5 +1,6 @@
 package xyz.kubasz.personalspace;
 
+import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
@@ -8,6 +9,7 @@ import cpw.mods.fml.common.event.FMLServerStartedEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
+import cpw.mods.fml.common.registry.GameRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.gui.GuiScreen;
@@ -16,6 +18,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.world.World;
 import xyz.kubasz.personalspace.block.PortalTileEntity;
+import xyz.kubasz.personalspace.block.RenderPortal;
 import xyz.kubasz.personalspace.gui.GuiEditWorld;
 
 public class ClientProxy extends CommonProxy {
@@ -31,6 +34,7 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void init(FMLInitializationEvent event) {
         super.init(event);
+        ClientRegistry.bindTileEntitySpecialRenderer(PortalTileEntity.class, new RenderPortal());
     }
 
     // postInit "Handle interaction with other mods, complete your setup based on this."
