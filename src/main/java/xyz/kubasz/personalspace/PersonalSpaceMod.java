@@ -23,6 +23,7 @@ import cpw.mods.fml.common.network.FMLNetworkEvent;
 import cpw.mods.fml.common.network.NetworkHandshakeEstablished;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
@@ -147,12 +148,28 @@ public class PersonalSpaceMod {
                 MutablePair<DimensionConfig, Integer> dc = DimensionConfig.fromUtilityWorldsWorld(dir.getName());
                 if (dc != null) {
                     dc.getLeft().registerWithDimensionManager(dc.getRight(), false);
+                    saveConfig(dc.getRight(), dc.getLeft());
                     LOG.info("Migrated world {} (at {}) from utilityworlds", dc.getRight(), dir.getName());
                 }
             }
         } catch (Exception e) {
             LOG.error("Caught error while loading and registering personal space dimensions", e);
         }
+    }
+
+    private void saveConfig(int dimId, DimensionConfig config) throws IOException {
+        File saveDir = DimensionManager.getCurrentSaveRootDirectory();
+        if (saveDir == null || !saveDir.isDirectory()) {
+            return;
+        }
+        saveDir = new File(saveDir, config.getSaveDir(dimId));
+        if (!(saveDir.exists() && saveDir.isDirectory())) {
+            if (!saveDir.mkdirs()) {
+                throw new IOException("Couldn't create save directory for personal dimension " + config.getSaveDir(dimId));
+            }
+        }
+        File dataFile = new File(saveDir, DIM_METADATA_FILE);
+        config.syncWithFile(dataFile, true, dimId);
     }
 
     @SubscribeEvent
@@ -166,18 +183,7 @@ public class PersonalSpaceMod {
             if (config == null || !config.needsSaving()) {
                 return;
             }
-            File saveDir = DimensionManager.getCurrentSaveRootDirectory();
-            if (saveDir == null || !saveDir.isDirectory()) {
-                return;
-            }
-            saveDir = new File(saveDir, provider.getSaveFolder());
-            if (!(saveDir.exists() && saveDir.isDirectory())) {
-                if (!saveDir.mkdirs()) {
-                    throw new IOException("Couldn't create save directory for personal dimension " + provider.getSaveFolder());
-                }
-            }
-            File dataFile = new File(saveDir, DIM_METADATA_FILE);
-            config.syncWithFile(dataFile, true, provider.dimensionId);
+            saveConfig(provider.dimensionId, config);
         } catch (Exception e) {
             LOG.fatal("Couldn't save personal dimension data for " + event.world.provider.getDimensionName(), e);
         }
@@ -191,6 +197,16 @@ public class PersonalSpaceMod {
     @Mod.EventHandler
     public void serverStopping(FMLServerStoppingEvent event) {
         proxy.serverStopping(event);
+        TIntObjectHashMap<DimensionConfig> configs = CommonProxy.getDimensionConfigObjects(true);
+        configs.forEachEntry((dimId, dimCfg) -> {
+            if (dimCfg == null || !dimCfg.needsSaving()) {return true;}
+            try {
+                saveConfig(dimId, dimCfg);
+            } catch (IOException e) {
+                LOG.error("Couldn't save dimension " + dimId, e);
+            }
+            return true;
+        });
     }
 
     private void deregisterServerDimensions() {

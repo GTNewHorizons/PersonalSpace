@@ -181,7 +181,7 @@ public class DimensionConfig {
             if (!CommonProxy.getDimensionConfigObjects(isClient).containsKey(dimId)) {
                 CommonProxy.getDimensionConfigObjects(isClient).put(dimId, this);
             } else {
-                CommonProxy.getDimensionConfigObjects(isClient).get(dimId).copyFrom(this, false, true, true);
+                CommonProxy.getDimensionConfigObjects(isClient).get(dimId).copyFrom(this, true, true, true);
             }
         }
     }
