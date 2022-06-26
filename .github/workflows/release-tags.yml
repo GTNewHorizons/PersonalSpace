@@ -45,7 +45,6 @@ jobs:
           files: build/libs/*.jar
 
       - name: Publish to Maven
-        if: ${{ false }}
         run: ./gradlew publish
         env:
           MAVEN_USER: ${{ secrets.MAVEN_USER }}

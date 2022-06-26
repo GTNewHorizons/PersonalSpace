@@ -1,5 +1,6 @@
 package xyz.kubasz.personalspace.world;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.entity.Entity;
@@ -10,6 +11,8 @@ import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.biome.WorldChunkManagerHell;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
+import xyz.kubasz.personalspace.CommonProxy;
+import xyz.kubasz.personalspace.PersonalSpaceMod;
 
 /**
  * Based on WorldProviderEnd
@@ -28,6 +31,10 @@ public class PersonalWorldProvider extends WorldProvider {
     }
 
     public DimensionConfig getConfig() {
+        if (this.config == null) {
+            boolean isClient = (this.worldObj != null) ? this.worldObj.isRemote : FMLCommonHandler.instance().getEffectiveSide().isClient();
+            this.config = DimensionConfig.getForDimension(this.dimensionId, isClient);
+        }
         return this.config;
     }
 
@@ -88,7 +95,7 @@ public class PersonalWorldProvider extends WorldProvider {
     }
 
     public int getAverageGroundLevel() {
-        return this.config.getGroundLevel();
+        return getConfig().getGroundLevel();
     }
 
     @SideOnly(Side.CLIENT)
@@ -108,7 +115,7 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public String getSaveFolder() {
-        return config.getSaveDir(this.dimensionId);
+        return getConfig().getSaveDir(this.dimensionId);
     }
 
     @Override
@@ -128,7 +135,7 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public float getStarBrightness(float par1) {
-        return config.getStarBrightness();
+        return getConfig().getStarBrightness();
     }
 
     @Override
