@@ -16,8 +16,9 @@ gui.personalWorld.skyColor.green=Green:
 gui.personalWorld.skyColor.blue=Blue: 
 gui.personalWorld.starBrightness=Star brightness
 
-gui.personalWorld.vegetation=Generating foliage
-gui.personalWorld.trees=Generating trees
+gui.personalWorld.vegetation=Foliage
+gui.personalWorld.trees=Trees
+gui.personalWorld.weather=Weather
 
 commands.pspace.usage=/pspace (give-portal player DIM [X] [Y] [Z])|(tpx player DIM [X Y Z])|(ls)|(where player)|(allow-worldgen-change DIM)
 commands.pspace.badDimension=The specified dimension doesn't exist

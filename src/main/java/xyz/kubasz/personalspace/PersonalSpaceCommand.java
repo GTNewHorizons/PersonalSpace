@@ -55,7 +55,8 @@ public class PersonalSpaceCommand extends CommandBase {
                 throw new WrongUsageException("commands.pspace.usage");
             }
             EntityPlayerMP player = getPlayer(sender, args[1]);
-            sender.addChatMessage(new ChatComponentTranslation("commands.pspace.where", sender.getCommandSenderName(), player.worldObj.provider.dimensionId));
+            sender.addChatMessage(new ChatComponentTranslation(
+                    "commands.pspace.where", sender.getCommandSenderName(), player.worldObj.provider.dimensionId));
             return;
         }
         if (args[0].equalsIgnoreCase("tpx")) {
@@ -86,7 +87,8 @@ public class PersonalSpaceCommand extends CommandBase {
             }
             PersonalTeleporter tp = new PersonalTeleporter(dimWorld, (int) x, (int) y, (int) z);
             player.mcServer.getConfigurationManager().transferPlayerToDimension(player, dim, tp);
-            sender.addChatMessage(new ChatComponentTranslation("commands.pspace.tpx", sender.getCommandSenderName(), dim, x, y, z));
+            sender.addChatMessage(
+                    new ChatComponentTranslation("commands.pspace.tpx", sender.getCommandSenderName(), dim, x, y, z));
             return;
         }
         if (args[0].equalsIgnoreCase("give-portal")) {
@@ -136,7 +138,8 @@ public class PersonalSpaceCommand extends CommandBase {
             }
             cfg.setAllowGenerationChanges(true);
             Packets.INSTANCE.sendWorldList().sendToClients();
-            sender.addChatMessage(new ChatComponentTranslation("commands.pspace.allow-worldgen-change", sender.getCommandSenderName(), dim));
+            sender.addChatMessage(new ChatComponentTranslation(
+                    "commands.pspace.allow-worldgen-change", sender.getCommandSenderName(), dim));
             return;
         }
 

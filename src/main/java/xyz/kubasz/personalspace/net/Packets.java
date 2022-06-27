@@ -1,12 +1,15 @@
 package xyz.kubasz.personalspace.net;
 
 import codechicken.lib.packet.PacketCustom;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.play.INetHandlerPlayClient;
 import net.minecraft.network.play.INetHandlerPlayServer;
 import net.minecraft.tileentity.TileEntity;
 import xyz.kubasz.personalspace.CommonProxy;
+import xyz.kubasz.personalspace.Config;
 import xyz.kubasz.personalspace.PersonalSpaceMod;
 import xyz.kubasz.personalspace.block.PortalTileEntity;
 import xyz.kubasz.personalspace.world.DimensionConfig;
@@ -65,6 +68,14 @@ public enum Packets {
 
     public PacketCustom sendWorldList() {
         PacketCustom pkt = new PacketCustom(PersonalSpaceMod.CHANNEL, PacketIds.UPDATE_WORLDLIST.ordinal());
+        pkt.writeVarInt(Config.allowedBiomes.size());
+        for (String biome : Config.allowedBiomes) {
+            pkt.writeString(biome);
+        }
+        pkt.writeVarInt(Config.allowedBlocks.size());
+        for (String block : Config.allowedBlocks) {
+            pkt.writeString(block);
+        }
         // Send all dimconfigs
         synchronized (CommonProxy.getDimensionConfigObjects(false)) {
             pkt.writeVarInt(CommonProxy.getDimensionConfigObjects(false).size());
@@ -88,6 +99,21 @@ public enum Packets {
     }
 
     private static void handleWorldList(PacketCustom pkt) {
+        List<String> tmpList = new ArrayList<>();
+        int allowedBiomes = pkt.readVarInt();
+        // Use tmpList to only atomically swap references after the list is populated
+        // to prevent concurrent modification by the network thread
+        tmpList = new ArrayList<>(allowedBiomes);
+        for (int i = 0; i < allowedBiomes; ++i) {
+            tmpList.add(pkt.readString());
+        }
+        PersonalSpaceMod.clientAllowedBiomes = tmpList;
+        int allowedBlocks = pkt.readVarInt();
+        tmpList = new ArrayList<>(allowedBlocks);
+        for (int i = 0; i < allowedBlocks; ++i) {
+            tmpList.add(pkt.readString());
+        }
+        PersonalSpaceMod.clientAllowedBlocks = tmpList;
         int dimConfigs = pkt.readVarInt();
         for (int i = 0; i < dimConfigs; i++) {
             int dimId = pkt.readVarInt();

@@ -1,18 +1,26 @@
 package xyz.kubasz.personalspace.gui;
 
 import codechicken.lib.gui.GuiDraw;
+import cpw.mods.fml.common.registry.GameRegistry;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.IntConsumer;
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.biome.BiomeGenBase;
+import net.minecraft.world.gen.FlatLayerInfo;
+import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 import xyz.kubasz.personalspace.CommonProxy;
 import xyz.kubasz.personalspace.Config;
+import xyz.kubasz.personalspace.PersonalSpaceMod;
 import xyz.kubasz.personalspace.block.PortalTileEntity;
 import xyz.kubasz.personalspace.net.Packets;
 import xyz.kubasz.personalspace.world.DimensionConfig;
@@ -29,6 +37,7 @@ public class GuiEditWorld extends GuiScreen {
     WTextField biome;
     int biomeCycle = 0;
     WButton biomeEditButton;
+    WToggleButton enableWeather;
     WToggleButton generateTrees;
     WToggleButton generateVegetation;
     WButton save;
@@ -140,10 +149,9 @@ public class GuiEditWorld extends GuiScreen {
         this.biomeEditButton = new WButton(new Rectangle(144, 0, 18, 18), "", false, 0, Icons.PENCIL, () -> {
             this.biomeCycle = (this.biomeEditButton.lastButton == 0)
                     ? (this.biomeCycle + 1)
-                    : (this.biomeCycle + Config.allowedBiomes.size() - 1);
-            this.biomeCycle = this.biomeCycle % Config.allowedBiomes.size();
-            this.biome.textField.setText((String)
-                    Config.allowedBiomes.stream().skip(this.biomeCycle).limit(1).toArray()[0]);
+                    : (this.biomeCycle + PersonalSpaceMod.clientAllowedBiomes.size() - 1);
+            this.biomeCycle = this.biomeCycle % PersonalSpaceMod.clientAllowedBiomes.size();
+            this.biome.textField.setText(PersonalSpaceMod.clientAllowedBiomes.get(this.biomeCycle));
         });
         this.biome.addChild(biomeEditButton);
         addWidget(this.biome);
@@ -154,6 +162,17 @@ public class GuiEditWorld extends GuiScreen {
                 });
         this.generateTrees.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.trees"), false));
         addWidget(generateTrees);
+        this.enableWeather = new WToggleButton(
+                new Rectangle(90, this.generateTrees.position.y, 18, 18),
+                "",
+                false,
+                0,
+                desiredConfig.isGeneratingTrees(),
+                () -> {
+                    desiredConfig.setGeneratingTrees(enableWeather.getValue());
+                });
+        this.enableWeather.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.weather"), false));
+        rootWidget.addChild(this.enableWeather);
         this.generateVegetation = new WToggleButton(
                 new Rectangle(0, this.ySize, 18, 18), "", false, 0, desiredConfig.isGeneratingVegetation(), () -> {
                     desiredConfig.setGeneratingVegetation(generateVegetation.getValue());
@@ -219,6 +238,9 @@ public class GuiEditWorld extends GuiScreen {
 
         this.presetEditor = new Widget();
         this.presetEditor.position = new Rectangle(172, 0, 1, 1);
+        this.rootWidget.addChild(this.presetEditor);
+
+        regeneratePresetEditor();
 
         this.xSize = 320 - 16;
         this.ySize = 240 - 16;
@@ -226,8 +248,101 @@ public class GuiEditWorld extends GuiScreen {
         this.guiTop = (this.height - this.ySize) / 2;
     }
 
+    private void regeneratePresetEditor() {
+        final boolean generationEnabled = desiredConfig.getAllowGenerationChanges();
+        this.presetEditor.children.clear();
+        // Palette
+        int curX = 0;
+        int curY = 0;
+        for (String bl : PersonalSpaceMod.clientAllowedBlocks) {
+            String[] blName = bl.split(":");
+            if (blName.length != 2) continue;
+            Block block = GameRegistry.findBlock(blName[0], blName[1]);
+            ItemStack is = new ItemStack(block);
+            WButton addBtn = new WButton(new Rectangle(curX, curY, 20, 20), "", false, 0, null, () -> {
+                FlatLayerInfo fli = new FlatLayerInfo(1, block);
+                this.desiredConfig.getMutableLayers().add(fli);
+                this.desiredConfig.setLayers(this.desiredConfig.getLayersAsString());
+                this.configToPreset();
+            });
+            addBtn.itemStack = is;
+            addBtn.itemStackText = "+";
+            addBtn.enabled = generationEnabled;
+            this.presetEditor.addChild(addBtn);
+            curY += 21;
+            if (curY > 188) {
+                curY = 0;
+                curX += 21;
+            }
+        }
+        // Layers
+        curY = 0;
+        curX += 22;
+        this.presetEditor.addChild(new WLabel(curX, curY, I18n.format("gui.personalWorld.layers"), false));
+        curY += 10;
+        List<FlatLayerInfo> fli = this.desiredConfig.getLayers();
+        for (int i = fli.size() - 1; i >= 0; i--) {
+            FlatLayerInfo info = fli.get(i);
+            final int finalI = i;
+            WButton block = new WButton(new Rectangle(curX + 12, curY, 20, 28), "", false, 0, null, null);
+            block.enabled = false;
+            block.itemStack = new ItemStack(info.func_151536_b());
+            block.itemStackText = Integer.toString(info.getLayerCount());
+            this.presetEditor.addChild(block);
+
+            // up
+            if (i < fli.size() - 1) {
+                block.addChild(new WButton(new Rectangle(-12, 0, 10, 10), "", false, 0, Icons.SMALL_UP, () -> {
+                    Collections.swap(this.desiredConfig.getMutableLayers(), finalI, finalI + 1);
+                    this.configToPreset();
+                }));
+            }
+            block.addChild(new WButton(new Rectangle(-12, 9, 10, 10), "", false, 0, Icons.SMALL_CROSS, () -> {
+                this.desiredConfig.getMutableLayers().remove(finalI);
+                this.configToPreset();
+            }));
+            if (i > 0) {
+                block.addChild(new WButton(new Rectangle(-12, 18, 10, 10), "", false, 0, Icons.SMALL_DOWN, () -> {
+                    Collections.swap(this.desiredConfig.getMutableLayers(), finalI, finalI - 1);
+                    this.configToPreset();
+                }));
+            }
+            IntConsumer plusMinus = (mul) -> {
+                FlatLayerInfo orig = this.desiredConfig.getMutableLayers().get(finalI);
+                boolean shiftHeld = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT);
+                boolean ctrlHeld = Keyboard.isKeyDown(Keyboard.KEY_LCONTROL);
+                int newCnt = ctrlHeld ? 64 : (shiftHeld ? 10 : 1);
+                newCnt *= mul;
+                newCnt = MathHelper.clamp_int(orig.getLayerCount() + newCnt, 1, 255);
+                this.desiredConfig.getMutableLayers().set(finalI, new FlatLayerInfo(newCnt, orig.func_151536_b()));
+                this.desiredConfig.setLayers(this.desiredConfig.getLayersAsString());
+                this.configToPreset();
+            };
+            block.addChild(
+                    new WButton(new Rectangle(21, 5, 18, 18), "", false, 0, Icons.PLUS, () -> plusMinus.accept(1)));
+            block.addChild(
+                    new WButton(new Rectangle(40, 5, 18, 18), "", false, 0, Icons.MINUS, () -> plusMinus.accept(-1)));
+
+            for (Widget child : block.children) {
+                child.enabled = generationEnabled;
+            }
+
+            curY += 30;
+        }
+    }
+
+    private void configToPreset() {
+        String preset = this.desiredConfig.getLayersAsString();
+        if (preset == null || preset.isEmpty()) {
+            preset = voidPresetName;
+        }
+        this.presetEntry.textField.setText(preset);
+        this.presetEntry.textField.setCursorPositionZero();
+    }
+
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        boolean inputsValid = true;
         this.drawDefaultBackground();
         GL11.glPushMatrix();
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
@@ -262,11 +377,14 @@ public class GuiEditWorld extends GuiScreen {
                 .matcher(actualText)
                 .matches()) {
             this.presetEntry.textField.setTextColor(0xFF0000);
+            inputsValid = false;
         } else if (!DimensionConfig.canUseLayers(actualText)) {
             this.presetEntry.textField.setTextColor(0xFFFF00);
+            inputsValid = false;
         } else {
             this.presetEntry.textField.setTextColor(0xA0FFA0);
             this.desiredConfig.setLayers(actualText);
+            this.regeneratePresetEditor();
         }
         this.desiredConfig.setBiomeId(this.biome.textField.getText());
         if (!generationEnabled) {
@@ -275,11 +393,15 @@ public class GuiEditWorld extends GuiScreen {
                 .getBiomeId()
                 .equalsIgnoreCase(BiomeGenBase.getBiome(this.desiredConfig.getRawBiomeId()).biomeName)) {
             this.biome.textField.setTextColor(0xFF0000);
+            inputsValid = false;
         } else if (!DimensionConfig.canUseBiome(this.desiredConfig.getBiomeId())) {
             this.biome.textField.setTextColor(0xFFFF00);
+            inputsValid = false;
         } else {
             this.biome.textField.setTextColor(0xA0FFA0);
         }
+
+        this.save.enabled = inputsValid;
 
         rootWidget.draw(mouseX, mouseY, partialTicks);
 

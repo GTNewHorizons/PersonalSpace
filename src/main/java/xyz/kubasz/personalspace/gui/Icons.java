@@ -3,12 +3,14 @@ package xyz.kubasz.personalspace.gui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.OpenGlHelper;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
 
 public enum Icons {
     // 9-patch rectangles
@@ -177,12 +179,17 @@ public enum Icons {
             GL11.glEnable(GL11.GL_DEPTH_TEST);
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GL11.glEnable(GL11.GL_LIGHTING);
+            GL11.glEnable(GL12.GL_RESCALE_NORMAL);
             GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+            RenderHelper.enableGUIStandardItemLighting();
 
             GL11.glTranslatef(1.0f, 1.0f, 0.0f);
 
             itemRender.renderItemAndEffectIntoGUI(fr, tm, is, xOff, yOff);
             itemRender.renderItemOverlayIntoGUI(fr, tm, is, xOff, yOff, text);
+
+            RenderHelper.disableStandardItemLighting();
 
             GL11.glPopAttrib();
             GL11.glPopMatrix();

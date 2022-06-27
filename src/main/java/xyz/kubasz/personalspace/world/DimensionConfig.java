@@ -2,6 +2,7 @@ package xyz.kubasz.personalspace.world;
 
 import codechicken.lib.data.MCDataInput;
 import codechicken.lib.data.MCDataOutput;
+import com.google.common.collect.Lists;
 import cpw.mods.fml.common.registry.GameRegistry;
 import java.io.File;
 import java.util.ArrayList;
@@ -29,11 +30,12 @@ public class DimensionConfig {
     private String saveDirOverride = "";
     private int skyColor = 0xc0d8ff;
     private float starBrightness = 1.0F;
+    private boolean weatherEnabled = false;
     private boolean generatingVegetation = false;
     private boolean generatingTrees = false;
     private boolean allowGenerationChanges = false;
     private String biomeId = "Plains";
-    private List<FlatLayerInfo> layers = Collections.emptyList();
+    private ArrayList<FlatLayerInfo> layers = Lists.newArrayList();
 
     private boolean needsSaving = true;
 
@@ -51,6 +53,7 @@ public class DimensionConfig {
         pkt.writeInt(skyColor);
         pkt.writeFloat(starBrightness);
         pkt.writeVarInt(getRawBiomeId());
+        pkt.writeBoolean(weatherEnabled);
         pkt.writeBoolean(generatingVegetation);
         pkt.writeBoolean(generatingTrees);
         pkt.writeBoolean(allowGenerationChanges);
@@ -67,6 +70,7 @@ public class DimensionConfig {
         this.setSkyColor(pkt.readInt());
         this.setStarBrightness(pkt.readFloat());
         this.setBiomeId(BiomeGenBase.getBiomeGenArray()[pkt.readVarInt()].biomeName);
+        this.setWeatherEnabled(pkt.readBoolean());
         this.setGeneratingVegetation(pkt.readBoolean());
         this.setGeneratingTrees(pkt.readBoolean());
         this.setAllowGenerationChanges(pkt.readBoolean());
@@ -109,6 +113,12 @@ public class DimensionConfig {
             cur.set(getBiomeId());
         } else {
             setBiomeId(cur.getString());
+        }
+        cur = cfg.get(VISUAL, "weatherEnabled", weatherEnabled, "");
+        if (write) {
+            cur.set(weatherEnabled);
+        } else {
+            setWeatherEnabled(cur.getBoolean());
         }
         cur = cfg.get(WORLDGEN, "generatingTrees", generatingTrees, "");
         if (write) {
@@ -166,6 +176,7 @@ public class DimensionConfig {
         if (copyVisualInfo) {
             this.setSkyColor(source.getSkyColor());
             this.setStarBrightness(source.getStarBrightness());
+            this.setWeatherEnabled(source.isWeatherEnabled());
         }
         if (copyGenerationInfo) {
             this.setAllowGenerationChanges(source.getAllowGenerationChanges());
@@ -251,6 +262,17 @@ public class DimensionConfig {
         }
     }
 
+    public boolean isWeatherEnabled() {
+        return weatherEnabled;
+    }
+
+    public void setWeatherEnabled(boolean weatherEnabled) {
+        if (this.weatherEnabled != weatherEnabled) {
+            this.needsSaving = true;
+            this.weatherEnabled = weatherEnabled;
+        }
+    }
+
     public boolean isGeneratingVegetation() {
         return generatingVegetation;
     }
@@ -312,15 +334,15 @@ public class DimensionConfig {
         return needsSaving;
     }
 
-    public static List<FlatLayerInfo> parseLayers(String preset) {
+    public static ArrayList<FlatLayerInfo> parseLayers(String preset) {
         if (preset == null) {
-            return Collections.emptyList();
+            return Lists.newArrayList();
         }
         preset = preset.replaceAll("\\s+", "");
         if (preset.length() < 1 || !PRESET_VALIDATION_PATTERN.matcher(preset).matches()) {
-            return Collections.emptyList();
+            return Lists.newArrayList();
         }
-        List<FlatLayerInfo> infos = new ArrayList<>();
+        ArrayList<FlatLayerInfo> infos = new ArrayList<>();
         int currY = 0;
         for (String layerStr : preset.split(";")) {
             if (layerStr.isEmpty()) {
@@ -329,20 +351,20 @@ public class DimensionConfig {
             String[] components = layerStr.split("\\*", 2);
             String[] blockName = components[0].split(":");
             if (blockName.length != 2) {
-                return Collections.emptyList();
+                return Lists.newArrayList();
             }
             int blockCount = 1;
             if (components.length > 1) {
                 try {
                     blockCount = Integer.parseInt(components[1]);
                 } catch (NumberFormatException nfe) {
-                    return Collections.emptyList();
+                    return Lists.newArrayList();
                 }
             }
             blockCount = MathHelper.clamp_int(blockCount, 1, 255);
             Block block = GameRegistry.findBlock(blockName[0], blockName[1]);
             if (block == null) {
-                return Collections.emptyList();
+                return Lists.newArrayList();
             }
             FlatLayerInfo info = new FlatLayerInfo(blockCount, block, 0);
             info.setMinY(currY);
@@ -357,6 +379,10 @@ public class DimensionConfig {
 
     public List<FlatLayerInfo> getLayers() {
         return Collections.unmodifiableList(this.layers);
+    }
+
+    public List<FlatLayerInfo> getMutableLayers() {
+        return this.layers;
     }
 
     public static String layersToString(List<FlatLayerInfo> layers) {

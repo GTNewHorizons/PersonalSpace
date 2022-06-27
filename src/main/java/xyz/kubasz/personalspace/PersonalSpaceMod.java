@@ -4,6 +4,7 @@ import appeng.api.AEApi;
 import appeng.api.IAppEngApi;
 import appeng.api.features.IWorldGen;
 import codechicken.lib.packet.PacketCustom;
+import com.google.common.collect.Lists;
 import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
@@ -26,6 +27,7 @@ import cpw.mods.fml.common.registry.GameRegistry;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraftforge.common.DimensionManager;
@@ -64,6 +66,8 @@ public class PersonalSpaceMod {
     public static PortalBlock BLOCK_PORTAL, BP_MIGRATION_2, BP_MIGRATION_3, BP_MIGRATION_4;
 
     public static final String CHANNEL = Tags.MODID;
+
+    public static List<String> clientAllowedBlocks = Lists.newArrayList(), clientAllowedBiomes = Lists.newArrayList();
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {

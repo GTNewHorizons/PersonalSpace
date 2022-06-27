@@ -4,6 +4,8 @@ import java.awt.*;
 import javax.annotation.Nonnull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.renderer.entity.RenderItem;
+import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 
 public class WButton extends Widget {
@@ -14,8 +16,12 @@ public class WButton extends Widget {
     public static final int DEFAULT_COLOR = 0xFFFFFF;
     public int color = DEFAULT_COLOR;
     public Icons buttonIcon = null;
+    public ItemStack itemStack = null;
+    public String itemStackText = "";
     public Runnable onClick = null;
     public int lastButton = 0;
+
+    private static RenderItem renderItem;
 
     public WButton() {}
 
@@ -50,7 +56,14 @@ public class WButton extends Widget {
         int textSpace = position.width;
         if (buttonIcon != null) {
             textSpace -= buttonIcon.w + 6;
-            buttonIcon.drawAt(2, position.height / 2 - buttonIcon.h / 2 - 1);
+            buttonIcon.drawAt(1, position.height / 2 - buttonIcon.h / 2);
+        }
+        if (itemStack != null) {
+            if (renderItem == null) {
+                renderItem = new RenderItem();
+            }
+            textSpace -= 18;
+            Icons.drawItem(1, position.height / 2 - 9, itemStack, itemStackText, renderItem);
         }
         if (!text.isEmpty()) {
             FontRenderer fr = Minecraft.getMinecraft().fontRenderer;

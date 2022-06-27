@@ -151,29 +151,29 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public void updateWeather() {
-        if (!this.worldObj.isRemote) {
+        if (!this.worldObj.isRemote && !this.getConfig().isWeatherEnabled()) {
             this.resetRainAndThunder();
         }
     }
 
     @Override
     public boolean canDoLightning(Chunk chunk) {
-        return false;
+        return this.getConfig().isWeatherEnabled();
     }
 
     @Override
     public boolean canDoRainSnowIce(Chunk chunk) {
-        return false;
+        return this.getConfig().isWeatherEnabled();
     }
 
     @Override
     public boolean canBlockFreeze(int x, int y, int z, boolean byWater) {
-        return false;
+        return this.getConfig().isWeatherEnabled();
     }
 
     @Override
     public boolean canSnowAt(int x, int y, int z, boolean checkLight) {
-        return false;
+        return this.getConfig().isWeatherEnabled();
     }
 
     @Override
