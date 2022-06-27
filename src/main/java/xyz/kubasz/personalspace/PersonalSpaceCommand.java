@@ -11,6 +11,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
@@ -54,7 +55,7 @@ public class PersonalSpaceCommand extends CommandBase {
                 throw new WrongUsageException("commands.pspace.usage");
             }
             EntityPlayerMP player = getPlayer(sender, args[1]);
-            sender.addChatMessage(new ChatComponentText(String.format("%d", player.worldObj.provider.dimensionId)));
+            sender.addChatMessage(new ChatComponentTranslation("commands.pspace.where", player.getCommandSenderName(), player.worldObj.provider.dimensionId));
             return;
         }
         if (args[0].equalsIgnoreCase("tpx")) {
