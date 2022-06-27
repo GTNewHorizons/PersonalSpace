@@ -213,13 +213,14 @@ public class PortalTileEntity extends TileEntity {
         } else if (this.active) {
             targetDimId = this.targetDimId;
         }
+        boolean changed = true;
         if (targetDimId > 0) {
             DimensionConfig realConfig =
                     CommonProxy.getDimensionConfigObjects(false).get(targetDimId);
             if (realConfig == null) {
                 return;
             }
-            realConfig.copyFrom(sanitized, false, true, realConfig.getAllowGenerationChanges());
+            changed = realConfig.copyFrom(sanitized, false, true, realConfig.getAllowGenerationChanges());
             realConfig.setAllowGenerationChanges(false);
         } else {
             if (this.worldObj.provider.dimensionId != 0) {
@@ -242,7 +243,7 @@ public class PortalTileEntity extends TileEntity {
         Packets.INSTANCE.sendWorldList().sendToClients();
         if (createdNewDim) {
             player.addChatMessage(new ChatComponentTranslation("chat.personalWorld.created"));
-        } else {
+        } else if (changed) {
             player.addChatMessage(new ChatComponentTranslation("chat.personalWorld.updated"));
         }
     }

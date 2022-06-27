@@ -157,9 +157,9 @@ public class DimensionConfig {
         return cfg;
     }
 
-    public void copyFrom(
+    public boolean copyFrom(
             DimensionConfig source, boolean copySaveInfo, boolean copyVisualInfo, boolean copyGenerationInfo) {
-        this.needsSaving = true;
+        this.needsSaving = false;
         if (copySaveInfo) {
             this.saveDirOverride = source.saveDirOverride;
         }
@@ -173,7 +173,11 @@ public class DimensionConfig {
             this.setGeneratingTrees(source.isGeneratingTrees());
             this.setGeneratingVegetation(source.isGeneratingVegetation());
             this.layers = source.layers;
+            this.needsSaving = true;
         }
+        boolean modified = this.needsSaving;
+        this.needsSaving = true;
+        return modified;
     }
 
     public void registerWithDimensionManager(int dimId, boolean isClient) {
