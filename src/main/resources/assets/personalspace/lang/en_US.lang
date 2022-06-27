@@ -22,3 +22,5 @@ gui.personalWorld.trees=Generating trees
 commands.pspace.usage=/pspace (give-portal player DIM [X] [Y] [Z])|(tpx player DIM [X Y Z])|(ls)|(where player)|(allow-worldgen-change DIM)
 commands.pspace.badDimension=The specified dimension doesn't exist
 commands.pspace.where=Player %s is in dimension %d
+commands.pspace.tpx=Player %s was teleported to %d: %d, %d, %d
+commands.pspace.allow-worldgen-change=Player %s unlocked worldgen settings for dimension %d
