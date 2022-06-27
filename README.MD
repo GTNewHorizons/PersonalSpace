@@ -19,3 +19,5 @@ designed for use in the [Gregtech New Horizons](https://github.com/GTNewHorizons
    * `/pspace allow-worldgen-change DIM` - temporarily unlocks editing worldgen settings for the specified dimension
 
  * Visual (and worldgen if unlocked) settings can be changed on active portals, by right clicking on them while sneaking.
+
+![Customization options available in the mod](customization.png)
