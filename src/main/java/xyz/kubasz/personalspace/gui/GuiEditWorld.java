@@ -328,6 +328,10 @@ public class GuiEditWorld extends GuiScreen {
             }
 
             curY += 30;
+            if (curY > 188) {
+                curY = 10;
+                curX += 21;
+            }
         }
     }
 

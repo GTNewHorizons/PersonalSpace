@@ -60,7 +60,7 @@ public class PersonalSpaceMod {
 
     @SidedProxy(
             clientSide = "xyz.kubasz.personalspace.ClientProxy",
-            serverSide = Tags.GROUPNAME + "xyz.kubasz.personalspace.CommonProxy")
+            serverSide = "xyz.kubasz.personalspace.CommonProxy")
     public static CommonProxy proxy;
 
     public static PortalBlock BLOCK_PORTAL, BP_MIGRATION_2, BP_MIGRATION_3, BP_MIGRATION_4;
