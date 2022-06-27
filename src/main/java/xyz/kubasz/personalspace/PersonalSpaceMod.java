@@ -42,7 +42,7 @@ import xyz.kubasz.personalspace.world.DimensionConfig;
 import xyz.kubasz.personalspace.world.PersonalWorldProvider;
 
 @Mod(
-        modid = Tags.MODID,
+        modid = "personalspace",
         version = Tags.VERSION,
         name = Tags.MODNAME,
         acceptedMinecraftVersions = "[1.7.10]",
@@ -51,12 +51,14 @@ public class PersonalSpaceMod {
 
     public static final String DIM_METADATA_FILE = "personalspace_metadata.cfg";
 
-    @Mod.Instance(Tags.MODID)
+    @Mod.Instance
     public static PersonalSpaceMod INSTANCE;
 
     public static Logger LOG = LogManager.getLogger(Tags.MODID);
 
-    @SidedProxy(clientSide = Tags.GROUPNAME + ".ClientProxy", serverSide = Tags.GROUPNAME + ".CommonProxy")
+    @SidedProxy(
+            clientSide = "xyz.kubasz.personalspace.ClientProxy",
+            serverSide = Tags.GROUPNAME + "xyz.kubasz.personalspace.CommonProxy")
     public static CommonProxy proxy;
 
     public static PortalBlock BLOCK_PORTAL, BP_MIGRATION_2, BP_MIGRATION_3, BP_MIGRATION_4;

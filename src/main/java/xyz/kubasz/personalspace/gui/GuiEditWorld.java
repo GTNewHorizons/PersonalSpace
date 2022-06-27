@@ -1,14 +1,12 @@
 package xyz.kubasz.personalspace.gui;
 
 import codechicken.lib.gui.GuiDraw;
-import cpw.mods.fml.client.config.GuiButtonExt;
-import cpw.mods.fml.client.config.GuiSlider;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.biome.BiomeGenBase;
@@ -26,17 +24,18 @@ public class GuiEditWorld extends GuiScreen {
     int xSize, ySize, guiLeft, guiTop;
 
     DimensionConfig desiredConfig = new DimensionConfig();
-    GuiSlider skyRed;
-    GuiSlider skyGreen;
-    GuiSlider skyBlue;
-    GuiSlider starBrightness;
-    GuiTextField biome;
-    GuiButton generateTrees;
-    GuiButton generateVegetation;
-    GuiButton save;
-    GuiTextField presetEntry;
-    List<GuiButton> presetButtons = new ArrayList<>();
-    List<GuiTextField> textFields = new ArrayList<>();
+    WSlider skyRed, skyGreen, skyBlue;
+    WSlider starBrightness;
+    WTextField biome;
+    int biomeCycle = 0;
+    WButton biomeEditButton;
+    WToggleButton generateTrees;
+    WToggleButton generateVegetation;
+    WButton save;
+    WTextField presetEntry;
+    List<WButton> presetButtons = new ArrayList<>();
+    Widget presetEditor;
+    Widget rootWidget = new Widget();
     String voidPresetName = "gui.personalWorld.voidWorld";
 
     public GuiEditWorld(PortalTileEntity tile) {
@@ -63,9 +62,7 @@ public class GuiEditWorld extends GuiScreen {
     @Override
     public void updateScreen() {
         super.updateScreen();
-        for (GuiTextField tf : textFields) {
-            tf.updateCursorCounter();
-        }
+        rootWidget.update();
         if (!this.mc.thePlayer.isEntityAlive() || this.mc.thePlayer.isDead) {
             this.mc.thePlayer.closeScreen();
         }
@@ -76,106 +73,155 @@ public class GuiEditWorld extends GuiScreen {
         this.ySize += btn.height + 6;
     }
 
+    private void addWidget(Widget w) {
+        this.rootWidget.addChild(w);
+        this.ySize += w.position.height + 1;
+    }
+
     @Override
     public void initGui() {
-        this.xSize = 400;
-        this.ySize = 8;
-
-        this.skyRed = new GuiSlider(
-                0,
-                48,
-                this.ySize,
-                200,
-                20,
-                I18n.format("gui.personalWorld.skyColor.red"),
-                "",
-                0.0F,
-                255.0F,
+        this.ySize = 0;
+        addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.skyColor"), false));
+        this.skyRed = new WSlider(
+                new Rectangle(0, this.ySize, 128, 12),
+                I18n.format("gui.personalWorld.skyColor.red") + "%.0f",
+                0.0,
+                255.0,
                 ((desiredConfig.getSkyColor() >> 16) & 0xFF),
+                1.0,
                 false,
-                true);
-        addButton(this.skyRed);
-        this.skyGreen = new GuiSlider(
-                1,
-                48,
-                this.ySize,
-                200,
-                20,
-                I18n.format("gui.personalWorld.skyColor.green"),
-                "",
-                0.0F,
-                255.0F,
+                0xFFFFFF,
+                null,
+                null);
+        addWidget(skyRed);
+        this.skyGreen = new WSlider(
+                new Rectangle(0, this.ySize, 128, 12),
+                I18n.format("gui.personalWorld.skyColor.green") + "%.0f",
+                0.0,
+                255.0,
                 ((desiredConfig.getSkyColor() >> 8) & 0xFF),
+                1.0,
                 false,
-                true);
-        addButton(this.skyGreen);
-        this.skyBlue = new GuiSlider(
-                2,
-                48,
-                this.ySize,
-                200,
-                20,
-                I18n.format("gui.personalWorld.skyColor.blue"),
-                "",
-                0.0F,
-                255.0F,
-                (desiredConfig.getSkyColor() & 0xFF),
+                0xFFFFFF,
+                null,
+                null);
+        addWidget(skyGreen);
+        this.skyBlue = new WSlider(
+                new Rectangle(0, this.ySize, 128, 12),
+                I18n.format("gui.personalWorld.skyColor.blue") + "%.0f",
+                0.0,
+                255.0,
+                ((desiredConfig.getSkyColor()) & 0xFF),
+                1.0,
                 false,
-                true);
-        addButton(this.skyBlue);
+                0xFFFFFF,
+                null,
+                null);
+        addWidget(skyBlue);
 
-        this.starBrightness = new GuiSlider(
-                3,
-                48,
-                this.ySize,
-                200,
-                20,
-                I18n.format("gui.personalWorld.starBrightness"),
-                "",
-                0.0F,
-                1.0F,
+        this.ySize += 4;
+        addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.starBrightness"), false));
+        this.starBrightness = new WSlider(
+                new Rectangle(0, this.ySize, 128, 12),
+                "%.2f",
+                0.0,
+                1.0,
                 desiredConfig.getStarBrightness(),
-                true,
-                true);
-        addButton(this.starBrightness);
+                0.01,
+                false,
+                0xFFFFFF,
+                null,
+                null);
+        addWidget(starBrightness);
 
-        GuiButtonExt lblBiome = new GuiButtonExt(-1, 48, this.ySize, 200, 20, I18n.format("gui.personalWorld.biome"));
-        lblBiome.enabled = false;
-        addButton(lblBiome);
-        this.biome = new GuiTextField(fontRendererObj, 8, this.ySize, 400, 20);
-        this.biome.setMaxStringLength(4096);
-        this.biome.setText(desiredConfig.getBiomeId());
-        this.textFields.add(this.biome);
-        this.ySize += 26;
-        this.generateTrees = new GuiButtonExt(4, 8, this.ySize, 200, 20, "trees");
-        addButton(this.generateTrees);
-        this.generateVegetation = new GuiButtonExt(5, 8, this.ySize, 200, 20, "veg");
-        addButton(this.generateVegetation);
+        this.ySize += 4;
+        addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.biome"), false));
+        this.biome = new WTextField(new Rectangle(0, this.ySize, 142, 18), desiredConfig.getBiomeId());
+        this.biomeEditButton = new WButton(new Rectangle(144, 0, 18, 18), "", false, 0, Icons.PENCIL, () -> {
+            this.biomeCycle = (this.biomeEditButton.lastButton == 0)
+                    ? (this.biomeCycle + 1)
+                    : (this.biomeCycle + Config.allowedBiomes.size() - 1);
+            this.biomeCycle = this.biomeCycle % Config.allowedBiomes.size();
+            this.biome.textField.setText((String)
+                    Config.allowedBiomes.stream().skip(this.biomeCycle).limit(1).toArray()[0]);
+        });
+        this.biome.addChild(biomeEditButton);
+        addWidget(this.biome);
+        this.ySize += 4;
+        this.generateTrees = new WToggleButton(
+                new Rectangle(0, this.ySize, 18, 18), "", false, 0, desiredConfig.isGeneratingTrees(), () -> {
+                    desiredConfig.setGeneratingTrees(generateTrees.getValue());
+                });
+        this.generateTrees.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.trees"), false));
+        addWidget(generateTrees);
+        this.generateVegetation = new WToggleButton(
+                new Rectangle(0, this.ySize, 18, 18), "", false, 0, desiredConfig.isGeneratingVegetation(), () -> {
+                    desiredConfig.setGeneratingVegetation(generateVegetation.getValue());
+                });
+        this.generateVegetation.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.vegetation"), false));
+        addWidget(generateVegetation);
 
         voidPresetName = I18n.format("gui.personalWorld.voidWorld");
 
-        this.presetEntry = new GuiTextField(fontRendererObj, 8, this.ySize, 400, 20);
-        this.presetEntry.setMaxStringLength(4096);
-        this.presetEntry.setText(desiredConfig.getLayersAsString());
-        if (this.presetEntry.getText().isEmpty()) {
-            this.presetEntry.setText(voidPresetName);
+        this.ySize += 2;
+        this.presetEntry = new WTextField(new Rectangle(0, this.ySize, 160, 20), desiredConfig.getLayersAsString());
+        if (this.presetEntry.textField.getText().isEmpty()) {
+            this.presetEntry.textField.setText(voidPresetName);
         }
-        this.textFields.add(this.presetEntry);
-        this.ySize += 26;
+        addWidget(presetEntry);
+        this.ySize += 2;
 
-        int i = 9;
+        addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.presets"), false));
+
+        int px = 8, pi = 1;
         for (String preset : Config.defaultPresets) {
             if (preset.isEmpty()) {
                 preset = voidPresetName;
             }
-            presetButtons.add(new GuiButtonExt(++i, 8, this.ySize, 400, 20, preset));
-            addButton(presetButtons.get(presetButtons.size() - 1));
+            String finalPreset = preset;
+            presetButtons.add(new WButton(
+                    new Rectangle(px, this.ySize, 24, 18),
+                    Integer.toString(pi),
+                    true,
+                    WButton.DEFAULT_COLOR,
+                    null,
+                    () -> {
+                        this.presetEntry.textField.setText(finalPreset);
+                    }));
+            rootWidget.addChild(presetButtons.get(presetButtons.size() - 1));
+            ++pi;
+            px += 26;
         }
+        this.ySize += 20;
 
-        this.save = new GuiButton(6, 8, this.ySize, 200, 20, I18n.format("gui.done"));
-        addButton(save);
+        this.save = new WButton(
+                new Rectangle(0, ySize, 128, 20),
+                I18n.format("gui.done"),
+                true,
+                WButton.DEFAULT_COLOR,
+                Icons.CHECKMARK,
+                () -> {
+                    Packets.INSTANCE
+                            .sendChangeWorldSettings(this.tile, desiredConfig)
+                            .sendToServer();
+                    Minecraft.getMinecraft().displayGuiScreen(null);
+                });
+        rootWidget.addChild(new WButton(
+                new Rectangle(130, ySize, 128, 20),
+                I18n.format("gui.cancel"),
+                true,
+                WButton.DEFAULT_COLOR,
+                Icons.CROSS,
+                () -> {
+                    Minecraft.getMinecraft().displayGuiScreen(null);
+                }));
+        addWidget(save);
 
-        this.ySize += 8;
+        this.presetEditor = new Widget();
+        this.presetEditor.position = new Rectangle(172, 0, 1, 1);
+
+        this.xSize = 320 - 16;
+        this.ySize = 240 - 16;
         this.guiLeft = (this.width - this.xSize) / 2;
         this.guiTop = (this.height - this.ySize) / 2;
     }
@@ -184,74 +230,80 @@ public class GuiEditWorld extends GuiScreen {
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         this.drawDefaultBackground();
         GL11.glPushMatrix();
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
         GL11.glTranslatef(this.guiLeft, this.guiTop, 0.0f);
         mouseX -= guiLeft;
         mouseY -= guiTop;
+        Icons.bindTexture();
+        Icons.GUI_BG.draw9Patch(-8, -8, xSize + 16, ySize + 16);
+
         int skyR = MathHelper.clamp_int(skyRed.getValueInt(), 0, 255);
         int skyG = MathHelper.clamp_int(skyGreen.getValueInt(), 0, 255);
         int skyB = MathHelper.clamp_int(skyBlue.getValueInt(), 0, 255);
         desiredConfig.setSkyColor((skyR << 16) | (skyG << 8) | skyB);
         desiredConfig.setStarBrightness((float) this.starBrightness.getValue());
-        this.generateTrees.displayString = I18n.format(
-                desiredConfig.isGeneratingTrees() ? "gui.personalWorld.trees.on" : "gui.personalWorld.trees.off");
-        this.generateVegetation.displayString = I18n.format(
-                desiredConfig.isGeneratingVegetation()
-                        ? "gui.personalWorld.vegetation.on"
-                        : "gui.personalWorld.vegetation.off");
         boolean generationEnabled = desiredConfig.getAllowGenerationChanges();
         this.generateTrees.enabled = generationEnabled;
         this.generateVegetation.enabled = generationEnabled;
-        for (GuiButton presetBtn : presetButtons) {
+        for (WButton presetBtn : presetButtons) {
             presetBtn.enabled = generationEnabled;
         }
         super.drawScreen(mouseX, mouseY, partialTicks);
-        this.presetEntry.setEnabled(generationEnabled);
-        String actualText = this.presetEntry.getText();
+        this.biome.enabled = generationEnabled;
+        this.biomeEditButton.enabled = generationEnabled;
+        this.presetEntry.enabled = generationEnabled;
+        String actualText = this.presetEntry.textField.getText();
         if (voidPresetName.equals(actualText)) {
             actualText = "";
         }
         if (!generationEnabled) {
-            this.presetEntry.setTextColor(0x909090);
+            this.presetEntry.textField.setTextColor(0x909090);
         } else if (!DimensionConfig.PRESET_VALIDATION_PATTERN
                 .matcher(actualText)
                 .matches()) {
-            this.presetEntry.setTextColor(0xFF0000);
+            this.presetEntry.textField.setTextColor(0xFF0000);
         } else if (!DimensionConfig.canUseLayers(actualText)) {
-            this.presetEntry.setTextColor(0xFFFF00);
+            this.presetEntry.textField.setTextColor(0xFFFF00);
         } else {
-            this.presetEntry.setTextColor(0xA0FFA0);
+            this.presetEntry.textField.setTextColor(0xA0FFA0);
             this.desiredConfig.setLayers(actualText);
         }
-        this.desiredConfig.setBiomeId(this.biome.getText());
+        this.desiredConfig.setBiomeId(this.biome.textField.getText());
         if (!generationEnabled) {
-            this.biome.setTextColor(0x909090);
+            this.biome.textField.setTextColor(0x909090);
         } else if (!this.desiredConfig
                 .getBiomeId()
                 .equalsIgnoreCase(BiomeGenBase.getBiome(this.desiredConfig.getRawBiomeId()).biomeName)) {
-            this.biome.setTextColor(0xFF0000);
+            this.biome.textField.setTextColor(0xFF0000);
         } else if (!DimensionConfig.canUseBiome(this.desiredConfig.getBiomeId())) {
-            this.biome.setTextColor(0xFFFF00);
+            this.biome.textField.setTextColor(0xFFFF00);
         } else {
-            this.biome.setTextColor(0xA0FFA0);
+            this.biome.textField.setTextColor(0xA0FFA0);
         }
-        for (GuiTextField tf : textFields) {
-            tf.drawTextBox();
-        }
-        GuiDraw.gui.setZLevel(99.f);
-        GuiDraw.drawRect(8, 8, 32, 72, 0xFF000000 | desiredConfig.getSkyColor());
-        int starBright = MathHelper.clamp_int((int) (desiredConfig.getStarBrightness() * 255.0F), 0, 255);
-        GuiDraw.drawRect(8, this.starBrightness.yPosition, 32, 20, 0xFF000000 | starBright * 0x010101);
+
+        rootWidget.draw(mouseX, mouseY, partialTicks);
+
+        GuiDraw.gui.setZLevel(0.f);
+        GuiDraw.drawRect(130, skyRed.position.y, 32, 3 * (skyRed.position.height + 1), 0xFF000000);
+        GuiDraw.drawRect(
+                131,
+                skyRed.position.y + 1,
+                30,
+                3 * (skyRed.position.height + 1) - 2,
+                0xFF000000 | desiredConfig.getSkyColor());
+        Icons.bindTexture();
+        GL11.glColor4f(1, 1, 1, desiredConfig.getStarBrightness());
+        Icons.STAR.drawAt(132, this.skyRed.position.y + 2);
+        Icons.STAR.drawAt(145, this.skyRed.position.y + 12);
+        Icons.STAR.drawAt(134, this.skyRed.position.y + 21);
+        GL11.glColor4f(1, 1, 1, 1);
         GL11.glPopMatrix();
     }
 
     @Override
     protected void keyTyped(char character, int key) {
         super.keyTyped(character, key);
-        for (GuiTextField tf : textFields) {
-            if (tf.isFocused()) {
-                tf.textboxKeyTyped(character, key);
-            }
-        }
+        rootWidget.keyTyped(character, key);
     }
 
     @Override
@@ -259,9 +311,7 @@ public class GuiEditWorld extends GuiScreen {
         x -= guiLeft;
         y -= guiTop;
         super.mouseClicked(x, y, button);
-        for (GuiTextField tf : textFields) {
-            tf.mouseClicked(x, y, button);
-        }
+        rootWidget.mouseClicked(x, y, button);
     }
 
     @Override
@@ -269,6 +319,7 @@ public class GuiEditWorld extends GuiScreen {
         x -= guiLeft;
         y -= guiTop;
         super.mouseMovedOrUp(x, y, button);
+        rootWidget.mouseMovedOrUp(x, y, button);
     }
 
     @Override
@@ -276,21 +327,11 @@ public class GuiEditWorld extends GuiScreen {
         x -= guiLeft;
         y -= guiTop;
         super.mouseClickMove(x, y, lastBtn, timeDragged);
+        rootWidget.mouseClickMove(x, y, lastBtn, timeDragged);
     }
 
     @Override
-    protected void actionPerformed(GuiButton button) {
-        if (button == this.save) {
-            Packets.INSTANCE.sendChangeWorldSettings(this.tile, desiredConfig).sendToServer();
-            Minecraft.getMinecraft().displayGuiScreen(null);
-        } else if (button == this.generateTrees) {
-            desiredConfig.setGeneratingTrees(!desiredConfig.isGeneratingTrees());
-        } else if (button == this.generateVegetation) {
-            desiredConfig.setGeneratingVegetation(!desiredConfig.isGeneratingVegetation());
-        } else if (button.id >= 9) {
-            this.presetEntry.setText(button.displayString);
-        }
-    }
+    protected void actionPerformed(GuiButton button) {}
 
     @Override
     public boolean doesGuiPauseGame() {
