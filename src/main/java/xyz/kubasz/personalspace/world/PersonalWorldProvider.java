@@ -11,8 +11,6 @@ import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.biome.WorldChunkManagerHell;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
-import xyz.kubasz.personalspace.CommonProxy;
-import xyz.kubasz.personalspace.PersonalSpaceMod;
 
 /**
  * Based on WorldProviderEnd
@@ -32,7 +30,9 @@ public class PersonalWorldProvider extends WorldProvider {
 
     public DimensionConfig getConfig() {
         if (this.config == null) {
-            boolean isClient = (this.worldObj != null) ? this.worldObj.isRemote : FMLCommonHandler.instance().getEffectiveSide().isClient();
+            boolean isClient = (this.worldObj != null)
+                    ? this.worldObj.isRemote
+                    : FMLCommonHandler.instance().getEffectiveSide().isClient();
             this.config = DimensionConfig.getForDimension(this.dimensionId, isClient);
         }
         return this.config;

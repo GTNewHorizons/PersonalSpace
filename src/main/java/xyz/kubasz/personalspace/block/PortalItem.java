@@ -1,11 +1,10 @@
 package xyz.kubasz.personalspace.block;
 
+import java.util.List;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
-
-import java.util.List;
 
 public class PortalItem extends ItemBlock {
     public PortalItem(Block block) {
@@ -24,6 +23,8 @@ public class PortalItem extends ItemBlock {
 
     @Override
     public boolean hasEffect(ItemStack itemStack, int pass) {
-        return itemStack != null && itemStack.getTagCompound() != null && itemStack.getTagCompound().hasKey("target");
+        return itemStack != null
+                && itemStack.getTagCompound() != null
+                && itemStack.getTagCompound().hasKey("target");
     }
 }

@@ -1,23 +1,20 @@
 package xyz.kubasz.personalspace;
 
-import net.minecraftforge.common.config.Configuration;
-import xyz.kubasz.personalspace.world.DimensionConfig;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.stream.Collectors;
+import net.minecraftforge.common.config.Configuration;
+import xyz.kubasz.personalspace.world.DimensionConfig;
 
 public class Config {
 
     private static class Defaults {
-        public static final String[] defaultPresets = new String[]{
-            DimensionConfig.PRESET_UW_VOID,
-            DimensionConfig.PRESET_UW_GARDEN,
-            DimensionConfig.PRESET_UW_MINING,
+        public static final String[] defaultPresets = new String[] {
+            DimensionConfig.PRESET_UW_VOID, DimensionConfig.PRESET_UW_GARDEN, DimensionConfig.PRESET_UW_MINING,
         };
 
-        public static final String[] allowedBlocks = new String[]{
+        public static final String[] allowedBlocks = new String[] {
             "minecraft:bedrock",
             "minecraft:stone",
             "minecraft:cobblestone",
@@ -27,7 +24,7 @@ public class Config {
             "minecraft:netherrack"
         };
 
-        public static final String[] allowedBiomes = new String[]{
+        public static final String[] allowedBiomes = new String[] {
             "Plains",
             "Ocean",
             "Desert",
@@ -59,19 +56,35 @@ public class Config {
         Configuration configuration = new Configuration(configFile);
         configuration.load();
 
-        defaultPresets = configuration.getStringList(Categories.general, "defaultPresets", Defaults.defaultPresets,
-            "Default world configuration presets. Format: blockname*layers;blockname*layers;..., example preset: minecraft:bedrock;minecraft:dirt*3;minecraft:grass");
+        defaultPresets = configuration.getStringList(
+                Categories.general,
+                "defaultPresets",
+                Defaults.defaultPresets,
+                "Default world configuration presets. Format: blockname*layers;blockname*layers;..., example preset: minecraft:bedrock;minecraft:dirt*3;minecraft:grass");
 
-        allowedBlocks = new HashSet<>(Arrays.asList(configuration.getStringList(
-            Categories.general, "allowedBlocks", Defaults.allowedBlocks,
-            "List of blocks allowed in the user-specified presets, keep in mind these are used in world generation, so will be available in infinite quantities for the player.")));
+        allowedBlocks = new HashSet<>(
+                Arrays.asList(
+                        configuration.getStringList(
+                                Categories.general,
+                                "allowedBlocks",
+                                Defaults.allowedBlocks,
+                                "List of blocks allowed in the user-specified presets, keep in mind these are used in world generation, so will be available in infinite quantities for the player.")));
 
         allowedBiomes = Arrays.stream(configuration.getStringList(
-            Categories.general, "allowedBiomes", Defaults.allowedBiomes,
-            "List of biomes allowed for the personal dimensions.")).map(String::toLowerCase).collect(Collectors.toCollection(HashSet::new));
+                        Categories.general,
+                        "allowedBiomes",
+                        Defaults.allowedBiomes,
+                        "List of biomes allowed for the personal dimensions."))
+                .map(String::toLowerCase)
+                .collect(Collectors.toCollection(HashSet::new));
 
-        firstDimensionId = configuration.getInt("firstDimensionId", Categories.general, Defaults.firstDimensionId, 0, Integer.MAX_VALUE,
-            "First dimension ID to use for newly generated worlds");
+        firstDimensionId = configuration.getInt(
+                "firstDimensionId",
+                Categories.general,
+                Defaults.firstDimensionId,
+                0,
+                Integer.MAX_VALUE,
+                "First dimension ID to use for newly generated worlds");
 
         if (configuration.hasChanged()) {
             configuration.save();

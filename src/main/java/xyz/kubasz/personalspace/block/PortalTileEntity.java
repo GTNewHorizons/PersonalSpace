@@ -28,8 +28,7 @@ public class PortalTileEntity extends TileEntity {
     public int targetZ = 8;
     public ForgeDirection facing = DEFAULT_FACING;
 
-    public PortalTileEntity() {
-    }
+    public PortalTileEntity() {}
 
     @Override
     public void readFromNBT(NBTTagCompound tag) {
@@ -97,7 +96,8 @@ public class PortalTileEntity extends TileEntity {
 
         if (isLegacy) {
             this.active = true;
-            PersonalSpaceMod.LOG.info("Migrated old UW portal to dim {} : target {},{},{}", targetDimId, targetX, targetY, targetZ);
+            PersonalSpaceMod.LOG.info(
+                    "Migrated old UW portal to dim {} : target {},{},{}", targetDimId, targetX, targetY, targetZ);
             markDirty();
         }
         if (facing == ForgeDirection.UNKNOWN) {
@@ -117,7 +117,7 @@ public class PortalTileEntity extends TileEntity {
     public void writeToNBT(NBTTagCompound tag) {
         super.writeToNBT(tag);
         tag.setBoolean("active", this.active);
-        tag.setIntArray("target", new int[]{this.targetDimId, this.targetX, this.targetY, this.targetZ});
+        tag.setIntArray("target", new int[] {this.targetDimId, this.targetX, this.targetY, this.targetZ});
         tag.setInteger("facing", this.facing.ordinal());
     }
 
@@ -166,7 +166,8 @@ public class PortalTileEntity extends TileEntity {
         int otherY = config.getGroundLevel() + 1;
         int otherZ = 8;
         if (!world.blockExists(otherX, otherY, otherZ)) {
-            GameRegistry.generateWorld(otherX >> 4, otherZ >> 4, world, world.getChunkProvider(), world.getChunkProvider());
+            GameRegistry.generateWorld(
+                    otherX >> 4, otherZ >> 4, world, world.getChunkProvider(), world.getChunkProvider());
         }
         PortalTileEntity otherPortal = null;
 
@@ -213,7 +214,8 @@ public class PortalTileEntity extends TileEntity {
             targetDimId = this.targetDimId;
         }
         if (targetDimId > 0) {
-            DimensionConfig realConfig = CommonProxy.getDimensionConfigObjects(false).get(targetDimId);
+            DimensionConfig realConfig =
+                    CommonProxy.getDimensionConfigObjects(false).get(targetDimId);
             if (realConfig == null) {
                 return;
             }

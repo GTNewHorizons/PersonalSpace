@@ -3,8 +3,13 @@ package xyz.kubasz.personalspace.world;
 import codechicken.lib.data.MCDataInput;
 import codechicken.lib.data.MCDataOutput;
 import cpw.mods.fml.common.registry.GameRegistry;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import net.minecraft.block.Block;
-import net.minecraft.init.Blocks;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.gen.FlatLayerInfo;
@@ -15,13 +20,6 @@ import org.apache.commons.lang3.tuple.MutablePair;
 import xyz.kubasz.personalspace.CommonProxy;
 import xyz.kubasz.personalspace.Config;
 import xyz.kubasz.personalspace.PersonalSpaceMod;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 
 /**
  * Current world generation settings for a given dimension
@@ -41,11 +39,12 @@ public class DimensionConfig {
 
     public static final String PRESET_UW_VOID = "";
     public static final String PRESET_UW_GARDEN = "minecraft:bedrock;minecraft:dirt*3;minecraft:grass";
-    public static final String PRESET_UW_MINING = "minecraft:bedrock*4;minecraft:stone*58;minecraft:dirt;minecraft:grass";
-    public static final Pattern PRESET_VALIDATION_PATTERN = Pattern.compile("^([^:\\*;]+:[^:\\*;]+(\\*\\d+)?;)*([^:\\*;]+:[^:\\*;]+(\\*\\d+)?)?$");
+    public static final String PRESET_UW_MINING =
+            "minecraft:bedrock*4;minecraft:stone*58;minecraft:dirt;minecraft:grass";
+    public static final Pattern PRESET_VALIDATION_PATTERN =
+            Pattern.compile("^([^:\\*;]+:[^:\\*;]+(\\*\\d+)?;)*([^:\\*;]+:[^:\\*;]+(\\*\\d+)?)?$");
 
-    public DimensionConfig() {
-    }
+    public DimensionConfig() {}
 
     public void writeToPacket(MCDataOutput pkt) {
         pkt.writeString(saveDirOverride);
@@ -123,7 +122,11 @@ public class DimensionConfig {
         } else {
             setGeneratingVegetation(cur.getBoolean());
         }
-        cur = cfg.get(WORLDGEN, "allowGenerationChanges", allowGenerationChanges, "One-time-use permission to change generation settings on the world");
+        cur = cfg.get(
+                WORLDGEN,
+                "allowGenerationChanges",
+                allowGenerationChanges,
+                "One-time-use permission to change generation settings on the world");
         if (write) {
             cur.set(allowGenerationChanges);
         } else {
@@ -154,7 +157,8 @@ public class DimensionConfig {
         return cfg;
     }
 
-    public void copyFrom(DimensionConfig source, boolean copySaveInfo, boolean copyVisualInfo, boolean copyGenerationInfo) {
+    public void copyFrom(
+            DimensionConfig source, boolean copySaveInfo, boolean copyVisualInfo, boolean copyGenerationInfo) {
         this.needsSaving = true;
         if (copySaveInfo) {
             this.saveDirOverride = source.saveDirOverride;
@@ -216,7 +220,9 @@ public class DimensionConfig {
     }
 
     public String getSaveDir(int dimId) {
-        return (saveDirOverride != null && saveDirOverride.length() > 0) ? saveDirOverride : String.format("PERSONAL_DIM_%d", dimId);
+        return (saveDirOverride != null && saveDirOverride.length() > 0)
+                ? saveDirOverride
+                : String.format("PERSONAL_DIM_%d", dimId);
     }
 
     public float getStarBrightness() {
@@ -391,7 +397,8 @@ public class DimensionConfig {
             return false;
         }
         for (FlatLayerInfo info : infos) {
-            String block = GameRegistry.findUniqueIdentifierFor(info.func_151536_b()).toString();
+            String block =
+                    GameRegistry.findUniqueIdentifierFor(info.func_151536_b()).toString();
             if (!Config.allowedBlocks.contains(block)) {
                 return false;
             }

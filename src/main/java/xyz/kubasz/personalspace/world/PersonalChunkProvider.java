@@ -1,5 +1,10 @@
 package xyz.kubasz.personalspace.world;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Random;
 import net.minecraft.block.Block;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.init.Blocks;
@@ -15,12 +20,6 @@ import net.minecraft.world.gen.feature.WorldGenAbstractTree;
 import net.minecraft.world.gen.feature.WorldGenTrees;
 import net.minecraftforge.event.terraingen.DecorateBiomeEvent;
 import net.minecraftforge.event.terraingen.TerrainGen;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
 
 public class PersonalChunkProvider implements IChunkProvider {
     private PersonalWorldProvider world;
@@ -87,7 +86,8 @@ public class PersonalChunkProvider implements IChunkProvider {
             }
         }
 
-        if (savedBiomeId < 0 || !Objects.equals(savedBiomeName, world.getConfig().getBiomeId())) {
+        if (savedBiomeId < 0
+                || !Objects.equals(savedBiomeName, world.getConfig().getBiomeId())) {
             savedBiomeName = world.getConfig().getBiomeId();
             savedBiomeId = world.getConfig().getRawBiomeId();
         }
@@ -113,7 +113,9 @@ public class PersonalChunkProvider implements IChunkProvider {
         if (this.world.getConfig().isGeneratingVegetation()) {
             biome.decorate(this.world.worldObj, this.random, chunkX * 16, chunkZ * 16);
         }
-        if (this.world.getConfig().isGeneratingTrees() && TerrainGen.decorate(world.worldObj, random, chunkX * 16, chunkZ * 16, DecorateBiomeEvent.Decorate.EventType.TREE)) {
+        if (this.world.getConfig().isGeneratingTrees()
+                && TerrainGen.decorate(
+                        world.worldObj, random, chunkX * 16, chunkZ * 16, DecorateBiomeEvent.Decorate.EventType.TREE)) {
             int x = chunkX * 16 + random.nextInt(16) + 8;
             int z = chunkZ * 16 + random.nextInt(16) + 8;
             int y = this.world.worldObj.getHeightValue(x, z);
@@ -163,11 +165,8 @@ public class PersonalChunkProvider implements IChunkProvider {
     }
 
     @Override
-    public void recreateStructures(int x, int z) {
-
-    }
+    public void recreateStructures(int x, int z) {}
 
     @Override
-    public void saveExtraData() {
-    }
+    public void saveExtraData() {}
 }

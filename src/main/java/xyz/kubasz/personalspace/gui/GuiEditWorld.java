@@ -3,6 +3,8 @@ package xyz.kubasz.personalspace.gui;
 import codechicken.lib.gui.GuiDraw;
 import cpw.mods.fml.client.config.GuiButtonExt;
 import cpw.mods.fml.client.config.GuiSlider;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
@@ -16,9 +18,6 @@ import xyz.kubasz.personalspace.Config;
 import xyz.kubasz.personalspace.block.PortalTileEntity;
 import xyz.kubasz.personalspace.net.Packets;
 import xyz.kubasz.personalspace.world.DimensionConfig;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class GuiEditWorld extends GuiScreen {
 
@@ -44,11 +43,13 @@ public class GuiEditWorld extends GuiScreen {
         super();
         this.tile = tile;
         int targetDimId = 0;
-        DimensionConfig currentDimConfig = DimensionConfig.getForDimension(tile.getWorldObj().provider.dimensionId, true);
+        DimensionConfig currentDimConfig =
+                DimensionConfig.getForDimension(tile.getWorldObj().provider.dimensionId, true);
         if (currentDimConfig != null) {
             this.desiredConfig.copyFrom(currentDimConfig, false, true, true);
         } else if (tile.active && tile.targetDimId > 1) {
-            DimensionConfig currentConfig = CommonProxy.getDimensionConfigObjects(true).get(tile.targetDimId);
+            DimensionConfig currentConfig =
+                    CommonProxy.getDimensionConfigObjects(true).get(tile.targetDimId);
             if (currentConfig != null) {
                 this.desiredConfig.copyFrom(currentConfig, false, true, true);
             } else {
@@ -80,14 +81,62 @@ public class GuiEditWorld extends GuiScreen {
         this.xSize = 400;
         this.ySize = 8;
 
-        this.skyRed = new GuiSlider(0, 48, this.ySize, 200, 20, I18n.format("gui.personalWorld.skyColor.red"), "", 0.0F, 255.0F, ((desiredConfig.getSkyColor() >> 16) & 0xFF), false, true);
+        this.skyRed = new GuiSlider(
+                0,
+                48,
+                this.ySize,
+                200,
+                20,
+                I18n.format("gui.personalWorld.skyColor.red"),
+                "",
+                0.0F,
+                255.0F,
+                ((desiredConfig.getSkyColor() >> 16) & 0xFF),
+                false,
+                true);
         addButton(this.skyRed);
-        this.skyGreen = new GuiSlider(1, 48, this.ySize, 200, 20, I18n.format("gui.personalWorld.skyColor.green"), "", 0.0F, 255.0F, ((desiredConfig.getSkyColor() >> 8) & 0xFF), false, true);
+        this.skyGreen = new GuiSlider(
+                1,
+                48,
+                this.ySize,
+                200,
+                20,
+                I18n.format("gui.personalWorld.skyColor.green"),
+                "",
+                0.0F,
+                255.0F,
+                ((desiredConfig.getSkyColor() >> 8) & 0xFF),
+                false,
+                true);
         addButton(this.skyGreen);
-        this.skyBlue = new GuiSlider(2, 48, this.ySize, 200, 20, I18n.format("gui.personalWorld.skyColor.blue"), "", 0.0F, 255.0F, (desiredConfig.getSkyColor() & 0xFF), false, true);
+        this.skyBlue = new GuiSlider(
+                2,
+                48,
+                this.ySize,
+                200,
+                20,
+                I18n.format("gui.personalWorld.skyColor.blue"),
+                "",
+                0.0F,
+                255.0F,
+                (desiredConfig.getSkyColor() & 0xFF),
+                false,
+                true);
         addButton(this.skyBlue);
 
-        this.starBrightness = new GuiSlider(3, 48, this.ySize, 200, 20, I18n.format("gui.personalWorld.starBrightness"), "", 0.0F, 1.0F, desiredConfig.getStarBrightness(), true, true);
+        this.starBrightness = new GuiSlider(
+                3,
+                48,
+                this.ySize,
+                200,
+                20,
+                I18n.format("gui.personalWorld.starBrightness"),
+                "",
+                0.0F,
+                1.0F,
+                desiredConfig.getStarBrightness(),
+                true,
+                true);
         addButton(this.starBrightness);
 
         GuiButtonExt lblBiome = new GuiButtonExt(-1, 48, this.ySize, 200, 20, I18n.format("gui.personalWorld.biome"));
@@ -143,8 +192,12 @@ public class GuiEditWorld extends GuiScreen {
         int skyB = MathHelper.clamp_int(skyBlue.getValueInt(), 0, 255);
         desiredConfig.setSkyColor((skyR << 16) | (skyG << 8) | skyB);
         desiredConfig.setStarBrightness((float) this.starBrightness.getValue());
-        this.generateTrees.displayString = I18n.format(desiredConfig.isGeneratingTrees() ? "gui.personalWorld.trees.on" : "gui.personalWorld.trees.off");
-        this.generateVegetation.displayString = I18n.format(desiredConfig.isGeneratingVegetation() ? "gui.personalWorld.vegetation.on" : "gui.personalWorld.vegetation.off");
+        this.generateTrees.displayString = I18n.format(
+                desiredConfig.isGeneratingTrees() ? "gui.personalWorld.trees.on" : "gui.personalWorld.trees.off");
+        this.generateVegetation.displayString = I18n.format(
+                desiredConfig.isGeneratingVegetation()
+                        ? "gui.personalWorld.vegetation.on"
+                        : "gui.personalWorld.vegetation.off");
         boolean generationEnabled = desiredConfig.getAllowGenerationChanges();
         this.generateTrees.enabled = generationEnabled;
         this.generateVegetation.enabled = generationEnabled;
@@ -159,7 +212,9 @@ public class GuiEditWorld extends GuiScreen {
         }
         if (!generationEnabled) {
             this.presetEntry.setTextColor(0x909090);
-        } else if (!DimensionConfig.PRESET_VALIDATION_PATTERN.matcher(actualText).matches()) {
+        } else if (!DimensionConfig.PRESET_VALIDATION_PATTERN
+                .matcher(actualText)
+                .matches()) {
             this.presetEntry.setTextColor(0xFF0000);
         } else if (!DimensionConfig.canUseLayers(actualText)) {
             this.presetEntry.setTextColor(0xFFFF00);
@@ -170,7 +225,9 @@ public class GuiEditWorld extends GuiScreen {
         this.desiredConfig.setBiomeId(this.biome.getText());
         if (!generationEnabled) {
             this.biome.setTextColor(0x909090);
-        } else if (!this.desiredConfig.getBiomeId().equalsIgnoreCase(BiomeGenBase.getBiome(this.desiredConfig.getRawBiomeId()).biomeName)) {
+        } else if (!this.desiredConfig
+                .getBiomeId()
+                .equalsIgnoreCase(BiomeGenBase.getBiome(this.desiredConfig.getRawBiomeId()).biomeName)) {
             this.biome.setTextColor(0xFF0000);
         } else if (!DimensionConfig.canUseBiome(this.desiredConfig.getBiomeId())) {
             this.biome.setTextColor(0xFFFF00);

@@ -24,7 +24,8 @@ public class PersonalTeleporter extends Teleporter {
     }
 
     @Override
-    public boolean placeInExistingPortal(Entity p_77184_1_, double p_77184_2_, double p_77184_4_, double p_77184_6_, float p_77184_8_) {
+    public boolean placeInExistingPortal(
+            Entity p_77184_1_, double p_77184_2_, double p_77184_4_, double p_77184_6_, float p_77184_8_) {
         return true;
     }
 
@@ -34,6 +35,5 @@ public class PersonalTeleporter extends Teleporter {
     }
 
     @Override
-    public void removeStalePortalLocations(long p_85189_1_) {
-    }
+    public void removeStalePortalLocations(long p_85189_1_) {}
 }

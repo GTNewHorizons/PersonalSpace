@@ -1,5 +1,6 @@
 package xyz.kubasz.personalspace;
 
+import java.util.List;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -16,8 +17,6 @@ import net.minecraftforge.common.DimensionManager;
 import xyz.kubasz.personalspace.net.Packets;
 import xyz.kubasz.personalspace.world.DimensionConfig;
 import xyz.kubasz.personalspace.world.PersonalTeleporter;
-
-import java.util.List;
 
 public class PersonalSpaceCommand extends CommandBase {
 
@@ -117,7 +116,7 @@ public class PersonalSpaceCommand extends CommandBase {
             ItemStack itemstack = new ItemStack(PersonalSpaceMod.BLOCK_PORTAL, 1, 0);
             NBTTagCompound tag = new NBTTagCompound();
             tag.setBoolean("active", true);
-            tag.setIntArray("target", new int[]{dim, (int) x, (int) y, (int) z});
+            tag.setIntArray("target", new int[] {dim, (int) x, (int) y, (int) z});
             itemstack.setTagCompound(tag);
             EntityItem entityitem = player.dropPlayerItemWithRandomChoice(itemstack, false);
             entityitem.delayBeforeCanPickup = 0;
@@ -148,7 +147,8 @@ public class PersonalSpaceCommand extends CommandBase {
         switch (args.length) {
             case 0:
             case 1:
-                return getListOfStringsMatchingLastWord(args, "ls", "where", "tpx", "give-portal", "allow-worldgen-change");
+                return getListOfStringsMatchingLastWord(
+                        args, "ls", "where", "tpx", "give-portal", "allow-worldgen-change");
             case 2:
                 return getListOfStringsMatchingLastWord(args, this.getPlayers());
         }
@@ -165,5 +165,4 @@ public class PersonalSpaceCommand extends CommandBase {
     public boolean isUsernameIndex(String[] args, int idx) {
         return idx == 1;
     }
-
 }

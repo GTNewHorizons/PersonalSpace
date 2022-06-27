@@ -24,6 +24,9 @@ import cpw.mods.fml.common.network.NetworkHandshakeEstablished;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import java.io.File;
+import java.io.IOException;
+import java.util.Objects;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
@@ -38,12 +41,12 @@ import xyz.kubasz.personalspace.net.Packets;
 import xyz.kubasz.personalspace.world.DimensionConfig;
 import xyz.kubasz.personalspace.world.PersonalWorldProvider;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Objects;
-
-@Mod(modid = Tags.MODID, version = Tags.VERSION, name = Tags.MODNAME, acceptedMinecraftVersions = "[1.7.10]",
-    dependencies = "after:utilityworlds;after:appliedenergistics2-core")
+@Mod(
+        modid = Tags.MODID,
+        version = Tags.VERSION,
+        name = Tags.MODNAME,
+        acceptedMinecraftVersions = "[1.7.10]",
+        dependencies = "after:utilityworlds;after:appliedenergistics2-core")
 public class PersonalSpaceMod {
 
     public static final String DIM_METADATA_FILE = "personalspace_metadata.cfg";
@@ -63,10 +66,12 @@ public class PersonalSpaceMod {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         if (Loader.isModLoaded("utilityworlds")) {
-            throw new RuntimeException("Personal space mod cannot be loaded in the same instance with utilityworlds mod, because it replaces its functionality");
+            throw new RuntimeException(
+                    "Personal space mod cannot be loaded in the same instance with utilityworlds mod, because it replaces its functionality");
         }
         if (event.getSide().isClient()) {
-            PacketCustom.assignHandler(CHANNEL, (PacketCustom.IClientPacketHandler) Packets.INSTANCE::handleClientPacket);
+            PacketCustom.assignHandler(
+                    CHANNEL, (PacketCustom.IClientPacketHandler) Packets.INSTANCE::handleClientPacket);
         }
         PacketCustom.assignHandler(CHANNEL, (PacketCustom.IServerPacketHandler) Packets.INSTANCE::handleServerPacket);
         NetworkRegistry.INSTANCE.newEventDrivenChannel(CHANNEL + "_event").register(this);
@@ -79,7 +84,8 @@ public class PersonalSpaceMod {
         GameRegistry.registerBlock(BP_MIGRATION_2, PortalItem.class, "personalPortal_migration2");
         GameRegistry.registerBlock(BP_MIGRATION_3, PortalItem.class, "personalPortal_migration3");
         GameRegistry.registerBlock(BP_MIGRATION_4, PortalItem.class, "personalPortal_migration4");
-        GameRegistry.registerTileEntityWithAlternatives(PortalTileEntity.class, "personalspace:personalPortal", "uw_portal_te");
+        GameRegistry.registerTileEntityWithAlternatives(
+                PortalTileEntity.class, "personalspace:personalPortal", "uw_portal_te");
     }
 
     @Mod.EventHandler
@@ -98,7 +104,9 @@ public class PersonalSpaceMod {
         if (aeApi == null) {
             return;
         }
-        aeApi.registries().worldgen().disableWorldGenForProviderID(IWorldGen.WorldGenType.Meteorites, PersonalWorldProvider.class);
+        aeApi.registries()
+                .worldgen()
+                .disableWorldGenForProviderID(IWorldGen.WorldGenType.Meteorites, PersonalWorldProvider.class);
     }
 
     @Mod.EventHandler
@@ -165,7 +173,8 @@ public class PersonalSpaceMod {
         saveDir = new File(saveDir, config.getSaveDir(dimId));
         if (!(saveDir.exists() && saveDir.isDirectory())) {
             if (!saveDir.mkdirs()) {
-                throw new IOException("Couldn't create save directory for personal dimension " + config.getSaveDir(dimId));
+                throw new IOException(
+                        "Couldn't create save directory for personal dimension " + config.getSaveDir(dimId));
             }
         }
         File dataFile = new File(saveDir, DIM_METADATA_FILE);
@@ -199,7 +208,9 @@ public class PersonalSpaceMod {
         proxy.serverStopping(event);
         TIntObjectHashMap<DimensionConfig> configs = CommonProxy.getDimensionConfigObjects(true);
         configs.forEachEntry((dimId, dimCfg) -> {
-            if (dimCfg == null || !dimCfg.needsSaving()) {return true;}
+            if (dimCfg == null || !dimCfg.needsSaving()) {
+                return true;
+            }
             try {
                 saveConfig(dimId, dimCfg);
             } catch (IOException e) {
@@ -216,7 +227,9 @@ public class PersonalSpaceMod {
                     FMLLog.info("Deregistering PersonalSpace dimension %d", dimId);
                     DimensionManager.unregisterDimension(dimId);
                     if (DimensionManager.unregisterProviderType(dimId).length > 0) {
-                        FMLLog.severe("PersonalSpace dimension id %d has other dimension ids registered for the same provider", dimId);
+                        FMLLog.severe(
+                                "PersonalSpace dimension id %d has other dimension ids registered for the same provider",
+                                dimId);
                     }
                 }
                 return true;

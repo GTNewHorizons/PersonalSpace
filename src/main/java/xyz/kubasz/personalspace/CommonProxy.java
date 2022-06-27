@@ -33,38 +33,23 @@ public class CommonProxy {
     }
 
     // load "Do your mod setup. Build whatever data structures you care about. Register recipes."
-    public void init(FMLInitializationEvent event) {
-
-    }
+    public void init(FMLInitializationEvent event) {}
 
     // postInit "Handle interaction with other mods, complete your setup based on this."
-    public void postInit(FMLPostInitializationEvent event) {
+    public void postInit(FMLPostInitializationEvent event) {}
 
-    }
-
-    public void serverAboutToStart(FMLServerAboutToStartEvent event) {
-
-    }
+    public void serverAboutToStart(FMLServerAboutToStartEvent event) {}
 
     // register server commands in this event handler
-    public void serverStarting(FMLServerStartingEvent event) {
+    public void serverStarting(FMLServerStartingEvent event) {}
 
-    }
+    public void serverStarted(FMLServerStartedEvent event) {}
 
-    public void serverStarted(FMLServerStartedEvent event) {
+    public void serverStopping(FMLServerStoppingEvent event) {}
 
-    }
+    public void serverStopped(FMLServerStoppedEvent event) {}
 
-    public void serverStopping(FMLServerStoppingEvent event) {
+    public void openPortalGui(World world, int x, int y, int z) {}
 
-    }
-
-    public void serverStopped(FMLServerStoppedEvent event) {
-    }
-
-    public void openPortalGui(World world, int x, int y, int z) {
-    }
-
-    public void closePortalGui(PortalTileEntity owner) {
-    }
+    public void closePortalGui(PortalTileEntity owner) {}
 }

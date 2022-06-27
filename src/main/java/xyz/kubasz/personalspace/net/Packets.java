@@ -18,7 +18,7 @@ public enum Packets {
         DUMMY,
         UPDATE_WORLDLIST,
         CHANGE_WORLD_SETTINGS;
-        final static PacketIds[] VALUES = values();
+        static final PacketIds[] VALUES = values();
     }
 
     public void handleClientPacket(PacketCustom packetCustom, Minecraft mc, INetHandlerPlayClient handler) {
