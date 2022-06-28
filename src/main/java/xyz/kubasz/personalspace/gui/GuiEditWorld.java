@@ -382,7 +382,7 @@ public class GuiEditWorld extends GuiScreen {
                 .matches()) {
             this.presetEntry.textField.setTextColor(0xFF0000);
             inputsValid = false;
-        } else if (!DimensionConfig.canUseLayers(actualText)) {
+        } else if (!DimensionConfig.canUseLayers(actualText, true)) {
             this.presetEntry.textField.setTextColor(0xFFFF00);
             inputsValid = false;
         } else {
@@ -398,7 +398,7 @@ public class GuiEditWorld extends GuiScreen {
                 .equalsIgnoreCase(BiomeGenBase.getBiome(this.desiredConfig.getRawBiomeId()).biomeName)) {
             this.biome.textField.setTextColor(0xFF0000);
             inputsValid = false;
-        } else if (!DimensionConfig.canUseBiome(this.desiredConfig.getBiomeId())) {
+        } else if (!DimensionConfig.canUseBiome(this.desiredConfig.getBiomeId(), true)) {
             this.biome.textField.setTextColor(0xFFFF00);
             inputsValid = false;
         } else {

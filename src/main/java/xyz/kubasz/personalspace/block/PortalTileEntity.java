@@ -198,10 +198,10 @@ public class PortalTileEntity extends TileEntity {
             // permissions check
             return;
         }
-        if (!DimensionConfig.canUseLayers(unsafeConfig.getLayersAsString())) {
+        if (!DimensionConfig.canUseLayers(unsafeConfig.getLayersAsString(), false)) {
             return;
         }
-        if (!DimensionConfig.canUseBiome(unsafeConfig.getBiomeId())) {
+        if (!DimensionConfig.canUseBiome(unsafeConfig.getBiomeId(), false)) {
             unsafeConfig.setBiomeId("Plains");
         }
         DimensionConfig sanitized = new DimensionConfig();

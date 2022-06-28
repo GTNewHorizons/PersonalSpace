@@ -415,7 +415,7 @@ public class DimensionConfig {
         return layersToString(this.layers);
     }
 
-    public static boolean canUseLayers(String preset) {
+    public static boolean canUseLayers(String preset, boolean onClient) {
         if (preset == null) {
             preset = "";
         }
@@ -429,18 +429,22 @@ public class DimensionConfig {
         for (FlatLayerInfo info : infos) {
             String block =
                     GameRegistry.findUniqueIdentifierFor(info.func_151536_b()).toString();
-            if (!Config.allowedBlocks.contains(block)) {
+            if (!(onClient
+                    ? PersonalSpaceMod.clientAllowedBlocks.contains(block)
+                    : Config.allowedBlocks.contains(block))) {
                 return false;
             }
         }
         return true;
     }
 
-    public static boolean canUseBiome(String biome) {
+    public static boolean canUseBiome(String biome, boolean onClient) {
         if (biome.equalsIgnoreCase("Plains")) {
             return true;
         }
-        return Config.allowedBiomes.contains(biome.toLowerCase());
+        return onClient
+                ? PersonalSpaceMod.clientAllowedBiomes.contains(biome.toLowerCase())
+                : Config.allowedBiomes.contains(biome.toLowerCase());
     }
 
     /**
