@@ -36,6 +36,8 @@ public enum Icons {
     STAR(32, 32, 16, 16),
     STAR_BG(48, 32, 16, 16),
     PENCIL(64, 32, 16, 16),
+    MOON(80, 32, 16, 16),
+    SUN(96, 32, 16, 16),
     ALL(0, 0, 256, 256);
     public static final double TEXTURE_DIM = 256;
     public static final String TEXTURE_PATH = "personalspace:textures/widgets.png";

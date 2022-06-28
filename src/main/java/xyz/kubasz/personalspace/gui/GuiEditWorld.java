@@ -38,6 +38,7 @@ public class GuiEditWorld extends GuiScreen {
     int biomeCycle = 0;
     WButton biomeEditButton;
     WToggleButton enableWeather;
+    WToggleButton enableNightTime;
     WToggleButton generateTrees;
     WToggleButton generateVegetation;
     WButton save;
@@ -129,6 +130,16 @@ public class GuiEditWorld extends GuiScreen {
         addWidget(skyBlue);
 
         this.ySize += 4;
+
+        this.enableNightTime = new WToggleButton(
+                new Rectangle(130, this.ySize, 18, 18), "", false, 0, desiredConfig.isNightTime(), () -> {
+                    desiredConfig.setNightTime(enableNightTime.value);
+                });
+        this.enableNightTime.noIcon = Icons.SUN;
+        this.enableNightTime.yesIcon = Icons.MOON;
+        this.enableNightTime.setValue(this.enableNightTime.value);
+        this.rootWidget.addChild(this.enableNightTime);
+
         addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.starBrightness"), false));
         this.starBrightness = new WSlider(
                 new Rectangle(0, this.ySize, 128, 12),
@@ -167,9 +178,9 @@ public class GuiEditWorld extends GuiScreen {
                 "",
                 false,
                 0,
-                desiredConfig.isGeneratingTrees(),
+                desiredConfig.isWeatherEnabled(),
                 () -> {
-                    desiredConfig.setGeneratingTrees(enableWeather.getValue());
+                    desiredConfig.setWeatherEnabled(enableWeather.getValue());
                 });
         this.enableWeather.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.weather"), false));
         rootWidget.addChild(this.enableWeather);

@@ -31,6 +31,7 @@ public class DimensionConfig {
     private int skyColor = 0xc0d8ff;
     private float starBrightness = 1.0F;
     private boolean weatherEnabled = false;
+    private boolean nightTime = false;
     private boolean generatingVegetation = false;
     private boolean generatingTrees = false;
     private boolean allowGenerationChanges = false;
@@ -53,6 +54,7 @@ public class DimensionConfig {
         pkt.writeInt(skyColor);
         pkt.writeFloat(starBrightness);
         pkt.writeVarInt(getRawBiomeId());
+        pkt.writeBoolean(nightTime);
         pkt.writeBoolean(weatherEnabled);
         pkt.writeBoolean(generatingVegetation);
         pkt.writeBoolean(generatingTrees);
@@ -70,6 +72,7 @@ public class DimensionConfig {
         this.setSkyColor(pkt.readInt());
         this.setStarBrightness(pkt.readFloat());
         this.setBiomeId(BiomeGenBase.getBiomeGenArray()[pkt.readVarInt()].biomeName);
+        this.setNightTime(pkt.readBoolean());
         this.setWeatherEnabled(pkt.readBoolean());
         this.setGeneratingVegetation(pkt.readBoolean());
         this.setGeneratingTrees(pkt.readBoolean());
@@ -119,6 +122,12 @@ public class DimensionConfig {
             cur.set(weatherEnabled);
         } else {
             setWeatherEnabled(cur.getBoolean());
+        }
+        cur = cfg.get(VISUAL, "nightTime", nightTime, "");
+        if (write) {
+            cur.set(nightTime);
+        } else {
+            setNightTime(cur.getBoolean());
         }
         cur = cfg.get(WORLDGEN, "generatingTrees", generatingTrees, "");
         if (write) {
@@ -176,6 +185,7 @@ public class DimensionConfig {
         if (copyVisualInfo) {
             this.setSkyColor(source.getSkyColor());
             this.setStarBrightness(source.getStarBrightness());
+            this.setNightTime(source.isNightTime());
             this.setWeatherEnabled(source.isWeatherEnabled());
         }
         if (copyGenerationInfo) {
@@ -270,6 +280,17 @@ public class DimensionConfig {
         if (this.weatherEnabled != weatherEnabled) {
             this.needsSaving = true;
             this.weatherEnabled = weatherEnabled;
+        }
+    }
+
+    public boolean isNightTime() {
+        return nightTime;
+    }
+
+    public void setNightTime(boolean nightTime) {
+        if (this.nightTime != nightTime) {
+            this.needsSaving = true;
+            this.nightTime = nightTime;
         }
     }
 

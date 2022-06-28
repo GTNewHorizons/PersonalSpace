@@ -5,6 +5,9 @@ import java.awt.*;
 public class WToggleButton extends WButton {
     protected boolean value = true;
 
+    public Icons yesIcon = Icons.CHECKMARK;
+    public Icons noIcon = Icons.CROSS;
+
     public WToggleButton(
             Rectangle position, String text, boolean dropShadow, int color, boolean value, Runnable onClick) {
         super(position, text, dropShadow, color, Icons.CHECKMARK, onClick);
@@ -13,7 +16,7 @@ public class WToggleButton extends WButton {
 
     public void setValue(boolean value) {
         this.value = value;
-        this.buttonIcon = value ? Icons.CHECKMARK : Icons.CROSS;
+        this.buttonIcon = value ? yesIcon : noIcon;
     }
 
     public boolean getValue() {

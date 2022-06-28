@@ -45,7 +45,7 @@ public class PersonalWorldProvider extends WorldProvider {
 
     public void registerWorldChunkManager() {
         this.config = DimensionConfig.getForDimension(this.dimensionId, this.worldObj.isRemote);
-        this.worldChunkMgr = new WorldChunkManagerHell(BiomeGenBase.plains, 0.0F);
+        this.worldChunkMgr = new WorldChunkManagerHell(BiomeGenBase.plains, 1.0F);
     }
 
     public IChunkProvider createChunkGenerator() {
@@ -78,7 +78,7 @@ public class PersonalWorldProvider extends WorldProvider {
     }
 
     public boolean canRespawnHere() {
-        return true;
+        return false;
     }
 
     public boolean isSurfaceWorld() {
@@ -120,17 +120,17 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public boolean isDaytime() {
-        return true;
+        return !this.getConfig().isNightTime();
     }
 
     @Override
     public float getSunBrightnessFactor(float par1) {
-        return 1.0F;
+        return this.getConfig().isNightTime() ? 0.0F : 1.0F;
     }
 
     @Override
     public float getSunBrightness(float par1) {
-        return 1.0F;
+        return this.getConfig().isNightTime() ? 0.2F : 1.0F;
     }
 
     @Override
@@ -140,19 +140,33 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public float calculateCelestialAngle(long p_76563_1_, float p_76563_3_) {
-        return 0.0f;
+        return this.getConfig().isNightTime() ? 0.5f : 0.0f;
     }
 
     @Override
     public void calculateInitialWeather() {
-        this.worldObj.rainingStrength = 0.0F;
-        this.worldObj.thunderingStrength = 0.0F;
+        if (this.getConfig().isWeatherEnabled()) {
+            super.calculateInitialWeather();
+        } else {
+            this.worldObj.rainingStrength = 0.0F;
+            this.worldObj.thunderingStrength = 0.0F;
+            this.worldObj.prevRainingStrength = 0.0F;
+            this.worldObj.prevThunderingStrength = 0.0F;
+            this.worldObj.getWorldInfo().setRaining(false);
+            this.worldObj.getWorldInfo().setThundering(false);
+        }
     }
 
     @Override
     public void updateWeather() {
         if (!this.worldObj.isRemote && !this.getConfig().isWeatherEnabled()) {
             this.resetRainAndThunder();
+            this.worldObj.rainingStrength = 0.0F;
+            this.worldObj.thunderingStrength = 0.0F;
+            this.worldObj.prevRainingStrength = 0.0F;
+            this.worldObj.prevThunderingStrength = 0.0F;
+        } else {
+            super.updateWeather();
         }
     }
 
@@ -168,12 +182,12 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public boolean canBlockFreeze(int x, int y, int z, boolean byWater) {
-        return this.getConfig().isWeatherEnabled();
+        return this.getConfig().isWeatherEnabled() ? super.canBlockFreeze(x, y, z, byWater) : false;
     }
 
     @Override
     public boolean canSnowAt(int x, int y, int z, boolean checkLight) {
-        return this.getConfig().isWeatherEnabled();
+        return this.getConfig().isWeatherEnabled() ? super.canSnowAt(x, y, z, checkLight) : false;
     }
 
     @Override
