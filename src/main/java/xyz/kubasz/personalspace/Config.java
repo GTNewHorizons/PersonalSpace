@@ -41,6 +41,8 @@ public class Config {
         };
 
         public static final int firstDimensionId = 180;
+
+        public static final boolean debugLogging = false;
     }
 
     private static class Categories {
@@ -50,7 +52,8 @@ public class Config {
     public static String[] defaultPresets = Arrays.copyOf(Defaults.defaultPresets, Defaults.defaultPresets.length);
     public static HashSet<String> allowedBlocks = new HashSet<>(Arrays.asList(Defaults.allowedBlocks));
     public static HashSet<String> allowedBiomes = new HashSet<>(Arrays.asList(Defaults.allowedBiomes));
-    public static int firstDimensionId;
+    public static int firstDimensionId = Defaults.firstDimensionId;
+    public static boolean debugLogging = Defaults.debugLogging;
 
     public static void synchronizeConfiguration(File configFile) {
         Configuration configuration = new Configuration(configFile);
@@ -85,6 +88,9 @@ public class Config {
                 0,
                 Integer.MAX_VALUE,
                 "First dimension ID to use for newly generated worlds");
+
+        debugLogging = configuration.getBoolean(
+                "debugLogging", Categories.general, Defaults.debugLogging, "Debug logging toggle");
 
         if (configuration.hasChanged()) {
             configuration.save();

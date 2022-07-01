@@ -20,6 +20,8 @@ import net.minecraft.world.gen.feature.WorldGenAbstractTree;
 import net.minecraft.world.gen.feature.WorldGenTrees;
 import net.minecraftforge.event.terraingen.DecorateBiomeEvent;
 import net.minecraftforge.event.terraingen.TerrainGen;
+import xyz.kubasz.personalspace.Config;
+import xyz.kubasz.personalspace.PersonalSpaceMod;
 
 public class PersonalChunkProvider implements IChunkProvider {
     private PersonalWorldProvider world;
@@ -33,6 +35,9 @@ public class PersonalChunkProvider implements IChunkProvider {
         this.world = world;
         this.seed = seed;
         this.random = new Random(seed);
+        if (Config.debugLogging) {
+            PersonalSpaceMod.LOG.info("PersonalChunkProvider created for world {}", world.dimensionId, new Throwable());
+        }
     }
 
     @Override
@@ -43,6 +48,7 @@ public class PersonalChunkProvider implements IChunkProvider {
     @Override
     public Chunk provideChunk(int chunkX, int chunkZ) {
         Chunk chunk = new Chunk(this.world.worldObj, chunkX, chunkZ);
+        chunk.isModified = true;
 
         List<FlatLayerInfo> layers = world.getConfig().getLayers();
         int y = 0;

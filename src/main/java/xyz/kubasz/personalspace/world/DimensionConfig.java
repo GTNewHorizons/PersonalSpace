@@ -5,9 +5,11 @@ import codechicken.lib.data.MCDataOutput;
 import com.google.common.collect.Lists;
 import cpw.mods.fml.common.registry.GameRegistry;
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import net.minecraft.block.Block;
@@ -204,7 +206,26 @@ public class DimensionConfig {
     public void registerWithDimensionManager(int dimId, boolean isClient) {
         if (!DimensionManager.isDimensionRegistered(dimId)) {
             DimensionManager.registerProviderType(dimId, PersonalWorldProvider.class, false);
+            // Work around bad thermos logic
+            if (PersonalSpaceMod.isInThermos()) {
+                try {
+                    Class bukkitWorldEnv = Class.forName("org.bukkit.World$Environment");
+                    Field lookupField = bukkitWorldEnv.getDeclaredField("lookup");
+                    lookupField.setAccessible(true);
+                    Map<Integer, ?> lookup = (Map<Integer, ?>) lookupField.get(null);
+                    if (lookup.remove(Integer.valueOf(dimId)) != null) {
+                        PersonalSpaceMod.LOG.info(
+                                "Removed bad thermos environment lookup entry for dimension {}", dimId);
+                    }
+                } catch (Exception e) {
+                    PersonalSpaceMod.LOG.error("Couldn't adjust thermos environment lookup table", e);
+                }
+            }
             DimensionManager.registerDimension(dimId, dimId);
+            if (Config.debugLogging) {
+                PersonalSpaceMod.LOG.info(
+                        "DimensionConfig registered for dim {}, client {}", dimId, isClient, new Throwable());
+            }
         }
         synchronized (CommonProxy.getDimensionConfigObjects(isClient)) {
             if (!CommonProxy.getDimensionConfigObjects(isClient).containsKey(dimId)) {

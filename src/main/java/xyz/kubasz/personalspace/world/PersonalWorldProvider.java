@@ -11,6 +11,8 @@ import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.biome.WorldChunkManagerHell;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
+import xyz.kubasz.personalspace.Config;
+import xyz.kubasz.personalspace.PersonalSpaceMod;
 
 /**
  * Based on WorldProviderEnd
@@ -33,6 +35,13 @@ public class PersonalWorldProvider extends WorldProvider {
             boolean isClient = (this.worldObj != null)
                     ? this.worldObj.isRemote
                     : FMLCommonHandler.instance().getEffectiveSide().isClient();
+            if (Config.debugLogging) {
+                PersonalSpaceMod.LOG.info(
+                        "PersonalWorldProvider loading config for dim {}, client {}",
+                        this.dimensionId,
+                        isClient,
+                        new Throwable());
+            }
             this.config = DimensionConfig.getForDimension(this.dimensionId, isClient);
         }
         return this.config;
@@ -115,7 +124,11 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public String getSaveFolder() {
-        return getConfig().getSaveDir(this.dimensionId);
+        String name = getConfig().getSaveDir(this.dimensionId);
+        if (Config.debugLogging) {
+            PersonalSpaceMod.LOG.info("Save folder for dim id {} is {}", this.dimensionId, name, new Throwable());
+        }
+        return name;
     }
 
     @Override

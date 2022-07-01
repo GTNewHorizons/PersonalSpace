@@ -138,6 +138,7 @@ public class PersonalSpaceMod {
         try {
             deregisterServerDimensions();
             File saveDir = DimensionManager.getCurrentSaveRootDirectory();
+            LOG.info("Searching for PS worlds at {}", saveDir.getPath());
             if (saveDir == null || !saveDir.isDirectory()) {
                 return;
             }
@@ -201,6 +202,25 @@ public class PersonalSpaceMod {
             saveConfig(provider.dimensionId, config);
         } catch (Exception e) {
             LOG.fatal("Couldn't save personal dimension data for " + event.world.provider.getDimensionName(), e);
+        }
+    }
+
+    private static boolean thermosLogged = false;
+
+    public static boolean isInThermos() {
+        try {
+            Class.forName("thermos.Thermos");
+            if (!thermosLogged) {
+                thermosLogged = true;
+                LOG.warn("Thermos detected, applying workarounds");
+            }
+            return true;
+        } catch (ClassNotFoundException e) {
+            if (!thermosLogged) {
+                thermosLogged = true;
+                LOG.info("Thermos not detected");
+            }
+            return false;
         }
     }
 
