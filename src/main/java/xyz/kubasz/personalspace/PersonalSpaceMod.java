@@ -11,6 +11,7 @@ import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Optional;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLInterModComms;
 import cpw.mods.fml.common.event.FMLMissingMappingsEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
@@ -24,11 +25,13 @@ import cpw.mods.fml.common.network.FMLNetworkEvent;
 import cpw.mods.fml.common.network.NetworkHandshakeEstablished;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
@@ -167,6 +170,7 @@ public class PersonalSpaceMod {
                     LOG.info("Migrated world {} (at {}) from utilityworlds", dc.getRight(), dir.getName());
                 }
             }
+            bulkDimSettingsUpdate();
         } catch (Exception e) {
             LOG.error("Caught error while loading and registering personal space dimensions", e);
         }
@@ -203,6 +207,57 @@ public class PersonalSpaceMod {
         } catch (Exception e) {
             LOG.fatal("Couldn't save personal dimension data for " + event.world.provider.getDimensionName(), e);
         }
+    }
+
+    private static final String NATURA_MODID = "Natura";
+    private static final String NATURA_IMC = "set-worldgen-overrides";
+    private static final String NATURA_IMC_DIMS = "dimensions";
+    private static final String NATURA_IMC_SETS = "settings";
+    private static final int NATURA_DIM_WORLDGEN_CROP_BIT = 1;
+    private static final int NATURA_DIM_WORLDGEN_CLOUD_BIT = 2;
+    private static final int NATURA_DIM_WORLDGEN_TREE_BIT = 4;
+
+    private static int naturaConfigForDim(DimensionConfig config) {
+        int gen = 0;
+        if (config.isGeneratingVegetation()) {
+            gen |= NATURA_DIM_WORLDGEN_CROP_BIT;
+            gen |= NATURA_DIM_WORLDGEN_CLOUD_BIT;
+        }
+        if (config.isGeneratingTrees()) {
+            gen |= NATURA_DIM_WORLDGEN_TREE_BIT;
+        }
+        return gen;
+    }
+
+    private void bulkDimSettingsUpdate() {
+        TIntArrayList dimIds = new TIntArrayList();
+        TIntArrayList dimNaturaGens = new TIntArrayList();
+        CommonProxy.getDimensionConfigObjects(false).forEachEntry((dimId, config) -> {
+            if (config == null) {
+                return true;
+            }
+            dimIds.add(dimId);
+            dimNaturaGens.add(naturaConfigForDim(config));
+            return true;
+        });
+        if (dimIds.isEmpty()) {
+            return;
+        }
+        NBTTagCompound naturaImc = new NBTTagCompound();
+        naturaImc.setIntArray(NATURA_IMC_DIMS, dimIds.toArray());
+        naturaImc.setIntArray(NATURA_IMC_SETS, dimNaturaGens.toArray());
+        FMLInterModComms.sendRuntimeMessage(this, NATURA_MODID, NATURA_IMC, naturaImc);
+    }
+
+    public void onDimSettingsChangeServer(int dimId) {
+        DimensionConfig config = DimensionConfig.getForDimension(dimId, false);
+        if (config == null) {
+            return;
+        }
+        NBTTagCompound naturaImc = new NBTTagCompound();
+        naturaImc.setIntArray(NATURA_IMC_DIMS, new int[] {dimId});
+        naturaImc.setIntArray(NATURA_IMC_SETS, new int[] {naturaConfigForDim(config)});
+        FMLInterModComms.sendRuntimeMessage(this, NATURA_MODID, NATURA_IMC, naturaImc);
     }
 
     private static boolean thermosLogged = false;

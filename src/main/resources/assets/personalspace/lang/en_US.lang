@@ -4,6 +4,9 @@ tile.personalSpacePortalLegacy.name=Legacy Personal Dimension Portal (UW Migrati
 chat.overworldPersonalDimension=Personal dimensions can only be created from the overworld
 chat.personalWorld.created=Personal dimension successfully created!
 chat.personalWorld.updated=Personal dimension successfully updated!
+chat.personalWorld.relinked=Portal successfully relinked in dimension %d
+chat.personalWorld.relinked.error=Portal was not relinked, it would cause losing access to the dimension.
+chat.personalWorld.proximity=Too close to another portal.
 
 gui.personalWorld.voidWorld=Void world
 gui.personalWorld.biome=Biome name

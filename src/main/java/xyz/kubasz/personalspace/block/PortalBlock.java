@@ -96,9 +96,16 @@ public class PortalBlock extends Block implements ITileEntityProvider {
         } else {
             te.facing = (dz > 0) ? ForgeDirection.SOUTH : ForgeDirection.NORTH;
         }
+        if (world.isRemote) {
+            return;
+        }
         if (fromItem.hasTagCompound()) {
             te.readFromNBT(fromItem.getTagCompound());
-            te.linkOtherPortal(false);
+            EntityPlayerMP player = null;
+            if (placer instanceof EntityPlayerMP) {
+                player = (EntityPlayerMP) placer;
+            }
+            te.linkOtherPortal(false, player);
         }
         te.markDirty();
     }
