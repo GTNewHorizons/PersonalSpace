@@ -8,7 +8,7 @@ designed for use in the [Gregtech New Horizons](https://github.com/GTNewHorizons
  * Customizable personal utility world:
    * Set custom sky color, star brightness - these can be customized after you create your world too if you're not happy with the original settings!
    * Custom generation! Choose from a void, short or tall superflat world preset, or make your own! A list of allowed blocks is in the config, so that players can't just create diamond block worlds on your server.
-   * Migration from UtilityWorlds saves - retaining world generation settings and the look and feel! Feel free to customize the visuals or generation after the fact.
+   * Migration from UtilityWorlds saves - retaining world generation settings and the look and feel! Feel free to customize the visuals or generation after the fact. Customizing generation requires running the `/pspace allow-worldgen-change DIM` command by a server administrator.
  * Mined portals retain their link and can be placed back
  * Worldgen settings are locked after first use, but can be unlocked for 1 change with `/pspace allow-worldgen-change DIM-ID`
  * Other commands:
