@@ -2,7 +2,6 @@ package xyz.kubasz.personalspace.world;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.Teleporter;
 import net.minecraft.world.WorldServer;
 import xyz.kubasz.personalspace.block.PortalTileEntity;
@@ -67,8 +66,17 @@ public class PersonalTeleporter extends Teleporter {
     }
 
     private boolean targetPortalExist() {
-        TileEntity tileEntity = targetDimension.getTileEntity(sourceTeleporter.targetPosX, sourceTeleporter.targetPosY, sourceTeleporter.targetPosZ);
-        return tileEntity instanceof PortalTileEntity;
+        for (int x = sourceTeleporter.targetPosX - 1; x <= sourceTeleporter.targetPosX + 1; x++) {
+            for (int y = sourceTeleporter.targetPosY - 1; y <= sourceTeleporter.targetPosY + 1; y++) {
+                if (y < 0 || y > targetDimension.getHeight()) continue;
+                for (int z = sourceTeleporter.targetPosZ - 1; z <= sourceTeleporter.targetPosZ + 1; z++) {
+                    if (targetDimension.getTileEntity(x,y,z) instanceof PortalTileEntity) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     @Override
