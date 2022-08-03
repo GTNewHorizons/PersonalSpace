@@ -6,7 +6,6 @@ import net.minecraft.world.Teleporter;
 import net.minecraft.world.WorldServer;
 import xyz.kubasz.personalspace.block.PortalTileEntity;
 
-
 public class PersonalTeleporter extends Teleporter {
 
     int x, y, z;
@@ -31,15 +30,15 @@ public class PersonalTeleporter extends Teleporter {
 
     @Override
     public void placeInPortal(Entity entity, double entityPosX, double entityPosY, double entityPosZ, float yaw) {
-        if (!this.placeInExistingPortal(entity, entityPosX, entityPosY, entityPosZ, yaw))
-        {
+        if (!this.placeInExistingPortal(entity, entityPosX, entityPosY, entityPosZ, yaw)) {
             this.makePortal(entity);
             this.placeInExistingPortal(entity, entityPosX, entityPosY, entityPosZ, yaw);
         }
     }
 
     @Override
-    public boolean placeInExistingPortal(Entity entity, double entityPosX, double entityPosY, double entityPosZ, float yaw) {
+    public boolean placeInExistingPortal(
+            Entity entity, double entityPosX, double entityPosY, double entityPosZ, float yaw) {
         if (sourceTeleporter != null) {
 
             if (!targetPortalExist()) {
@@ -70,7 +69,7 @@ public class PersonalTeleporter extends Teleporter {
             for (int y = sourceTeleporter.targetPosY - 1; y <= sourceTeleporter.targetPosY + 1; y++) {
                 if (y < 0 || y > targetDimension.getHeight()) continue;
                 for (int z = sourceTeleporter.targetPosZ - 1; z <= sourceTeleporter.targetPosZ + 1; z++) {
-                    if (targetDimension.getTileEntity(x,y,z) instanceof PortalTileEntity) {
+                    if (targetDimension.getTileEntity(x, y, z) instanceof PortalTileEntity) {
                         return true;
                     }
                 }

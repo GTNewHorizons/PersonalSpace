@@ -1,6 +1,5 @@
 package xyz.kubasz.personalspace.block;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
@@ -99,7 +98,11 @@ public class PortalTileEntity extends TileEntity {
         if (isLegacy) {
             this.active = true;
             PersonalSpaceMod.LOG.info(
-                    "Migrated old UW portal to dim {} : target {},{},{}", targetDimId, targetPosX, targetPosY, targetPosZ);
+                    "Migrated old UW portal to dim {} : target {},{},{}",
+                    targetDimId,
+                    targetPosX,
+                    targetPosY,
+                    targetPosZ);
             markDirty();
         }
         if (facing == ForgeDirection.UNKNOWN) {
