@@ -2,6 +2,7 @@ package xyz.kubasz.personalspace.block;
 
 import java.util.List;
 import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
@@ -57,5 +58,26 @@ public class PortalItem extends ItemBlock {
             }
         }
         return super.onItemUse(itemStack, player, world, x, y, z, clickSide, p_77648_8_, p_77648_9_, p_77648_10_);
+    }
+
+    /**
+     * Prevents despawning of portals on the ground
+     */
+    @Override
+    public int getEntityLifespan(ItemStack itemStack, World world) {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public boolean hasCustomEntity(ItemStack stack) {
+        return true;
+    }
+
+    /**
+     * Override the portal item entity to be indestructible by fire, lava, cactus, explosion etc. damage
+     */
+    @Override
+    public Entity createEntity(World world, Entity location, ItemStack itemstack) {
+        return new PortalEntityItem(world, location, itemstack);
     }
 }

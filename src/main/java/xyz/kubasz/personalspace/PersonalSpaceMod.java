@@ -24,6 +24,7 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.network.FMLNetworkEvent;
 import cpw.mods.fml.common.network.NetworkHandshakeEstablished;
 import cpw.mods.fml.common.network.NetworkRegistry;
+import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -40,6 +41,7 @@ import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xyz.kubasz.personalspace.block.PortalBlock;
+import xyz.kubasz.personalspace.block.PortalEntityItem;
 import xyz.kubasz.personalspace.block.PortalItem;
 import xyz.kubasz.personalspace.block.PortalTileEntity;
 import xyz.kubasz.personalspace.net.Packets;
@@ -95,6 +97,7 @@ public class PersonalSpaceMod {
         GameRegistry.registerBlock(BP_MIGRATION_4, PortalItem.class, "personalPortal_migration4");
         GameRegistry.registerTileEntityWithAlternatives(
                 PortalTileEntity.class, "personalspace:personalPortal", "uw_portal_te");
+        EntityRegistry.registerModEntity(PortalEntityItem.class, "PortalItem", 1, this, 64, 20, true);
     }
 
     @Mod.EventHandler
