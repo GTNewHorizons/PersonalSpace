@@ -25,13 +25,13 @@ public class ClientProxy extends CommonProxy {
     // preInit "Run before anything else. Read your config, create blocks, items,
     // etc, and register them with the GameRegistry."
     @Override
-       public void preInit(FMLPreInitializationEvent event) {
+    public void preInit(FMLPreInitializationEvent event) {
         super.preInit(event);
     }
 
     // load "Do your mod setup. Build whatever data structures you care about. Register recipes."
     @Override
-      public void init(FMLInitializationEvent event) {
+    public void init(FMLInitializationEvent event) {
         super.init(event);
         ClientRegistry.bindTileEntitySpecialRenderer(PortalTileEntity.class, new RenderPortal());
     }
@@ -45,7 +45,7 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void serverAboutToStart(FMLServerAboutToStartEvent event) {
         super.serverAboutToStart(event);
-      }
+    }
 
     // register server commands in this event handler
     @Override

@@ -20,8 +20,6 @@ import cpw.mods.fml.common.event.FMLServerStartedEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
-
-
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.network.FMLNetworkEvent;
 import cpw.mods.fml.common.network.NetworkHandshakeEstablished;
@@ -40,12 +38,11 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.logging.log4j.LogManager;
-
 import org.apache.logging.log4j.Logger;
 import xyz.kubasz.personalspace.block.PortalBlock;
 import xyz.kubasz.personalspace.block.PortalItem;
-import xyz.kubasz.personalspace.net.Packets;
 import xyz.kubasz.personalspace.block.PortalTileEntity;
+import xyz.kubasz.personalspace.net.Packets;
 import xyz.kubasz.personalspace.world.DimensionConfig;
 import xyz.kubasz.personalspace.world.PersonalWorldProvider;
 
@@ -69,7 +66,7 @@ public class PersonalSpaceMod {
             serverSide = "xyz.kubasz.personalspace.CommonProxy")
     public static CommonProxy proxy;
 
-    public static PortalBlock   BLOCK_PORTAL, BP_MIGRATION_2, BP_MIGRATION_3, BP_MIGRATION_4;
+    public static PortalBlock BLOCK_PORTAL, BP_MIGRATION_2, BP_MIGRATION_3, BP_MIGRATION_4;
 
     public static final String CHANNEL = Tags.MODID;
 
