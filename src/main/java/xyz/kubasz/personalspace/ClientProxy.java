@@ -26,7 +26,7 @@ public class ClientProxy extends CommonProxy {
     // etc, and register them with the GameRegistry."
     @Override
        public void preInit(FMLPreInitializationEvent event) {
-        super.preInit(event);
+        super.preInit(event)
     }
 
     // load "Do your mod setup. Build whatever data structures you care about. Register recipes."
