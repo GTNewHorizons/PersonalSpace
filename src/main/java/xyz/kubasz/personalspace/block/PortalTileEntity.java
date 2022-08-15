@@ -5,7 +5,6 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.world.WorldServer;
@@ -146,8 +145,8 @@ public class PortalTileEntity extends TileEntity {
         if (worldObj.isRemote || !this.active) {
             return;
         }
-        WorldServer targetDimension = getTargetDimension();
-        PersonalTeleporter tp = new PersonalTeleporter(this, targetDimension, (WorldServer) worldObj);
+
+        PersonalTeleporter tp = new PersonalTeleporter(this, (WorldServer) worldObj);
 
         player.mcServer.getConfigurationManager().transferPlayerToDimension(player, this.targetDimId, tp);
     }
@@ -162,10 +161,6 @@ public class PortalTileEntity extends TileEntity {
 
     public int getTargetTeleportZ() {
         return targetPosZ + targetFacing.offsetZ;
-    }
-
-    public WorldServer getTargetDimension() {
-        return MinecraftServer.getServer().worldServerForDimension(targetDimId);
     }
 
     public void linkOtherPortal(boolean spawnNewPortal, EntityPlayerMP player) {
