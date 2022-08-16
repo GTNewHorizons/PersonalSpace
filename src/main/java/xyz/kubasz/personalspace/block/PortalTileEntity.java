@@ -21,9 +21,10 @@ public class PortalTileEntity extends TileEntity {
 
     public boolean active = false;
     public int targetDimId = 0;
-    public int targetX = 8;
-    public int targetY = 8;
-    public int targetZ = 8;
+    public int targetPosX = 8;
+    public int targetPosY = 8;
+    public int targetPosZ = 8;
+    public ForgeDirection targetFacing = DEFAULT_FACING;
     public ForgeDirection facing = DEFAULT_FACING;
 
     public PortalTileEntity() {}
@@ -47,9 +48,9 @@ public class PortalTileEntity extends TileEntity {
         if (tag.hasKey("remotePos")) {
             isLegacy = true;
             int[] pos_array = tag.getIntArray("remotePos");
-            this.targetX = pos_array[0];
-            this.targetY = pos_array[1];
-            this.targetZ = pos_array[2];
+            this.targetPosX = pos_array[0];
+            this.targetPosY = pos_array[1];
+            this.targetPosZ = pos_array[2];
         }
         if (tag.hasKey("remoteDir")) {
             isLegacy = true;
@@ -68,8 +69,6 @@ public class PortalTileEntity extends TileEntity {
                     this.facing = ForgeDirection.SOUTH;
                     break;
             }
-            this.targetX += 1;
-            this.targetZ += 1;
         }
         if (tag.hasKey("localDimensionId")) {
             isLegacy = true;
@@ -84,18 +83,25 @@ public class PortalTileEntity extends TileEntity {
         if (tag.hasKey("target")) {
             int[] t_array = tag.getIntArray("target");
             this.targetDimId = t_array[0];
-            this.targetX = t_array[1];
-            this.targetY = t_array[2];
-            this.targetZ = t_array[3];
+            this.targetPosX = t_array[1];
+            this.targetPosY = t_array[2];
+            this.targetPosZ = t_array[3];
         }
         if (tag.hasKey("facing")) {
             facing = ForgeDirection.getOrientation(tag.getInteger("facing"));
+        }
+        if (tag.hasKey("targetFacing")) {
+            targetFacing = ForgeDirection.getOrientation(tag.getInteger("targetFacing"));
         }
 
         if (isLegacy) {
             this.active = true;
             PersonalSpaceMod.LOG.info(
-                    "Migrated old UW portal to dim {} : target {},{},{}", targetDimId, targetX, targetY, targetZ);
+                    "Migrated old UW portal to dim {} : target {},{},{}",
+                    targetDimId,
+                    targetPosX,
+                    targetPosY,
+                    targetPosZ);
             markDirty();
         }
         if (facing == ForgeDirection.UNKNOWN) {
@@ -115,8 +121,9 @@ public class PortalTileEntity extends TileEntity {
     public void writeToNBT(NBTTagCompound tag) {
         super.writeToNBT(tag);
         tag.setBoolean("active", this.active);
-        tag.setIntArray("target", new int[] {this.targetDimId, this.targetX, this.targetY, this.targetZ});
+        tag.setIntArray("target", new int[] {this.targetDimId, this.targetPosX, this.targetPosY, this.targetPosZ});
         tag.setInteger("facing", this.facing.ordinal());
+        tag.setInteger("targetFacing", this.targetFacing.ordinal());
     }
 
     @Override
@@ -139,8 +146,21 @@ public class PortalTileEntity extends TileEntity {
             return;
         }
 
-        PersonalTeleporter tp = new PersonalTeleporter((WorldServer) worldObj, targetX, targetY, targetZ);
+        PersonalTeleporter tp = new PersonalTeleporter(this, (WorldServer) worldObj);
+
         player.mcServer.getConfigurationManager().transferPlayerToDimension(player, this.targetDimId, tp);
+    }
+
+    public int getTargetTeleportX() {
+        return targetPosX + targetFacing.offsetX;
+    }
+
+    public int getTargetTeleportY() {
+        return targetPosY + targetFacing.offsetY;
+    }
+
+    public int getTargetTeleportZ() {
+        return targetPosZ + targetFacing.offsetZ;
     }
 
     public void linkOtherPortal(boolean spawnNewPortal, EntityPlayerMP player) {
@@ -159,12 +179,12 @@ public class PortalTileEntity extends TileEntity {
             PersonalSpaceMod.LOG.fatal("Couldn't initialize world {}", this.targetDimId);
             return;
         }
-        int otherX = targetX, otherY = targetY, otherZ = targetZ;
+        int otherX = targetPosX, otherY = targetPosY, otherZ = targetPosZ;
         searchloop:
-        for (otherX = targetX - 1; otherX <= targetX + 1; otherX++) {
-            for (otherY = targetY - 1; otherY <= targetY + 1; otherY++) {
+        for (otherX = targetPosX - 1; otherX <= targetPosX + 1; otherX++) {
+            for (otherY = targetPosY - 1; otherY <= targetPosY + 1; otherY++) {
                 if (otherY < 0 || otherY > otherWorld.getHeight()) continue;
-                for (otherZ = targetZ - 1; otherZ <= targetZ + 1; otherZ++) {
+                for (otherZ = targetPosZ - 1; otherZ <= targetPosZ + 1; otherZ++) {
                     if (!otherWorld.blockExists(otherX, otherY, otherZ)) {
                         otherWorld.theChunkProviderServer.loadChunk(otherX >> 4, otherZ >> 4);
                     }
@@ -182,9 +202,9 @@ public class PortalTileEntity extends TileEntity {
                 otherPortal = (PortalTileEntity) wte;
             }
         } else if (spawnNewPortal) {
-            otherX = targetX;
-            otherY = targetY;
-            otherZ = targetZ;
+            otherX = targetPosX;
+            otherY = targetPosY;
+            otherZ = targetPosZ;
             otherWorld.setBlock(otherX, otherY, otherZ, PersonalSpaceMod.BLOCK_PORTAL, facing.ordinal(), 3);
             otherPortal = (PortalTileEntity) otherWorld.getTileEntity(otherX, otherY, otherZ);
         }
@@ -198,9 +218,10 @@ public class PortalTileEntity extends TileEntity {
                 return;
             }
             otherPortal.targetDimId = worldObj.provider.dimensionId;
-            otherPortal.targetX = xCoord + facing.offsetX;
-            otherPortal.targetY = yCoord + facing.offsetY;
-            otherPortal.targetZ = zCoord + facing.offsetZ;
+            otherPortal.targetPosX = xCoord;
+            otherPortal.targetPosY = yCoord;
+            otherPortal.targetPosZ = zCoord;
+            otherPortal.targetFacing = facing;
             otherPortal.markDirty();
             if (player != null) {
                 player.addChatMessage(new ChatComponentTranslation("chat.personalWorld.relinked", targetDimId));
@@ -261,9 +282,7 @@ public class PortalTileEntity extends TileEntity {
             PersonalSpaceMod.INSTANCE.onDimSettingsChangeServer(targetDimId);
             this.active = true;
             this.targetDimId = targetDimId;
-            this.targetX = 8 + DEFAULT_FACING.offsetX;
-            this.targetY = sanitized.getGroundLevel() + 1 + DEFAULT_FACING.offsetY;
-            this.targetZ = 8 + DEFAULT_FACING.offsetZ;
+            this.targetPosY = sanitized.getGroundLevel() + 1;
             markDirty();
             createdNewDim = true;
 
