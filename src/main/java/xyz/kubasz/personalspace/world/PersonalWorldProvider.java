@@ -3,6 +3,7 @@ package xyz.kubasz.personalspace.world;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import java.util.Arrays;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.util.Vec3;
@@ -11,6 +12,7 @@ import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.biome.WorldChunkManagerHell;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
+import xyz.kubasz.personalspace.CommonProxy;
 import xyz.kubasz.personalspace.Config;
 import xyz.kubasz.personalspace.PersonalSpaceMod;
 
@@ -43,6 +45,17 @@ public class PersonalWorldProvider extends WorldProvider {
                         new Throwable());
             }
             this.config = DimensionConfig.getForDimension(this.dimensionId, isClient);
+            if (this.config == null) {
+                PersonalSpaceMod.LOG.fatal(
+                        "PersonalSpace couldn't find dimension config for dimension {}, detected side: {}\nknown client dimension IDs: {}\nknown server dimension IDs: {}\n",
+                        this.dimensionId,
+                        isClient ? "CLIENT" : "SERVER",
+                        Arrays.toString(
+                                CommonProxy.getDimensionConfigObjects(true).keys()),
+                        Arrays.toString(
+                                CommonProxy.getDimensionConfigObjects(false).keys()),
+                        new Throwable());
+            }
         }
         return this.config;
     }
