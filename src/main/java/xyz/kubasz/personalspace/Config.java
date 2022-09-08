@@ -15,6 +15,7 @@ public class Config {
         };
 
         public static final String[] allowedBlocks = new String[] {
+            "minecraft:air",
             "minecraft:bedrock",
             "minecraft:stone",
             "minecraft:cobblestone",

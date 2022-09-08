@@ -278,6 +278,7 @@ public class GuiEditWorld extends GuiScreen {
             });
             addBtn.itemStack = is;
             addBtn.itemStackText = "+";
+            addBtn.tooltip = (is.getItem() != null) ? is.getDisplayName() : block.getLocalizedName();
             addBtn.enabled = generationEnabled;
             this.presetEditor.addChild(addBtn);
             curY += 21;
@@ -296,9 +297,11 @@ public class GuiEditWorld extends GuiScreen {
             FlatLayerInfo info = fli.get(i);
             final int finalI = i;
             WButton block = new WButton(new Rectangle(curX + 12, curY, 20, 28), "", false, 0, null, null);
+            Block gameBlock = info.func_151536_b();
             block.enabled = false;
-            block.itemStack = new ItemStack(info.func_151536_b());
+            block.itemStack = new ItemStack(gameBlock);
             block.itemStackText = Integer.toString(info.getLayerCount());
+            block.tooltip = gameBlock.getLocalizedName();
             this.presetEditor.addChild(block);
 
             // up
@@ -329,10 +332,20 @@ public class GuiEditWorld extends GuiScreen {
                 this.desiredConfig.setLayers(this.desiredConfig.getLayersAsString());
                 this.configToPreset();
             };
-            block.addChild(
-                    new WButton(new Rectangle(21, 5, 18, 18), "", false, 0, Icons.PLUS, () -> plusMinus.accept(1)));
-            block.addChild(
-                    new WButton(new Rectangle(40, 5, 18, 18), "", false, 0, Icons.MINUS, () -> plusMinus.accept(-1)));
+            block.addChild(new WButton(
+                    new Rectangle(21, 5, 18, 18),
+                    "",
+                    false,
+                    0,
+                    generationEnabled ? Icons.PLUS : Icons.LOCK,
+                    () -> plusMinus.accept(1)));
+            block.addChild(new WButton(
+                    new Rectangle(40, 5, 18, 18),
+                    "",
+                    false,
+                    0,
+                    generationEnabled ? Icons.MINUS : Icons.LOCK,
+                    () -> plusMinus.accept(-1)));
 
             for (Widget child : block.children) {
                 child.enabled = generationEnabled;
@@ -381,6 +394,7 @@ public class GuiEditWorld extends GuiScreen {
         super.drawScreen(mouseX, mouseY, partialTicks);
         this.biome.enabled = generationEnabled;
         this.biomeEditButton.enabled = generationEnabled;
+        this.biomeEditButton.buttonIcon = generationEnabled ? Icons.PENCIL : Icons.LOCK;
         this.presetEntry.enabled = generationEnabled;
         String actualText = this.presetEntry.textField.getText();
         if (voidPresetName.equals(actualText)) {
@@ -392,12 +406,15 @@ public class GuiEditWorld extends GuiScreen {
                 .matcher(actualText)
                 .matches()) {
             this.presetEntry.textField.setTextColor(0xFF0000);
+            this.presetEntry.tooltip = I18n.format("gui.personalWorld.invalidSyntax");
             inputsValid = false;
         } else if (!DimensionConfig.canUseLayers(actualText, true)) {
             this.presetEntry.textField.setTextColor(0xFFFF00);
+            this.presetEntry.tooltip = I18n.format("gui.personalWorld.notAllowed");
             inputsValid = false;
         } else {
             this.presetEntry.textField.setTextColor(0xA0FFA0);
+            this.presetEntry.tooltip = null;
             this.desiredConfig.setLayers(actualText);
             this.regeneratePresetEditor();
         }
@@ -408,12 +425,15 @@ public class GuiEditWorld extends GuiScreen {
                 .getBiomeId()
                 .equalsIgnoreCase(BiomeGenBase.getBiome(this.desiredConfig.getRawBiomeId()).biomeName)) {
             this.biome.textField.setTextColor(0xFF0000);
+            this.biome.tooltip = I18n.format("gui.personalWorld.invalidSyntax");
             inputsValid = false;
         } else if (!DimensionConfig.canUseBiome(this.desiredConfig.getBiomeId(), true)) {
             this.biome.textField.setTextColor(0xFFFF00);
+            this.biome.tooltip = I18n.format("gui.personalWorld.notAllowed");
             inputsValid = false;
         } else {
             this.biome.textField.setTextColor(0xA0FFA0);
+            this.biome.tooltip = null;
         }
 
         this.save.enabled = inputsValid;
@@ -434,6 +454,9 @@ public class GuiEditWorld extends GuiScreen {
         Icons.STAR.drawAt(145, this.skyRed.position.y + 12);
         Icons.STAR.drawAt(134, this.skyRed.position.y + 21);
         GL11.glColor4f(1, 1, 1, 1);
+
+        rootWidget.drawForeground(mouseX, mouseY, partialTicks);
+
         GL11.glPopMatrix();
     }
 
