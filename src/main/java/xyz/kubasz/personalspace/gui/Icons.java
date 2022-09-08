@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
@@ -171,30 +172,34 @@ public enum Icons {
         t.draw();
     }
 
+    private static final ItemStack dummyStack = new ItemStack(Blocks.fire);
+
     public static void drawItem(int xOff, int yOff, ItemStack is, String text, RenderItem itemRender) {
-        if (is != null && is.stackSize > 0) {
-            FontRenderer fr = Minecraft.getMinecraft().fontRenderer;
-            TextureManager tm = Minecraft.getMinecraft().getTextureManager();
-            GL11.glPushMatrix();
-            GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT);
-            GL11.glEnable(GL11.GL_ALPHA_TEST);
-            GL11.glEnable(GL11.GL_DEPTH_TEST);
-            GL11.glEnable(GL11.GL_BLEND);
-            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-            GL11.glEnable(GL11.GL_LIGHTING);
-            GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-            GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-            RenderHelper.enableGUIStandardItemLighting();
+        FontRenderer fr = Minecraft.getMinecraft().fontRenderer;
+        TextureManager tm = Minecraft.getMinecraft().getTextureManager();
+        GL11.glPushMatrix();
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT);
+        GL11.glEnable(GL11.GL_ALPHA_TEST);
+        GL11.glEnable(GL11.GL_DEPTH_TEST);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GL11.glEnable(GL11.GL_LIGHTING);
+        GL11.glEnable(GL12.GL_RESCALE_NORMAL);
+        GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderHelper.enableGUIStandardItemLighting();
 
-            GL11.glTranslatef(1.0f, 1.0f, 0.0f);
+        GL11.glTranslatef(1.0f, 1.0f, 0.0f);
 
+        if (is != null && is.getItem() != null && is.stackSize > 0) {
             itemRender.renderItemAndEffectIntoGUI(fr, tm, is, xOff, yOff);
             itemRender.renderItemOverlayIntoGUI(fr, tm, is, xOff, yOff, text);
-
-            RenderHelper.disableStandardItemLighting();
-
-            GL11.glPopAttrib();
-            GL11.glPopMatrix();
+        } else {
+            itemRender.renderItemOverlayIntoGUI(fr, tm, dummyStack, xOff, yOff, text);
         }
+
+        RenderHelper.disableStandardItemLighting();
+
+        GL11.glPopAttrib();
+        GL11.glPopMatrix();
     }
 }

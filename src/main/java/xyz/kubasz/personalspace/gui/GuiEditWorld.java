@@ -278,6 +278,7 @@ public class GuiEditWorld extends GuiScreen {
             });
             addBtn.itemStack = is;
             addBtn.itemStackText = "+";
+            addBtn.tooltip = (is.getItem() != null) ? is.getDisplayName() : block.getLocalizedName();
             addBtn.enabled = generationEnabled;
             this.presetEditor.addChild(addBtn);
             curY += 21;
@@ -296,9 +297,11 @@ public class GuiEditWorld extends GuiScreen {
             FlatLayerInfo info = fli.get(i);
             final int finalI = i;
             WButton block = new WButton(new Rectangle(curX + 12, curY, 20, 28), "", false, 0, null, null);
+            Block gameBlock = info.func_151536_b();
             block.enabled = false;
-            block.itemStack = new ItemStack(info.func_151536_b());
+            block.itemStack = new ItemStack(gameBlock);
             block.itemStackText = Integer.toString(info.getLayerCount());
+            block.tooltip = gameBlock.getLocalizedName();
             this.presetEditor.addChild(block);
 
             // up
@@ -434,6 +437,9 @@ public class GuiEditWorld extends GuiScreen {
         Icons.STAR.drawAt(145, this.skyRed.position.y + 12);
         Icons.STAR.drawAt(134, this.skyRed.position.y + 21);
         GL11.glColor4f(1, 1, 1, 1);
+
+        rootWidget.drawForeground(mouseX, mouseY, partialTicks);
+
         GL11.glPopMatrix();
     }
 
