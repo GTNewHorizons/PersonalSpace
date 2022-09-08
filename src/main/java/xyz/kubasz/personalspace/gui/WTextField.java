@@ -7,6 +7,7 @@ import org.lwjgl.opengl.GL11;
 
 public class WTextField extends Widget {
     public GuiTextField textField;
+    public String tooltip = null;
 
     public WTextField(Rectangle position, String text) {
         this.position = position;
@@ -27,6 +28,13 @@ public class WTextField extends Widget {
     protected void drawImpl(int mouseX, int mouseY, float partialTicks) {
         textField.drawTextBox();
         GL11.glColor4f(1, 1, 1, 1);
+    }
+
+    @Override
+    protected void drawForegroundImpl(int mouseX, int mouseY, float partialTicks) {
+        if (tooltip != null && !tooltip.isEmpty() && this.testPoint(mouseX, mouseY)) {
+            this.drawTooltip(mouseX - position.x, mouseY - position.y, tooltip);
+        }
     }
 
     @Override
