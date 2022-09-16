@@ -30,6 +30,8 @@ import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import net.minecraft.nbt.NBTTagCompound;
@@ -53,7 +55,7 @@ import xyz.kubasz.personalspace.world.PersonalWorldProvider;
         version = Tags.VERSION,
         name = Tags.MODNAME,
         acceptedMinecraftVersions = "[1.7.10]",
-        dependencies = "after:utilityworlds;after:appliedenergistics2-core;after:GalaxySpace")
+        dependencies = "after:utilityworlds;after:appliedenergistics2-core;after:GalaxySpace;after:Thaumcraft")
 public class PersonalSpaceMod {
 
     public static final String DIM_METADATA_FILE = "personalspace_metadata.cfg";
@@ -220,6 +222,9 @@ public class PersonalSpaceMod {
     private static final int NATURA_DIM_WORLDGEN_CLOUD_BIT = 2;
     private static final int NATURA_DIM_WORLDGEN_TREE_BIT = 4;
 
+    private static final String THAUMCRAFT_MODID = "Thaumcraft";
+    private static Field thaumcraftDimensionBlacklist = null;
+
     private static int naturaConfigForDim(DimensionConfig config) {
         int gen = 0;
         if (config.isGeneratingVegetation()) {
@@ -232,24 +237,46 @@ public class PersonalSpaceMod {
         return gen;
     }
 
+    private static HashMap<Integer, Integer> getThaumcraftDimensionBlacklist() {
+        if (Loader.isModLoaded(THAUMCRAFT_MODID)) {
+            try {
+                if (thaumcraftDimensionBlacklist == null) {
+                    Class<?> klass = Class.forName("thaumcraft.common.lib.world.ThaumcraftWorldGenerator");
+                    thaumcraftDimensionBlacklist = klass.getField("dimensionBlacklist");
+                }
+                return (HashMap<Integer, Integer>) thaumcraftDimensionBlacklist.get(null);
+            } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return null;
+    }
+
     private void bulkDimSettingsUpdate() {
         TIntArrayList dimIds = new TIntArrayList();
         TIntArrayList dimNaturaGens = new TIntArrayList();
+        HashMap<Integer, Integer> tcBlacklist = getThaumcraftDimensionBlacklist();
         CommonProxy.getDimensionConfigObjects(false).forEachEntry((dimId, config) -> {
             if (config == null) {
                 return true;
             }
             dimIds.add(dimId);
             dimNaturaGens.add(naturaConfigForDim(config));
+            if (tcBlacklist != null) {
+                if (config.isGeneratingTrees()) {
+                    tcBlacklist.remove(dimId);
+                } else {
+                    tcBlacklist.put(dimId, 0);
+                }
+            }
             return true;
         });
-        if (dimIds.isEmpty()) {
-            return;
+        if (Loader.isModLoaded(NATURA_MODID) && !dimIds.isEmpty()) {
+            NBTTagCompound naturaImc = new NBTTagCompound();
+            naturaImc.setIntArray(NATURA_IMC_DIMS, dimIds.toArray());
+            naturaImc.setIntArray(NATURA_IMC_SETS, dimNaturaGens.toArray());
+            FMLInterModComms.sendRuntimeMessage(this, NATURA_MODID, NATURA_IMC, naturaImc);
         }
-        NBTTagCompound naturaImc = new NBTTagCompound();
-        naturaImc.setIntArray(NATURA_IMC_DIMS, dimIds.toArray());
-        naturaImc.setIntArray(NATURA_IMC_SETS, dimNaturaGens.toArray());
-        FMLInterModComms.sendRuntimeMessage(this, NATURA_MODID, NATURA_IMC, naturaImc);
     }
 
     public void onDimSettingsChangeServer(int dimId) {
@@ -257,10 +284,20 @@ public class PersonalSpaceMod {
         if (config == null) {
             return;
         }
-        NBTTagCompound naturaImc = new NBTTagCompound();
-        naturaImc.setIntArray(NATURA_IMC_DIMS, new int[] {dimId});
-        naturaImc.setIntArray(NATURA_IMC_SETS, new int[] {naturaConfigForDim(config)});
-        FMLInterModComms.sendRuntimeMessage(this, NATURA_MODID, NATURA_IMC, naturaImc);
+        HashMap<Integer, Integer> tcBlacklist = getThaumcraftDimensionBlacklist();
+        if (tcBlacklist != null) {
+            if (config.isGeneratingTrees()) {
+                tcBlacklist.remove(dimId);
+            } else {
+                tcBlacklist.put(dimId, 0);
+            }
+        }
+        if (Loader.isModLoaded(NATURA_MODID)) {
+            NBTTagCompound naturaImc = new NBTTagCompound();
+            naturaImc.setIntArray(NATURA_IMC_DIMS, new int[] {dimId});
+            naturaImc.setIntArray(NATURA_IMC_SETS, new int[] {naturaConfigForDim(config)});
+            FMLInterModComms.sendRuntimeMessage(this, NATURA_MODID, NATURA_IMC, naturaImc);
+        }
     }
 
     private static boolean thermosLogged = false;
