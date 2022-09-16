@@ -39,6 +39,8 @@ public class GuiEditWorld extends GuiScreen {
     WButton biomeEditButton;
     WToggleButton enableWeather;
     WToggleButton enableNightTime;
+    WToggleButton enableClouds;
+    WButton skyType;
     WToggleButton generateTrees;
     WToggleButton generateVegetation;
     WButton save;
@@ -86,6 +88,12 @@ public class GuiEditWorld extends GuiScreen {
     private void addWidget(Widget w) {
         this.rootWidget.addChild(w);
         this.ySize += w.position.height + 1;
+    }
+
+    private void updateSkyTypeButton() {
+        DimensionConfig.SkyType currentType = desiredConfig.getSkyType();
+        skyType.text = currentType.getButtonText();
+        skyType.tooltip = currentType.getButtonTooltip();
     }
 
     @Override
@@ -139,6 +147,18 @@ public class GuiEditWorld extends GuiScreen {
         this.enableNightTime.yesIcon = Icons.MOON;
         this.enableNightTime.setValue(this.enableNightTime.value);
         this.rootWidget.addChild(this.enableNightTime);
+        this.skyType =
+                new WButton(new Rectangle(150, this.ySize, 18, 18), "?", true, WButton.DEFAULT_COLOR, null, () -> {
+                    final int skyTypes = DimensionConfig.SkyType.values().length;
+                    int skyType = (desiredConfig.getSkyType().ordinal() + 1) % skyTypes;
+                    while (!DimensionConfig.SkyType.fromOrdinal(skyType).isLoaded()) {
+                        skyType = (skyType + 1) % skyTypes;
+                    }
+                    desiredConfig.setSkyType(DimensionConfig.SkyType.fromOrdinal(skyType));
+                    updateSkyTypeButton();
+                });
+        this.rootWidget.addChild(this.skyType);
+        updateSkyTypeButton();
 
         addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.starBrightness"), false));
         this.starBrightness = new WSlider(
@@ -190,6 +210,17 @@ public class GuiEditWorld extends GuiScreen {
                 });
         this.generateVegetation.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.vegetation"), false));
         addWidget(generateVegetation);
+        this.enableClouds = new WToggleButton(
+                new Rectangle(90, this.generateVegetation.position.y, 18, 18),
+                "",
+                false,
+                0,
+                desiredConfig.isCloudsEnabled(),
+                () -> {
+                    desiredConfig.setCloudsEnabled(enableClouds.getValue());
+                });
+        this.enableClouds.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.clouds"), false));
+        rootWidget.addChild(this.enableClouds);
 
         voidPresetName = I18n.format("gui.personalWorld.voidWorld");
 

@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import net.minecraft.block.Block;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.StatCollector;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.gen.FlatLayerInfo;
 import net.minecraftforge.common.DimensionManager;
@@ -29,11 +30,76 @@ import xyz.kubasz.personalspace.PersonalSpaceMod;
  */
 public class DimensionConfig {
 
+    public enum SkyType {
+        VANILLA(null, null),
+        BARNADA_C(
+                "galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.SkyProviderBarnardaC",
+                "galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.CloudProviderBarnardaC"),
+        ;
+        public final String skyProvider, cloudProvider;
+        private Boolean isLoaded = null;
+
+        SkyType(String skyProvider, String cloudProvider) {
+            this.skyProvider = skyProvider;
+            this.cloudProvider = cloudProvider;
+        }
+
+        public static SkyType fromOrdinal(int ord) {
+            return (ord < 0 || ord >= values().length) ? SkyType.VANILLA : values()[ord];
+        }
+
+        public boolean isLoaded() {
+            if (skyProvider == null && cloudProvider == null) {
+                return true;
+            }
+            if (isLoaded == null) {
+                try {
+                    Class<?> skyClass = Class.forName(skyProvider);
+                    Class<?> cloudClass = Class.forName(cloudProvider);
+                    isLoaded = Boolean.TRUE;
+                } catch (ClassNotFoundException e) {
+                    isLoaded = Boolean.FALSE;
+                }
+            }
+            return isLoaded;
+        }
+
+        private Object makeClass(String name) {
+            if (name == null || !isLoaded()) {
+                return null;
+            }
+            try {
+                Class<?> klass = Class.forName(name);
+                return klass.newInstance();
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public Object makeSkyProvider() {
+            return makeClass(skyProvider);
+        }
+
+        public Object makeCloudProvider() {
+            return makeClass(cloudProvider);
+        }
+
+        public String getButtonText() {
+            return this.toString().substring(0, 1);
+        }
+
+        public String getButtonTooltip() {
+            return StatCollector.translateToLocal("gui.personalWorld.skyType." + toString());
+        }
+    }
+
     private String saveDirOverride = "";
     private int skyColor = 0xc0d8ff;
     private float starBrightness = 1.0F;
     private boolean weatherEnabled = false;
     private boolean nightTime = false;
+    private boolean cloudsEnabled = true;
+    private SkyType skyType = SkyType.VANILLA;
     private boolean generatingVegetation = false;
     private boolean generatingTrees = false;
     private boolean allowGenerationChanges = false;
@@ -57,6 +123,8 @@ public class DimensionConfig {
         pkt.writeFloat(starBrightness);
         pkt.writeVarInt(getRawBiomeId());
         pkt.writeBoolean(nightTime);
+        pkt.writeBoolean(cloudsEnabled);
+        pkt.writeVarInt(skyType.ordinal());
         pkt.writeBoolean(weatherEnabled);
         pkt.writeBoolean(generatingVegetation);
         pkt.writeBoolean(generatingTrees);
@@ -75,6 +143,8 @@ public class DimensionConfig {
         this.setStarBrightness(pkt.readFloat());
         this.setBiomeId(BiomeGenBase.getBiomeGenArray()[pkt.readVarInt()].biomeName);
         this.setNightTime(pkt.readBoolean());
+        this.setCloudsEnabled(pkt.readBoolean());
+        this.setSkyType(SkyType.fromOrdinal(pkt.readVarInt()));
         this.setWeatherEnabled(pkt.readBoolean());
         this.setGeneratingVegetation(pkt.readBoolean());
         this.setGeneratingTrees(pkt.readBoolean());
@@ -130,6 +200,18 @@ public class DimensionConfig {
             cur.set(nightTime);
         } else {
             setNightTime(cur.getBoolean());
+        }
+        cur = cfg.get(VISUAL, "cloudsEnabled", cloudsEnabled, "");
+        if (write) {
+            cur.set(cloudsEnabled);
+        } else {
+            setCloudsEnabled(cur.getBoolean());
+        }
+        cur = cfg.get(VISUAL, "skyType", skyType.ordinal(), "");
+        if (write) {
+            cur.set(skyType.ordinal());
+        } else {
+            setSkyType(SkyType.fromOrdinal(cur.getInt()));
         }
         cur = cfg.get(WORLDGEN, "generatingTrees", generatingTrees, "");
         if (write) {
@@ -188,6 +270,8 @@ public class DimensionConfig {
             this.setSkyColor(source.getSkyColor());
             this.setStarBrightness(source.getStarBrightness());
             this.setNightTime(source.isNightTime());
+            this.setCloudsEnabled(source.isCloudsEnabled());
+            this.setSkyType(source.getSkyType());
             this.setWeatherEnabled(source.isWeatherEnabled());
         }
         if (copyGenerationInfo) {
@@ -312,6 +396,28 @@ public class DimensionConfig {
         if (this.nightTime != nightTime) {
             this.needsSaving = true;
             this.nightTime = nightTime;
+        }
+    }
+
+    public boolean isCloudsEnabled() {
+        return cloudsEnabled;
+    }
+
+    public void setCloudsEnabled(boolean cloudsEnabled) {
+        if (this.cloudsEnabled != cloudsEnabled) {
+            this.needsSaving = true;
+            this.cloudsEnabled = cloudsEnabled;
+        }
+    }
+
+    public SkyType getSkyType() {
+        return skyType;
+    }
+
+    public void setSkyType(SkyType skyType) {
+        if (this.skyType != skyType) {
+            this.needsSaving = true;
+            this.skyType = skyType;
         }
     }
 
