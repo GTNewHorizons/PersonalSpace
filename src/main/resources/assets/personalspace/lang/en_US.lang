@@ -23,9 +23,13 @@ gui.personalWorld.starBrightness=Star brightness
 gui.personalWorld.vegetation=Foliage
 gui.personalWorld.trees=Trees
 gui.personalWorld.weather=Weather
+gui.personalWorld.clouds=Clouds
 
 gui.personalWorld.invalidSyntax=Invalid syntax
 gui.personalWorld.notAllowed=Not allowed by the server's configuration
+
+gui.personalWorld.skyType.VANILLA=Vanilla sky
+gui.personalWorld.skyType.BARNADA_C=Barnada C sky
 
 commands.pspace.usage=/pspace (give-portal player DIM [X] [Y] [Z])|(tpx player DIM [X Y Z])|(ls)|(where player)|(allow-worldgen-change DIM)
 commands.pspace.badDimension=The specified dimension doesn't exist

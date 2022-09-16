@@ -53,7 +53,7 @@ import xyz.kubasz.personalspace.world.PersonalWorldProvider;
         version = Tags.VERSION,
         name = Tags.MODNAME,
         acceptedMinecraftVersions = "[1.7.10]",
-        dependencies = "after:utilityworlds;after:appliedenergistics2-core")
+        dependencies = "after:utilityworlds;after:appliedenergistics2-core;after:GalaxySpace")
 public class PersonalSpaceMod {
 
     public static final String DIM_METADATA_FILE = "personalspace_metadata.cfg";

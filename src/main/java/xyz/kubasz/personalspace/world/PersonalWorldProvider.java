@@ -12,6 +12,7 @@ import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.biome.WorldChunkManagerHell;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraftforge.client.IRenderHandler;
 import xyz.kubasz.personalspace.CommonProxy;
 import xyz.kubasz.personalspace.Config;
 import xyz.kubasz.personalspace.PersonalSpaceMod;
@@ -21,6 +22,7 @@ import xyz.kubasz.personalspace.PersonalSpaceMod;
  */
 public class PersonalWorldProvider extends WorldProvider {
     DimensionConfig config;
+    DimensionConfig.SkyType lastSkyType = null;
 
     public PersonalWorldProvider() {
         // Called by Forge, followed by setDimension
@@ -65,8 +67,9 @@ public class PersonalWorldProvider extends WorldProvider {
         return "Personal World " + this.dimensionId;
     }
 
+    @Override
     public void registerWorldChunkManager() {
-        this.config = DimensionConfig.getForDimension(this.dimensionId, this.worldObj.isRemote);
+        getConfig();
         this.worldChunkMgr = new WorldChunkManagerHell(BiomeGenBase.plains, 1.0F);
     }
 
@@ -99,27 +102,33 @@ public class PersonalWorldProvider extends WorldProvider {
         return getFogColor(0.0f, partialTicks);
     }
 
+    @Override
     public boolean canRespawnHere() {
         return false;
     }
 
+    @Override
     public boolean isSurfaceWorld() {
         return true;
     }
 
+    @Override
     @SideOnly(Side.CLIENT)
     public float getCloudHeight() {
-        return 256.0F;
+        return getConfig().isCloudsEnabled() ? 256.0F : Float.NEGATIVE_INFINITY;
     }
 
+    @Override
     public boolean canCoordinateBeSpawn(int x, int z) {
         return this.worldObj.getTopBlock(x, z).getMaterial().blocksMovement();
     }
 
+    @Override
     public int getAverageGroundLevel() {
         return getConfig().getGroundLevel();
     }
 
+    @Override
     @SideOnly(Side.CLIENT)
     public boolean doesXZShowFog(int x, int z) {
         return false;
@@ -219,5 +228,31 @@ public class PersonalWorldProvider extends WorldProvider {
     @Override
     public ChunkCoordinates getEntrancePortalLocation() {
         return new ChunkCoordinates(8, getAverageGroundLevel(), 8);
+    }
+
+    private void updateSkyType() {
+        if (this.worldObj == null || !this.worldObj.isRemote) {
+            return;
+        }
+        DimensionConfig.SkyType currentSkyType = getConfig().getSkyType();
+        if (lastSkyType != currentSkyType) {
+            lastSkyType = currentSkyType;
+            setSkyRenderer((IRenderHandler) lastSkyType.makeSkyProvider());
+            setCloudRenderer((IRenderHandler) lastSkyType.makeCloudProvider());
+        }
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public IRenderHandler getSkyRenderer() {
+        updateSkyType();
+        return super.getSkyRenderer();
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public IRenderHandler getCloudRenderer() {
+        updateSkyType();
+        return super.getCloudRenderer();
     }
 }
