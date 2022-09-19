@@ -5,6 +5,7 @@ import appeng.api.IAppEngApi;
 import appeng.api.features.IWorldGen;
 import codechicken.lib.packet.PacketCustom;
 import com.google.common.collect.Lists;
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
@@ -26,6 +27,7 @@ import cpw.mods.fml.common.network.NetworkHandshakeEstablished;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
+import cpw.mods.fml.relauncher.Side;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.io.File;
@@ -110,6 +112,7 @@ public class PersonalSpaceMod {
         }
 
         MinecraftForge.EVENT_BUS.register(this);
+        FMLCommonHandler.instance().bus().register(this);
     }
 
     @Optional.Method(modid = "appliedenergistics2-core")
@@ -144,7 +147,7 @@ public class PersonalSpaceMod {
 
     void loadDimensionConfigs() {
         try {
-            deregisterServerDimensions();
+            deregisterDimensions(false);
             File saveDir = DimensionManager.getCurrentSaveRootDirectory();
             LOG.info("Searching for PS worlds at {}", saveDir.getPath());
             if (saveDir == null || !saveDir.isDirectory()) {
@@ -327,7 +330,7 @@ public class PersonalSpaceMod {
     @Mod.EventHandler
     public void serverStopping(FMLServerStoppingEvent event) {
         proxy.serverStopping(event);
-        TIntObjectHashMap<DimensionConfig> configs = CommonProxy.getDimensionConfigObjects(true);
+        TIntObjectHashMap<DimensionConfig> configs = CommonProxy.getDimensionConfigObjects(false);
         configs.forEachEntry((dimId, dimCfg) -> {
             if (dimCfg == null || !dimCfg.needsSaving()) {
                 return true;
@@ -341,9 +344,9 @@ public class PersonalSpaceMod {
         });
     }
 
-    private void deregisterServerDimensions() {
-        synchronized (CommonProxy.getDimensionConfigObjects(false)) {
-            CommonProxy.getDimensionConfigObjects(false).forEachEntry((dimId, dimCfg) -> {
+    private void deregisterDimensions(boolean isClient) {
+        synchronized (CommonProxy.getDimensionConfigObjects(isClient)) {
+            CommonProxy.getDimensionConfigObjects(isClient).forEachEntry((dimId, dimCfg) -> {
                 if (DimensionManager.isDimensionRegistered(dimId)) {
                     FMLLog.info("Deregistering PersonalSpace dimension %d", dimId);
                     DimensionManager.unregisterDimension(dimId);
@@ -355,16 +358,19 @@ public class PersonalSpaceMod {
                 }
                 return true;
             });
-            CommonProxy.getDimensionConfigObjects(false).clear();
+            CommonProxy.getDimensionConfigObjects(isClient).clear();
         }
     }
 
     @Mod.EventHandler
     public void serverStopped(FMLServerStoppedEvent event) {
         proxy.serverStopped(event);
-        deregisterServerDimensions();
-        synchronized (CommonProxy.getDimensionConfigObjects(true)) {
-            CommonProxy.getDimensionConfigObjects(true).clear();
+        deregisterDimensions(false);
+        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+            deregisterDimensions(true);
+            synchronized (CommonProxy.getDimensionConfigObjects(true)) {
+                CommonProxy.getDimensionConfigObjects(true).clear();
+            }
         }
     }
 
@@ -378,6 +384,13 @@ public class PersonalSpaceMod {
                 netHandler.sendPacket(pkt.toPacket());
             }
         }
+    }
+
+    @SubscribeEvent
+    public void clientDisconnectionHandler(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+        // clear all dynamic dimensions on disconnection
+        deregisterDimensions(true);
+        deregisterDimensions(false);
     }
 
     @Mod.EventHandler
