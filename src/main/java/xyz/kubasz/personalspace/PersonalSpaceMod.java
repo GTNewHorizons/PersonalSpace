@@ -307,7 +307,7 @@ public class PersonalSpaceMod {
 
     public static boolean isInThermos() {
         try {
-            Class.forName("thermos.Thermos");
+            Class.forName("thermos.ThermosRemapper");
             if (!thermosLogged) {
                 thermosLogged = true;
                 LOG.warn("Thermos detected, applying workarounds");
