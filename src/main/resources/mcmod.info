@@ -7,10 +7,10 @@
       "description": "Personal, customizable dimensions for players",
       "version": "${modVersion}",
       "mcversion": "${minecraftVersion}",
-      "url": "https://github.com/kubasz/PersonalSpace",
+      "url": "https://github.com/GTNewHorizons/PersonalSpace",
       "updateUrl": "",
       "authorList": [
-        "kubasz"
+        "eigenraven"
       ],
       "credits": "",
       "logoFile": "",
