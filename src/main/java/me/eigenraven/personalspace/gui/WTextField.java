@@ -1,11 +1,14 @@
 package me.eigenraven.personalspace.gui;
 
 import java.awt.*;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiTextField;
+
 import org.lwjgl.opengl.GL11;
 
 public class WTextField extends Widget {
+
     public GuiTextField textField;
     public String tooltip = null;
 

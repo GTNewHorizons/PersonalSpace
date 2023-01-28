@@ -1,18 +1,18 @@
 package me.eigenraven.personalspace.gui;
 
-import codechicken.lib.gui.GuiDraw;
-import cpw.mods.fml.common.registry.GameRegistry;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.IntConsumer;
+
 import me.eigenraven.personalspace.CommonProxy;
 import me.eigenraven.personalspace.Config;
 import me.eigenraven.personalspace.PersonalSpaceMod;
 import me.eigenraven.personalspace.block.PortalTileEntity;
 import me.eigenraven.personalspace.net.Packets;
 import me.eigenraven.personalspace.world.DimensionConfig;
+
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
@@ -22,8 +22,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.gen.FlatLayerInfo;
+
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
+
+import codechicken.lib.gui.GuiDraw;
+import cpw.mods.fml.common.registry.GameRegistry;
 
 public class GuiEditWorld extends GuiScreen {
 
@@ -54,13 +58,12 @@ public class GuiEditWorld extends GuiScreen {
         super();
         this.tile = tile;
         int targetDimId = 0;
-        DimensionConfig currentDimConfig =
-                DimensionConfig.getForDimension(tile.getWorldObj().provider.dimensionId, true);
+        DimensionConfig currentDimConfig = DimensionConfig
+                .getForDimension(tile.getWorldObj().provider.dimensionId, true);
         if (currentDimConfig != null) {
             this.desiredConfig.copyFrom(currentDimConfig, false, true, true);
         } else if (tile.active && tile.targetDimId > 1) {
-            DimensionConfig currentConfig =
-                    CommonProxy.getDimensionConfigObjects(true).get(tile.targetDimId);
+            DimensionConfig currentConfig = CommonProxy.getDimensionConfigObjects(true).get(tile.targetDimId);
             if (currentConfig != null) {
                 this.desiredConfig.copyFrom(currentConfig, false, true, true);
             } else {
@@ -140,15 +143,23 @@ public class GuiEditWorld extends GuiScreen {
         this.ySize += 4;
 
         this.enableNightTime = new WToggleButton(
-                new Rectangle(130, this.ySize, 18, 18), "", false, 0, desiredConfig.isNightTime(), () -> {
-                    desiredConfig.setNightTime(enableNightTime.value);
-                });
+                new Rectangle(130, this.ySize, 18, 18),
+                "",
+                false,
+                0,
+                desiredConfig.isNightTime(),
+                () -> { desiredConfig.setNightTime(enableNightTime.value); });
         this.enableNightTime.noIcon = Icons.SUN;
         this.enableNightTime.yesIcon = Icons.MOON;
         this.enableNightTime.setValue(this.enableNightTime.value);
         this.rootWidget.addChild(this.enableNightTime);
-        this.skyType =
-                new WButton(new Rectangle(150, this.ySize, 18, 18), "?", true, WButton.DEFAULT_COLOR, null, () -> {
+        this.skyType = new WButton(
+                new Rectangle(150, this.ySize, 18, 18),
+                "?",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
                     final int skyTypes = DimensionConfig.SkyType.values().length;
                     int skyType = (desiredConfig.getSkyType().ordinal() + 1) % skyTypes;
                     while (!DimensionConfig.SkyType.fromOrdinal(skyType).isLoaded()) {
@@ -178,8 +189,7 @@ public class GuiEditWorld extends GuiScreen {
         addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.biome"), false));
         this.biome = new WTextField(new Rectangle(0, this.ySize, 142, 18), desiredConfig.getBiomeId());
         this.biomeEditButton = new WButton(new Rectangle(144, 0, 18, 18), "", false, 0, Icons.PENCIL, () -> {
-            this.biomeCycle = (this.biomeEditButton.lastButton == 0)
-                    ? (this.biomeCycle + 1)
+            this.biomeCycle = (this.biomeEditButton.lastButton == 0) ? (this.biomeCycle + 1)
                     : (this.biomeCycle + PersonalSpaceMod.clientAllowedBiomes.size() - 1);
             this.biomeCycle = this.biomeCycle % PersonalSpaceMod.clientAllowedBiomes.size();
             this.biome.textField.setText(PersonalSpaceMod.clientAllowedBiomes.get(this.biomeCycle));
@@ -188,9 +198,12 @@ public class GuiEditWorld extends GuiScreen {
         addWidget(this.biome);
         this.ySize += 4;
         this.generateTrees = new WToggleButton(
-                new Rectangle(0, this.ySize, 18, 18), "", false, 0, desiredConfig.isGeneratingTrees(), () -> {
-                    desiredConfig.setGeneratingTrees(generateTrees.getValue());
-                });
+                new Rectangle(0, this.ySize, 18, 18),
+                "",
+                false,
+                0,
+                desiredConfig.isGeneratingTrees(),
+                () -> { desiredConfig.setGeneratingTrees(generateTrees.getValue()); });
         this.generateTrees.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.trees"), false));
         addWidget(generateTrees);
         this.enableWeather = new WToggleButton(
@@ -199,15 +212,16 @@ public class GuiEditWorld extends GuiScreen {
                 false,
                 0,
                 desiredConfig.isWeatherEnabled(),
-                () -> {
-                    desiredConfig.setWeatherEnabled(enableWeather.getValue());
-                });
+                () -> { desiredConfig.setWeatherEnabled(enableWeather.getValue()); });
         this.enableWeather.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.weather"), false));
         rootWidget.addChild(this.enableWeather);
         this.generateVegetation = new WToggleButton(
-                new Rectangle(0, this.ySize, 18, 18), "", false, 0, desiredConfig.isGeneratingVegetation(), () -> {
-                    desiredConfig.setGeneratingVegetation(generateVegetation.getValue());
-                });
+                new Rectangle(0, this.ySize, 18, 18),
+                "",
+                false,
+                0,
+                desiredConfig.isGeneratingVegetation(),
+                () -> { desiredConfig.setGeneratingVegetation(generateVegetation.getValue()); });
         this.generateVegetation.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.vegetation"), false));
         addWidget(generateVegetation);
         this.enableClouds = new WToggleButton(
@@ -216,9 +230,7 @@ public class GuiEditWorld extends GuiScreen {
                 false,
                 0,
                 desiredConfig.isCloudsEnabled(),
-                () -> {
-                    desiredConfig.setCloudsEnabled(enableClouds.getValue());
-                });
+                () -> { desiredConfig.setCloudsEnabled(enableClouds.getValue()); });
         this.enableClouds.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.clouds"), false));
         rootWidget.addChild(this.enableClouds);
 
@@ -240,15 +252,14 @@ public class GuiEditWorld extends GuiScreen {
                 preset = voidPresetName;
             }
             String finalPreset = preset;
-            presetButtons.add(new WButton(
-                    new Rectangle(px, this.ySize, 24, 18),
-                    Integer.toString(pi),
-                    true,
-                    WButton.DEFAULT_COLOR,
-                    null,
-                    () -> {
-                        this.presetEntry.textField.setText(finalPreset);
-                    }));
+            presetButtons.add(
+                    new WButton(
+                            new Rectangle(px, this.ySize, 24, 18),
+                            Integer.toString(pi),
+                            true,
+                            WButton.DEFAULT_COLOR,
+                            null,
+                            () -> { this.presetEntry.textField.setText(finalPreset); }));
             rootWidget.addChild(presetButtons.get(presetButtons.size() - 1));
             ++pi;
             px += 26;
@@ -262,20 +273,17 @@ public class GuiEditWorld extends GuiScreen {
                 WButton.DEFAULT_COLOR,
                 Icons.CHECKMARK,
                 () -> {
-                    Packets.INSTANCE
-                            .sendChangeWorldSettings(this.tile, desiredConfig)
-                            .sendToServer();
+                    Packets.INSTANCE.sendChangeWorldSettings(this.tile, desiredConfig).sendToServer();
                     Minecraft.getMinecraft().displayGuiScreen(null);
                 });
-        rootWidget.addChild(new WButton(
-                new Rectangle(130, ySize, 128, 20),
-                I18n.format("gui.cancel"),
-                true,
-                WButton.DEFAULT_COLOR,
-                Icons.CROSS,
-                () -> {
-                    Minecraft.getMinecraft().displayGuiScreen(null);
-                }));
+        rootWidget.addChild(
+                new WButton(
+                        new Rectangle(130, ySize, 128, 20),
+                        I18n.format("gui.cancel"),
+                        true,
+                        WButton.DEFAULT_COLOR,
+                        Icons.CROSS,
+                        () -> { Minecraft.getMinecraft().displayGuiScreen(null); }));
         addWidget(save);
 
         this.presetEditor = new Widget();
@@ -363,20 +371,22 @@ public class GuiEditWorld extends GuiScreen {
                 this.desiredConfig.setLayers(this.desiredConfig.getLayersAsString());
                 this.configToPreset();
             };
-            block.addChild(new WButton(
-                    new Rectangle(21, 5, 18, 18),
-                    "",
-                    false,
-                    0,
-                    generationEnabled ? Icons.PLUS : Icons.LOCK,
-                    () -> plusMinus.accept(1)));
-            block.addChild(new WButton(
-                    new Rectangle(40, 5, 18, 18),
-                    "",
-                    false,
-                    0,
-                    generationEnabled ? Icons.MINUS : Icons.LOCK,
-                    () -> plusMinus.accept(-1)));
+            block.addChild(
+                    new WButton(
+                            new Rectangle(21, 5, 18, 18),
+                            "",
+                            false,
+                            0,
+                            generationEnabled ? Icons.PLUS : Icons.LOCK,
+                            () -> plusMinus.accept(1)));
+            block.addChild(
+                    new WButton(
+                            new Rectangle(40, 5, 18, 18),
+                            "",
+                            false,
+                            0,
+                            generationEnabled ? Icons.MINUS : Icons.LOCK,
+                            () -> plusMinus.accept(-1)));
 
             for (Widget child : block.children) {
                 child.enabled = generationEnabled;
@@ -433,9 +443,7 @@ public class GuiEditWorld extends GuiScreen {
         }
         if (!generationEnabled) {
             this.presetEntry.textField.setTextColor(0x909090);
-        } else if (!DimensionConfig.PRESET_VALIDATION_PATTERN
-                .matcher(actualText)
-                .matches()) {
+        } else if (!DimensionConfig.PRESET_VALIDATION_PATTERN.matcher(actualText).matches()) {
             this.presetEntry.textField.setTextColor(0xFF0000);
             this.presetEntry.tooltip = I18n.format("gui.personalWorld.invalidSyntax");
             inputsValid = false;
@@ -452,20 +460,20 @@ public class GuiEditWorld extends GuiScreen {
         this.desiredConfig.setBiomeId(this.biome.textField.getText());
         if (!generationEnabled) {
             this.biome.textField.setTextColor(0x909090);
-        } else if (!this.desiredConfig
-                .getBiomeId()
+        } else if (!this.desiredConfig.getBiomeId()
                 .equalsIgnoreCase(BiomeGenBase.getBiome(this.desiredConfig.getRawBiomeId()).biomeName)) {
-            this.biome.textField.setTextColor(0xFF0000);
-            this.biome.tooltip = I18n.format("gui.personalWorld.invalidSyntax");
-            inputsValid = false;
-        } else if (!DimensionConfig.canUseBiome(this.desiredConfig.getBiomeId(), true)) {
-            this.biome.textField.setTextColor(0xFFFF00);
-            this.biome.tooltip = I18n.format("gui.personalWorld.notAllowed");
-            inputsValid = false;
-        } else {
-            this.biome.textField.setTextColor(0xA0FFA0);
-            this.biome.tooltip = null;
-        }
+                    this.biome.textField.setTextColor(0xFF0000);
+                    this.biome.tooltip = I18n.format("gui.personalWorld.invalidSyntax");
+                    inputsValid = false;
+                } else
+            if (!DimensionConfig.canUseBiome(this.desiredConfig.getBiomeId(), true)) {
+                this.biome.textField.setTextColor(0xFFFF00);
+                this.biome.tooltip = I18n.format("gui.personalWorld.notAllowed");
+                inputsValid = false;
+            } else {
+                this.biome.textField.setTextColor(0xA0FFA0);
+                this.biome.tooltip = null;
+            }
 
         this.save.enabled = inputsValid;
 

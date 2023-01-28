@@ -1,26 +1,32 @@
 package me.eigenraven.personalspace.net;
 
-import codechicken.lib.packet.PacketCustom;
 import java.util.ArrayList;
 import java.util.List;
+
 import me.eigenraven.personalspace.CommonProxy;
 import me.eigenraven.personalspace.Config;
 import me.eigenraven.personalspace.PersonalSpaceMod;
 import me.eigenraven.personalspace.block.PortalTileEntity;
 import me.eigenraven.personalspace.world.DimensionConfig;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.play.INetHandlerPlayClient;
 import net.minecraft.network.play.INetHandlerPlayServer;
 import net.minecraft.tileentity.TileEntity;
 
+import codechicken.lib.packet.PacketCustom;
+
 public enum Packets {
+
     INSTANCE;
 
     public enum PacketIds {
+
         DUMMY,
         UPDATE_WORLDLIST,
         CHANGE_WORLD_SETTINGS;
+
         static final PacketIds[] VALUES = values();
     }
 

@@ -1,9 +1,9 @@
 package me.eigenraven.personalspace.block;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import java.util.ArrayList;
+
 import me.eigenraven.personalspace.PersonalSpaceMod;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.ITileEntityProvider;
 import net.minecraft.block.material.Material;
@@ -20,7 +20,11 @@ import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
 public class PortalBlock extends Block implements ITileEntityProvider {
+
     public PortalBlock(boolean isMigration) {
         super(Material.rock);
         this.setBlockName(isMigration ? "personalSpacePortalLegacy" : "personalSpacePortal");
@@ -45,13 +49,13 @@ public class PortalBlock extends Block implements ITileEntityProvider {
     @SideOnly(Side.CLIENT)
     public IIcon getIcon(int side, int _meta) {
         switch (side) {
-                // top
+            // top
             case 1:
                 return Blocks.portal.getIcon(0, 0);
-                // bottom
+            // bottom
             case 0:
                 return Blocks.enchanting_table.getIcon(side, 0);
-                // sides
+            // sides
             default:
                 return Blocks.obsidian.getIcon(side, 0);
         }
@@ -63,8 +67,8 @@ public class PortalBlock extends Block implements ITileEntityProvider {
     }
 
     @Override
-    public boolean onBlockActivated(
-            World world, int x, int y, int z, EntityPlayer player, int side, float hitX, float hitY, float hitZ) {
+    public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int side, float hitX,
+            float hitY, float hitZ) {
         if (world.isRemote) {
             PersonalSpaceMod.proxy.openPortalGui(world, x, y, z);
             return true;

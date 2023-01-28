@@ -3,13 +3,14 @@ package me.eigenraven.personalspace.gui;
 import java.awt.*;
 
 public class WToggleButton extends WButton {
+
     protected boolean value = true;
 
     public Icons yesIcon = Icons.CHECKMARK;
     public Icons noIcon = Icons.CROSS;
 
-    public WToggleButton(
-            Rectangle position, String text, boolean dropShadow, int color, boolean value, Runnable onClick) {
+    public WToggleButton(Rectangle position, String text, boolean dropShadow, int color, boolean value,
+            Runnable onClick) {
         super(position, text, dropShadow, color, Icons.CHECKMARK, onClick);
         setValue(value);
     }

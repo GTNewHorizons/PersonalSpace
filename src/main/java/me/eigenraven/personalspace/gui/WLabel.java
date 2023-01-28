@@ -1,11 +1,14 @@
 package me.eigenraven.personalspace.gui;
 
 import javax.annotation.Nonnull;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+
 import org.lwjgl.opengl.GL11;
 
 public class WLabel extends Widget {
+
     @Nonnull
     String text = "";
 

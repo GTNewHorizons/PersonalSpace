@@ -1,9 +1,5 @@
 package me.eigenraven.personalspace.world;
 
-import codechicken.lib.data.MCDataInput;
-import codechicken.lib.data.MCDataOutput;
-import com.google.common.collect.Lists;
-import cpw.mods.fml.common.registry.GameRegistry;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -12,9 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
+
 import me.eigenraven.personalspace.CommonProxy;
 import me.eigenraven.personalspace.Config;
 import me.eigenraven.personalspace.PersonalSpaceMod;
+
 import net.minecraft.block.Block;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.StatCollector;
@@ -23,7 +21,14 @@ import net.minecraft.world.gen.FlatLayerInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
+
 import org.apache.commons.lang3.tuple.MutablePair;
+
+import codechicken.lib.data.MCDataInput;
+import codechicken.lib.data.MCDataOutput;
+
+import com.google.common.collect.Lists;
+import cpw.mods.fml.common.registry.GameRegistry;
 
 /**
  * Current world generation settings for a given dimension
@@ -31,11 +36,11 @@ import org.apache.commons.lang3.tuple.MutablePair;
 public class DimensionConfig {
 
     public enum SkyType {
+
         VANILLA(null, null),
-        BARNADA_C(
-                "galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.SkyProviderBarnardaC",
-                "galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.CloudProviderBarnardaC"),
-        ;
+        BARNADA_C("galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.SkyProviderBarnardaC",
+                "galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.CloudProviderBarnardaC"),;
+
         public final String skyProvider, cloudProvider;
         private Boolean isLoaded = null;
 
@@ -110,10 +115,9 @@ public class DimensionConfig {
 
     public static final String PRESET_UW_VOID = "";
     public static final String PRESET_UW_GARDEN = "minecraft:bedrock;minecraft:dirt*3;minecraft:grass";
-    public static final String PRESET_UW_MINING =
-            "minecraft:bedrock*4;minecraft:stone*58;minecraft:dirt;minecraft:grass";
-    public static final Pattern PRESET_VALIDATION_PATTERN =
-            Pattern.compile("^([^:\\*;]+:[^:\\*;]+(\\*\\d+)?;)*([^:\\*;]+:[^:\\*;]+(\\*\\d+)?)?$");
+    public static final String PRESET_UW_MINING = "minecraft:bedrock*4;minecraft:stone*58;minecraft:dirt;minecraft:grass";
+    public static final Pattern PRESET_VALIDATION_PATTERN = Pattern
+            .compile("^([^:\\*;]+:[^:\\*;]+(\\*\\d+)?;)*([^:\\*;]+:[^:\\*;]+(\\*\\d+)?)?$");
 
     public DimensionConfig() {}
 
@@ -260,8 +264,8 @@ public class DimensionConfig {
         return cfg;
     }
 
-    public boolean copyFrom(
-            DimensionConfig source, boolean copySaveInfo, boolean copyVisualInfo, boolean copyGenerationInfo) {
+    public boolean copyFrom(DimensionConfig source, boolean copySaveInfo, boolean copyVisualInfo,
+            boolean copyGenerationInfo) {
         this.needsSaving = false;
         if (copySaveInfo) {
             this.saveDirOverride = source.saveDirOverride;
@@ -298,8 +302,8 @@ public class DimensionConfig {
                     lookupField.setAccessible(true);
                     Map<Integer, ?> lookup = (Map<Integer, ?>) lookupField.get(null);
                     if (lookup.remove(Integer.valueOf(dimId)) != null) {
-                        PersonalSpaceMod.LOG.info(
-                                "Removed bad thermos environment lookup entry for dimension {}", dimId);
+                        PersonalSpaceMod.LOG
+                                .info("Removed bad thermos environment lookup entry for dimension {}", dimId);
                     }
                 } catch (Exception e) {
                     PersonalSpaceMod.LOG.error("Couldn't adjust thermos environment lookup table", e);
@@ -307,8 +311,8 @@ public class DimensionConfig {
             }
             DimensionManager.registerDimension(dimId, dimId);
             if (Config.debugLogging) {
-                PersonalSpaceMod.LOG.info(
-                        "DimensionConfig registered for dim {}, client {}", dimId, isClient, new Throwable());
+                PersonalSpaceMod.LOG
+                        .info("DimensionConfig registered for dim {}, client {}", dimId, isClient, new Throwable());
             }
         }
         synchronized (CommonProxy.getDimensionConfigObjects(isClient)) {
@@ -350,8 +354,7 @@ public class DimensionConfig {
     }
 
     public String getSaveDir(int dimId) {
-        return (saveDirOverride != null && saveDirOverride.length() > 0)
-                ? saveDirOverride
+        return (saveDirOverride != null && saveDirOverride.length() > 0) ? saveDirOverride
                 : String.format("PERSONAL_DIM_%d", dimId);
     }
 
@@ -575,10 +578,8 @@ public class DimensionConfig {
             return false;
         }
         for (FlatLayerInfo info : infos) {
-            String block =
-                    GameRegistry.findUniqueIdentifierFor(info.func_151536_b()).toString();
-            if (!(onClient
-                    ? PersonalSpaceMod.clientAllowedBlocks.contains(block)
+            String block = GameRegistry.findUniqueIdentifierFor(info.func_151536_b()).toString();
+            if (!(onClient ? PersonalSpaceMod.clientAllowedBlocks.contains(block)
                     : Config.allowedBlocks.contains(block))) {
                 return false;
             }
@@ -590,8 +591,7 @@ public class DimensionConfig {
         if (biome.equalsIgnoreCase("Plains")) {
             return true;
         }
-        return onClient
-                ? PersonalSpaceMod.clientAllowedBiomes.contains(biome.toLowerCase())
+        return onClient ? PersonalSpaceMod.clientAllowedBiomes.contains(biome.toLowerCase())
                 : Config.allowedBiomes.contains(biome.toLowerCase());
     }
 
@@ -604,7 +604,8 @@ public class DimensionConfig {
 
     /**
      * @param name Original UW save folder name
-     * @return Dimension config generating a UW-compatible world, and the dimension ID of the original world; or null if it's not a UW world
+     * @return Dimension config generating a UW-compatible world, and the dimension ID of the original world; or null if
+     *         it's not a UW world
      */
     public static MutablePair<DimensionConfig, Integer> fromUtilityWorldsWorld(String name) {
         boolean isMining = name.startsWith("UW_MINING_");

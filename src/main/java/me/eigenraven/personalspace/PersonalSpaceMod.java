@@ -1,10 +1,37 @@
 package me.eigenraven.personalspace;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
+
+import me.eigenraven.personalspace.block.PortalBlock;
+import me.eigenraven.personalspace.block.PortalEntityItem;
+import me.eigenraven.personalspace.block.PortalItem;
+import me.eigenraven.personalspace.block.PortalTileEntity;
+import me.eigenraven.personalspace.net.Packets;
+import me.eigenraven.personalspace.world.DimensionConfig;
+import me.eigenraven.personalspace.world.PersonalWorldProvider;
+
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.NetHandlerPlayServer;
+import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.WorldEvent;
+
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import appeng.api.AEApi;
 import appeng.api.IAppEngApi;
 import appeng.api.features.IWorldGen;
 import codechicken.lib.packet.PacketCustom;
+
 import com.google.common.collect.Lists;
+
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.common.Loader;
@@ -30,27 +57,6 @@ import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
-import me.eigenraven.personalspace.block.PortalBlock;
-import me.eigenraven.personalspace.block.PortalEntityItem;
-import me.eigenraven.personalspace.block.PortalItem;
-import me.eigenraven.personalspace.block.PortalTileEntity;
-import me.eigenraven.personalspace.net.Packets;
-import me.eigenraven.personalspace.world.DimensionConfig;
-import me.eigenraven.personalspace.world.PersonalWorldProvider;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.network.NetHandlerPlayServer;
-import net.minecraftforge.common.DimensionManager;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.world.WorldEvent;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 @Mod(
         modid = "personalspace",
@@ -85,8 +91,8 @@ public class PersonalSpaceMod {
                     "Personal space mod cannot be loaded in the same instance with utilityworlds mod, because it replaces its functionality");
         }
         if (event.getSide().isClient()) {
-            PacketCustom.assignHandler(
-                    CHANNEL, (PacketCustom.IClientPacketHandler) Packets.INSTANCE::handleClientPacket);
+            PacketCustom
+                    .assignHandler(CHANNEL, (PacketCustom.IClientPacketHandler) Packets.INSTANCE::handleClientPacket);
         }
         PacketCustom.assignHandler(CHANNEL, (PacketCustom.IServerPacketHandler) Packets.INSTANCE::handleServerPacket);
         NetworkRegistry.INSTANCE.newEventDrivenChannel(CHANNEL + "_event").register(this);
@@ -100,7 +106,9 @@ public class PersonalSpaceMod {
         GameRegistry.registerBlock(BP_MIGRATION_3, PortalItem.class, "personalPortal_migration3");
         GameRegistry.registerBlock(BP_MIGRATION_4, PortalItem.class, "personalPortal_migration4");
         GameRegistry.registerTileEntityWithAlternatives(
-                PortalTileEntity.class, "personalspace:personalPortal", "uw_portal_te");
+                PortalTileEntity.class,
+                "personalspace:personalPortal",
+                "uw_portal_te");
         EntityRegistry.registerModEntity(PortalEntityItem.class, "PortalItem", 1, this, 64, 20, true);
     }
 
@@ -121,8 +129,7 @@ public class PersonalSpaceMod {
         if (aeApi == null) {
             return;
         }
-        aeApi.registries()
-                .worldgen()
+        aeApi.registries().worldgen()
                 .disableWorldGenForProviderID(IWorldGen.WorldGenType.Meteorites, PersonalWorldProvider.class);
     }
 
@@ -297,8 +304,8 @@ public class PersonalSpaceMod {
         }
         if (Loader.isModLoaded(NATURA_MODID)) {
             NBTTagCompound naturaImc = new NBTTagCompound();
-            naturaImc.setIntArray(NATURA_IMC_DIMS, new int[] {dimId});
-            naturaImc.setIntArray(NATURA_IMC_SETS, new int[] {naturaConfigForDim(config)});
+            naturaImc.setIntArray(NATURA_IMC_DIMS, new int[] { dimId });
+            naturaImc.setIntArray(NATURA_IMC_SETS, new int[] { naturaConfigForDim(config) });
             FMLInterModComms.sendRuntimeMessage(this, NATURA_MODID, NATURA_IMC, naturaImc);
         }
     }

@@ -1,5 +1,10 @@
 package me.eigenraven.personalspace;
 
+import me.eigenraven.personalspace.block.PortalTileEntity;
+import me.eigenraven.personalspace.world.DimensionConfig;
+
+import net.minecraft.world.World;
+
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
@@ -9,9 +14,6 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import me.eigenraven.personalspace.block.PortalTileEntity;
-import me.eigenraven.personalspace.world.DimensionConfig;
-import net.minecraft.world.World;
 
 public class CommonProxy {
 

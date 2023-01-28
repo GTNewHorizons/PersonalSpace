@@ -3,6 +3,7 @@ package me.eigenraven.personalspace.gui;
 import java.awt.*;
 
 public class WRectangle extends Widget {
+
     public Icons icon9 = null;
     public float r = 1, g = 1, b = 1, a = 1;
 

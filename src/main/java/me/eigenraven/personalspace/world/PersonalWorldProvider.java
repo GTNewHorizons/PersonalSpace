@@ -1,12 +1,11 @@
 package me.eigenraven.personalspace.world;
 
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import java.util.Arrays;
+
 import me.eigenraven.personalspace.CommonProxy;
 import me.eigenraven.personalspace.Config;
 import me.eigenraven.personalspace.PersonalSpaceMod;
+
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.util.Vec3;
@@ -17,10 +16,15 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraftforge.client.IRenderHandler;
 
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
 /**
  * Based on WorldProviderEnd
  */
 public class PersonalWorldProvider extends WorldProvider {
+
     DimensionConfig config;
     DimensionConfig.SkyType lastSkyType = null;
 
@@ -36,8 +40,7 @@ public class PersonalWorldProvider extends WorldProvider {
 
     public DimensionConfig getConfig() {
         if (this.config == null) {
-            boolean isClient = (this.worldObj != null)
-                    ? this.worldObj.isRemote
+            boolean isClient = (this.worldObj != null) ? this.worldObj.isRemote
                     : FMLCommonHandler.instance().getEffectiveSide().isClient();
             if (Config.debugLogging) {
                 PersonalSpaceMod.LOG.info(
@@ -52,10 +55,8 @@ public class PersonalWorldProvider extends WorldProvider {
                         "PersonalSpace couldn't find dimension config for dimension {}, detected side: {}\nknown client dimension IDs: {}\nknown server dimension IDs: {}\n",
                         this.dimensionId,
                         isClient ? "CLIENT" : "SERVER",
-                        Arrays.toString(
-                                CommonProxy.getDimensionConfigObjects(true).keys()),
-                        Arrays.toString(
-                                CommonProxy.getDimensionConfigObjects(false).keys()),
+                        Arrays.toString(CommonProxy.getDimensionConfigObjects(true).keys()),
+                        Arrays.toString(CommonProxy.getDimensionConfigObjects(false).keys()),
                         new Throwable());
             }
         }

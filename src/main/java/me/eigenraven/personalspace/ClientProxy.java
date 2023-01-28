@@ -1,5 +1,17 @@
 package me.eigenraven.personalspace;
 
+import me.eigenraven.personalspace.block.PortalTileEntity;
+import me.eigenraven.personalspace.block.RenderPortal;
+import me.eigenraven.personalspace.gui.GuiEditWorld;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.resources.I18n;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.world.World;
+
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
@@ -9,16 +21,6 @@ import cpw.mods.fml.common.event.FMLServerStartedEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
-import me.eigenraven.personalspace.block.PortalTileEntity;
-import me.eigenraven.personalspace.block.RenderPortal;
-import me.eigenraven.personalspace.gui.GuiEditWorld;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.EntityClientPlayerMP;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.world.World;
 
 public class ClientProxy extends CommonProxy {
 

@@ -2,13 +2,17 @@ package me.eigenraven.personalspace.gui;
 
 import java.awt.*;
 import java.util.function.DoubleConsumer;
+
 import javax.annotation.Nonnull;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.MathHelper;
+
 import org.lwjgl.opengl.GL11;
 
 public class WSlider extends Widget {
+
     @Nonnull
     String text = "";
 
@@ -24,17 +28,8 @@ public class WSlider extends Widget {
 
     public WSlider() {}
 
-    public WSlider(
-            Rectangle position,
-            String text,
-            double min,
-            double max,
-            double val,
-            double step,
-            boolean dropShadow,
-            int color,
-            Icons buttonIcon,
-            DoubleConsumer onChange) {
+    public WSlider(Rectangle position, String text, double min, double max, double val, double step, boolean dropShadow,
+            int color, Icons buttonIcon, DoubleConsumer onChange) {
         this.position = position;
         this.dropShadow = dropShadow;
         this.color = color;

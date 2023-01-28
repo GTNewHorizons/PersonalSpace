@@ -1,6 +1,7 @@
 package me.eigenraven.personalspace.world;
 
 import me.eigenraven.personalspace.block.PortalTileEntity;
+
 import net.minecraft.entity.Entity;
 import net.minecraft.world.Teleporter;
 import net.minecraft.world.WorldServer;
@@ -31,8 +32,8 @@ public class PersonalTeleporter extends Teleporter {
     }
 
     @Override
-    public boolean placeInExistingPortal(
-            Entity entity, double entityPosX, double entityPosY, double entityPosZ, float yaw) {
+    public boolean placeInExistingPortal(Entity entity, double entityPosX, double entityPosY, double entityPosZ,
+            float yaw) {
         if (sourceTeleporter != null) {
 
             double dX = sourceTeleporter.targetPosX - sourceTeleporter.getTargetTeleportX();

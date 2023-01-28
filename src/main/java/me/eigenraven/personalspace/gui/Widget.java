@@ -1,8 +1,8 @@
 package me.eigenraven.personalspace.gui;
 
-import com.google.common.collect.Lists;
 import java.awt.*;
 import java.util.ArrayList;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.gui.FontRenderer;
@@ -10,10 +10,14 @@ import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.util.ResourceLocation;
+
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
+import com.google.common.collect.Lists;
+
 public class Widget {
+
     public Rectangle position = new Rectangle(0, 0, 1, 1);
     public boolean visible = true, enabled = true;
     public ArrayList<Widget> children = Lists.newArrayList();
@@ -135,13 +139,12 @@ public class Widget {
     }
 
     public final void clickSound() {
-        Minecraft.getMinecraft()
-                .getSoundHandler()
+        Minecraft.getMinecraft().getSoundHandler()
                 .playSound(PositionedSoundRecord.func_147674_a(new ResourceLocation("gui.button.press"), 1.0F));
     }
 
-    public static void drawGradientRect(
-            int xLeft, int yTop, int xRight, int yBottom, int topRGBA, int bottomRGBA, int zLevel) {
+    public static void drawGradientRect(int xLeft, int yTop, int xRight, int yBottom, int topRGBA, int bottomRGBA,
+            int zLevel) {
         float topA = (float) (topRGBA >> 24 & 255) / 255.0F;
         float topR = (float) (topRGBA >> 16 & 255) / 255.0F;
         float topG = (float) (topRGBA >> 8 & 255) / 255.0F;
@@ -204,11 +207,23 @@ public class Widget {
             final int color1 = 0xf0100010;
             drawGradientRect(drawX - 3, drawY - 4, drawX + width + 3, drawY - 3, color1, color1, zLevel);
             drawGradientRect(
-                    drawX - 3, drawY + height + 3, drawX + width + 3, drawY + height + 4, color1, color1, zLevel);
+                    drawX - 3,
+                    drawY + height + 3,
+                    drawX + width + 3,
+                    drawY + height + 4,
+                    color1,
+                    color1,
+                    zLevel);
             drawGradientRect(drawX - 3, drawY - 3, drawX + width + 3, drawY + height + 3, color1, color1, zLevel);
             drawGradientRect(drawX - 4, drawY - 3, drawX - 3, drawY + height + 3, color1, color1, zLevel);
             drawGradientRect(
-                    drawX + width + 3, drawY - 3, drawX + width + 4, drawY + height + 3, color1, color1, zLevel);
+                    drawX + width + 3,
+                    drawY - 3,
+                    drawX + width + 4,
+                    drawY + height + 3,
+                    color1,
+                    color1,
+                    zLevel);
             final int color2 = 0x505000ff;
             final int color3 = (color2 & 0xfefefe) >> 1 | color2 & 0xff000000;
             drawGradientRect(drawX - 3, drawY - 3 + 1, drawX - 3 + 1, drawY + height + 3 - 1, color2, color3, zLevel);
@@ -222,7 +237,13 @@ public class Widget {
                     zLevel);
             drawGradientRect(drawX - 3, drawY - 3, drawX + width + 3, drawY - 3 + 1, color2, color2, zLevel);
             drawGradientRect(
-                    drawX - 3, drawY + height + 2, drawX + width + 3, drawY + height + 3, color3, color3, zLevel);
+                    drawX - 3,
+                    drawY + height + 2,
+                    drawX + width + 3,
+                    drawY + height + 3,
+                    color3,
+                    color3,
+                    zLevel);
 
             for (int i = 0; i < msgLines.length; ++i) {
                 String var14 = msgLines[i];

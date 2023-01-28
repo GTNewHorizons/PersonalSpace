@@ -5,6 +5,7 @@ import me.eigenraven.personalspace.net.Packets;
 import me.eigenraven.personalspace.world.DimensionConfig;
 import me.eigenraven.personalspace.world.PersonalTeleporter;
 import me.eigenraven.personalspace.world.PersonalWorldProvider;
+
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
@@ -17,6 +18,7 @@ import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.ForgeDirection;
 
 public class PortalTileEntity extends TileEntity {
+
     public static final ForgeDirection DEFAULT_FACING = ForgeDirection.NORTH;
 
     public boolean active = false;
@@ -121,7 +123,7 @@ public class PortalTileEntity extends TileEntity {
     public void writeToNBT(NBTTagCompound tag) {
         super.writeToNBT(tag);
         tag.setBoolean("active", this.active);
-        tag.setIntArray("target", new int[] {this.targetDimId, this.targetPosX, this.targetPosY, this.targetPosZ});
+        tag.setIntArray("target", new int[] { this.targetDimId, this.targetPosX, this.targetPosY, this.targetPosZ });
         tag.setInteger("facing", this.facing.ordinal());
         tag.setInteger("targetFacing", this.targetFacing.ordinal());
     }
@@ -180,8 +182,7 @@ public class PortalTileEntity extends TileEntity {
             return;
         }
         int otherX = targetPosX, otherY = targetPosY, otherZ = targetPosZ;
-        searchloop:
-        for (otherX = targetPosX - 1; otherX <= targetPosX + 1; otherX++) {
+        searchloop: for (otherX = targetPosX - 1; otherX <= targetPosX + 1; otherX++) {
             for (otherY = targetPosY - 1; otherY <= targetPosY + 1; otherY++) {
                 if (otherY < 0 || otherY > otherWorld.getHeight()) continue;
                 for (otherZ = targetPosZ - 1; otherZ <= targetPosZ + 1; otherZ++) {

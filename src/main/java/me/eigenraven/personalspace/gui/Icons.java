@@ -10,10 +10,12 @@ import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
 public enum Icons {
+
     // 9-patch rectangles
     GUI_BG(0, 0, 24, 24),
     BUTTON_NORMAL(24, 0, 15, 15),
@@ -40,6 +42,7 @@ public enum Icons {
     MOON(80, 32, 16, 16),
     SUN(96, 32, 16, 16),
     ALL(0, 0, 256, 256);
+
     public static final double TEXTURE_DIM = 256;
     public static final String TEXTURE_PATH = "personalspace:textures/widgets.png";
     public static final ResourceLocation TEXTURE_LOC = new ResourceLocation(TEXTURE_PATH);

@@ -4,42 +4,24 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.stream.Collectors;
+
 import me.eigenraven.personalspace.world.DimensionConfig;
+
 import net.minecraftforge.common.config.Configuration;
 
 public class Config {
 
     private static class Defaults {
-        public static final String[] defaultPresets = new String[] {
-            DimensionConfig.PRESET_UW_VOID, DimensionConfig.PRESET_UW_GARDEN, DimensionConfig.PRESET_UW_MINING,
-        };
 
-        public static final String[] allowedBlocks = new String[] {
-            "minecraft:air",
-            "minecraft:bedrock",
-            "minecraft:stone",
-            "minecraft:cobblestone",
-            "minecraft:dirt",
-            "minecraft:grass",
-            "minecraft:double_stone_slab",
-            "minecraft:netherrack"
-        };
+        public static final String[] defaultPresets = new String[] { DimensionConfig.PRESET_UW_VOID,
+                DimensionConfig.PRESET_UW_GARDEN, DimensionConfig.PRESET_UW_MINING, };
 
-        public static final String[] allowedBiomes = new String[] {
-            "Plains",
-            "Ocean",
-            "Desert",
-            "Extreme Hills",
-            "Forest",
-            "Taiga",
-            "Swampland",
-            "River",
-            "MushroomIsland",
-            "Swampland",
-            "Jungle",
-            "Savanna",
-            "Mesa"
-        };
+        public static final String[] allowedBlocks = new String[] { "minecraft:air", "minecraft:bedrock",
+                "minecraft:stone", "minecraft:cobblestone", "minecraft:dirt", "minecraft:grass",
+                "minecraft:double_stone_slab", "minecraft:netherrack" };
+
+        public static final String[] allowedBiomes = new String[] { "Plains", "Ocean", "Desert", "Extreme Hills",
+                "Forest", "Taiga", "Swampland", "River", "MushroomIsland", "Swampland", "Jungle", "Savanna", "Mesa" };
 
         public static final int firstDimensionId = 180;
 
@@ -47,6 +29,7 @@ public class Config {
     }
 
     private static class Categories {
+
         public static final String general = "general";
     }
 
@@ -74,13 +57,14 @@ public class Config {
                                 Defaults.allowedBlocks,
                                 "List of blocks allowed in the user-specified presets, keep in mind these are used in world generation, so will be available in infinite quantities for the player.")));
 
-        allowedBiomes = Arrays.stream(configuration.getStringList(
-                        Categories.general,
-                        "allowedBiomes",
-                        Defaults.allowedBiomes,
-                        "List of biomes allowed for the personal dimensions."))
-                .map(String::toLowerCase)
-                .collect(Collectors.toCollection(HashSet::new));
+        allowedBiomes = Arrays
+                .stream(
+                        configuration.getStringList(
+                                Categories.general,
+                                "allowedBiomes",
+                                Defaults.allowedBiomes,
+                                "List of biomes allowed for the personal dimensions."))
+                .map(String::toLowerCase).collect(Collectors.toCollection(HashSet::new));
 
         firstDimensionId = configuration.getInt(
                 "firstDimensionId",
@@ -90,8 +74,8 @@ public class Config {
                 Integer.MAX_VALUE,
                 "First dimension ID to use for newly generated worlds");
 
-        debugLogging = configuration.getBoolean(
-                "debugLogging", Categories.general, Defaults.debugLogging, "Debug logging toggle");
+        debugLogging = configuration
+                .getBoolean("debugLogging", Categories.general, Defaults.debugLogging, "Debug logging toggle");
 
         if (configuration.hasChanged()) {
             configuration.save();

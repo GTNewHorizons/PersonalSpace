@@ -1,14 +1,18 @@
 package me.eigenraven.personalspace.gui;
 
 import java.awt.*;
+
 import javax.annotation.Nonnull;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.item.ItemStack;
+
 import org.lwjgl.opengl.GL11;
 
 public class WButton extends Widget {
+
     @Nonnull
     String text = "";
 

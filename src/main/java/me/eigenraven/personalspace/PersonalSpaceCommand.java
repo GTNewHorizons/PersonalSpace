@@ -1,9 +1,11 @@
 package me.eigenraven.personalspace;
 
 import java.util.List;
+
 import me.eigenraven.personalspace.net.Packets;
 import me.eigenraven.personalspace.world.DimensionConfig;
 import me.eigenraven.personalspace.world.PersonalTeleporter;
+
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -55,8 +57,11 @@ public class PersonalSpaceCommand extends CommandBase {
                 throw new WrongUsageException("commands.pspace.usage");
             }
             EntityPlayerMP player = getPlayer(sender, args[1]);
-            sender.addChatMessage(new ChatComponentTranslation(
-                    "commands.pspace.where", sender.getCommandSenderName(), player.worldObj.provider.dimensionId));
+            sender.addChatMessage(
+                    new ChatComponentTranslation(
+                            "commands.pspace.where",
+                            sender.getCommandSenderName(),
+                            player.worldObj.provider.dimensionId));
             return;
         }
         if (args[0].equalsIgnoreCase("tpx")) {
@@ -120,7 +125,7 @@ public class PersonalSpaceCommand extends CommandBase {
             ItemStack itemstack = new ItemStack(PersonalSpaceMod.BLOCK_PORTAL, 1, 0);
             NBTTagCompound tag = new NBTTagCompound();
             tag.setBoolean("active", true);
-            tag.setIntArray("target", new int[] {dim, (int) x, (int) y, (int) z});
+            tag.setIntArray("target", new int[] { dim, (int) x, (int) y, (int) z });
             itemstack.setTagCompound(tag);
             EntityItem entityitem = player.dropPlayerItemWithRandomChoice(itemstack, false);
             entityitem.delayBeforeCanPickup = 0;
@@ -138,8 +143,11 @@ public class PersonalSpaceCommand extends CommandBase {
             }
             cfg.setAllowGenerationChanges(true);
             Packets.INSTANCE.sendWorldList().sendToClients();
-            sender.addChatMessage(new ChatComponentTranslation(
-                    "commands.pspace.allow-worldgen-change", sender.getCommandSenderName(), dim));
+            sender.addChatMessage(
+                    new ChatComponentTranslation(
+                            "commands.pspace.allow-worldgen-change",
+                            sender.getCommandSenderName(),
+                            dim));
             return;
         }
 
@@ -154,7 +162,12 @@ public class PersonalSpaceCommand extends CommandBase {
             case 0:
             case 1:
                 return getListOfStringsMatchingLastWord(
-                        args, "ls", "where", "tpx", "give-portal", "allow-worldgen-change");
+                        args,
+                        "ls",
+                        "where",
+                        "tpx",
+                        "give-portal",
+                        "allow-worldgen-change");
             case 2:
                 return getListOfStringsMatchingLastWord(args, this.getPlayers());
         }
