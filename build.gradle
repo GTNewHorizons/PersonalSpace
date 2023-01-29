@@ -1,4 +1,4 @@
-//version: 1674943145
+//version: 1674988119
 /*
  DO NOT CHANGE THIS FILE!
  Also, you may replace this file at any time if there is an update available.
@@ -66,7 +66,7 @@ plugins {
     id 'com.diffplug.spotless' version '6.7.2' apply false
     id 'com.modrinth.minotaur' version '2.+' apply false
     id 'com.matthewprenger.cursegradle' version '1.4.0' apply false
-    id 'com.gtnewhorizons.retrofuturagradle' version '1.0.16'
+    id 'com.gtnewhorizons.retrofuturagradle' version '1.0.18'
 }
 boolean settingsupdated = verifySettingsGradle()
 settingsupdated = verifyGitAttributes() || settingsupdated
@@ -212,6 +212,25 @@ if (accessTransformersFile) {
     }
     tasks.deobfuscateMergedJarToSrg.accessTransformerFiles.from(targetFile)
     tasks.srgifyBinpatchedJar.accessTransformerFiles.from(targetFile)
+} else {
+    boolean atsFound = false
+    for (File at : sourceSets.getByName("main").resources.files) {
+        if (at.name.toLowerCase().endsWith("_at.cfg")) {
+            atsFound = true
+            tasks.deobfuscateMergedJarToSrg.accessTransformerFiles.from(at)
+            tasks.srgifyBinpatchedJar.accessTransformerFiles.from(at)
+        }
+    }
+    for (File at : sourceSets.getByName("api").resources.files) {
+        if (at.name.toLowerCase().endsWith("_at.cfg")) {
+            atsFound = true
+            tasks.deobfuscateMergedJarToSrg.accessTransformerFiles.from(at)
+            tasks.srgifyBinpatchedJar.accessTransformerFiles.from(at)
+        }
+    }
+    if (atsFound) {
+        logger.warn("Found and added access transformers in the resources folder, please configure gradle.properties to explicitly mention them by name")
+    }
 }
 
 if (usesMixins.toBoolean()) {
@@ -352,6 +371,16 @@ configurations.configureEach {
                 // https://www.curseforge.com/minecraft/mc-mods/industrial-craft/files/2353971
                 project.dependencies.reobfJarConfiguration("curse.maven:ic2-242638:2353971")
             }
+        }
+    }
+}
+
+// Ensure tests have access to minecraft classes
+sourceSets {
+    test {
+        java {
+            compileClasspath += sourceSets.patchedMc.output + sourceSets.mcLauncher.output
+            runtimeClasspath += sourceSets.patchedMc.output + sourceSets.mcLauncher.output
         }
     }
 }
