@@ -218,12 +218,12 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public boolean canBlockFreeze(int x, int y, int z, boolean byWater) {
-        return this.getConfig().isWeatherEnabled() ? super.canBlockFreeze(x, y, z, byWater) : false;
+        return this.getConfig().isWeatherEnabled() && super.canBlockFreeze(x, y, z, byWater);
     }
 
     @Override
     public boolean canSnowAt(int x, int y, int z, boolean checkLight) {
-        return this.getConfig().isWeatherEnabled() ? super.canSnowAt(x, y, z, checkLight) : false;
+        return this.getConfig().isWeatherEnabled() && super.canSnowAt(x, y, z, checkLight);
     }
 
     @Override

@@ -22,6 +22,7 @@ public class WLabel extends Widget {
         this.position.y = y;
     }
 
+    @Nonnull
     public String getText() {
         return text;
     }

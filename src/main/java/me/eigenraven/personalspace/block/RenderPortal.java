@@ -31,9 +31,8 @@ public class RenderPortal extends TileEntitySpecialRenderer {
         this.bindTexture(field_147540_b);
         float pageRightAngle = 0.3F;
         float pageLeftAngle = 0.9F;
-        pageRightAngle = (pageRightAngle - (float) MathHelper.truncateDoubleToInt((double) pageRightAngle)) * 1.6F
-                - 0.3F;
-        pageLeftAngle = (pageLeftAngle - (float) MathHelper.truncateDoubleToInt((double) pageLeftAngle)) * 1.6F - 0.3F;
+        pageRightAngle = (pageRightAngle - (float) MathHelper.truncateDoubleToInt(pageRightAngle)) * 1.6F - 0.3F;
+        pageLeftAngle = (pageLeftAngle - (float) MathHelper.truncateDoubleToInt(pageLeftAngle)) * 1.6F - 0.3F;
         pageRightAngle = MathHelper.clamp_float(pageRightAngle, 0.0F, 1.0F);
         pageLeftAngle = MathHelper.clamp_float(pageLeftAngle, 0.0F, 1.0F);
 

@@ -23,6 +23,7 @@ import net.minecraftforge.common.DimensionManager;
 
 public class PersonalSpaceCommand extends CommandBase {
 
+    @Override
     public String getCommandName() {
         return "pspace";
     }
@@ -30,14 +31,17 @@ public class PersonalSpaceCommand extends CommandBase {
     /**
      * Return the required permission level for this command.
      */
+    @Override
     public int getRequiredPermissionLevel() {
         return 2;
     }
 
+    @Override
     public String getCommandUsage(ICommandSender sender) {
         return "commands.pspace.usage";
     }
 
+    @Override
     public void processCommand(ICommandSender sender, String[] args) {
         if (args.length < 1 || sender == null) {
             throw new WrongUsageException("commands.pspace.usage");
@@ -157,6 +161,7 @@ public class PersonalSpaceCommand extends CommandBase {
     /**
      * Adds the strings available in this command to the given list of tab completion options.
      */
+    @Override
     public List<String> addTabCompletionOptions(ICommandSender sender, String[] args) {
         switch (args.length) {
             case 0:

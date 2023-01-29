@@ -94,7 +94,7 @@ public class DimensionConfig {
         }
 
         public String getButtonTooltip() {
-            return StatCollector.translateToLocal("gui.personalWorld.skyType." + toString());
+            return StatCollector.translateToLocal("gui.personalWorld.skyType." + this);
         }
     }
 
@@ -291,17 +291,18 @@ public class DimensionConfig {
         return modified;
     }
 
+    @SuppressWarnings("unchecked")
     public void registerWithDimensionManager(int dimId, boolean isClient) {
         if (!DimensionManager.isDimensionRegistered(dimId)) {
             DimensionManager.registerProviderType(dimId, PersonalWorldProvider.class, false);
             // Work around bad thermos logic
             if (PersonalSpaceMod.isInThermos()) {
                 try {
-                    Class bukkitWorldEnv = Class.forName("org.bukkit.World$Environment");
+                    Class<?> bukkitWorldEnv = Class.forName("org.bukkit.World$Environment");
                     Field lookupField = bukkitWorldEnv.getDeclaredField("lookup");
                     lookupField.setAccessible(true);
                     Map<Integer, ?> lookup = (Map<Integer, ?>) lookupField.get(null);
-                    if (lookup.remove(Integer.valueOf(dimId)) != null) {
+                    if (lookup.remove(dimId) != null) {
                         PersonalSpaceMod.LOG
                                 .info("Removed bad thermos environment lookup entry for dimension {}", dimId);
                     }
@@ -451,7 +452,7 @@ public class DimensionConfig {
     }
 
     public int getRawBiomeId() {
-        BiomeGenBase biomes[] = BiomeGenBase.getBiomeGenArray();
+        BiomeGenBase[] biomes = BiomeGenBase.getBiomeGenArray();
         for (int i = 0; i < biomes.length; i++) {
             if (biomes[i] != null && biomes[i].biomeName != null && biomes[i].biomeName.equalsIgnoreCase(biomeId)) {
                 return i;

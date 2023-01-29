@@ -1,4 +1,4 @@
-//version: 1674988119
+//version: 1675013090
 /*
  DO NOT CHANGE THIS FILE!
  Also, you may replace this file at any time if there is an update available.
@@ -392,7 +392,7 @@ if (file('addon.gradle').exists()) {
 // Allow unsafe repos but warn
 repositories.configureEach { repo ->
     if (repo instanceof org.gradle.api.artifacts.repositories.UrlArtifactRepository) {
-        if (repo.getUrl().getScheme() == "http" && !repo.allowInsecureProtocol) {
+        if (repo.getUrl() != null && repo.getUrl().getScheme() == "http" && !repo.allowInsecureProtocol) {
             logger.warn("Deprecated: Allowing insecure connections for repo '${repo.name}' - add 'allowInsecureProtocol = true'")
             repo.allowInsecureProtocol = true
         }

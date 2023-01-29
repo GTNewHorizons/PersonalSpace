@@ -25,7 +25,7 @@ import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 public class ClientProxy extends CommonProxy {
 
     // preInit "Run before anything else. Read your config, create blocks, items,
-    // etc, and register them with the GameRegistry."
+    // etc., and register them with the GameRegistry."
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         super.preInit(event);

@@ -148,7 +148,7 @@ public class GuiEditWorld extends GuiScreen {
                 false,
                 0,
                 desiredConfig.isNightTime(),
-                () -> { desiredConfig.setNightTime(enableNightTime.value); });
+                () -> desiredConfig.setNightTime(enableNightTime.value));
         this.enableNightTime.noIcon = Icons.SUN;
         this.enableNightTime.yesIcon = Icons.MOON;
         this.enableNightTime.setValue(this.enableNightTime.value);
@@ -203,7 +203,7 @@ public class GuiEditWorld extends GuiScreen {
                 false,
                 0,
                 desiredConfig.isGeneratingTrees(),
-                () -> { desiredConfig.setGeneratingTrees(generateTrees.getValue()); });
+                () -> desiredConfig.setGeneratingTrees(generateTrees.getValue()));
         this.generateTrees.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.trees"), false));
         addWidget(generateTrees);
         this.enableWeather = new WToggleButton(
@@ -212,7 +212,7 @@ public class GuiEditWorld extends GuiScreen {
                 false,
                 0,
                 desiredConfig.isWeatherEnabled(),
-                () -> { desiredConfig.setWeatherEnabled(enableWeather.getValue()); });
+                () -> desiredConfig.setWeatherEnabled(enableWeather.getValue()));
         this.enableWeather.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.weather"), false));
         rootWidget.addChild(this.enableWeather);
         this.generateVegetation = new WToggleButton(
@@ -221,7 +221,7 @@ public class GuiEditWorld extends GuiScreen {
                 false,
                 0,
                 desiredConfig.isGeneratingVegetation(),
-                () -> { desiredConfig.setGeneratingVegetation(generateVegetation.getValue()); });
+                () -> desiredConfig.setGeneratingVegetation(generateVegetation.getValue()));
         this.generateVegetation.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.vegetation"), false));
         addWidget(generateVegetation);
         this.enableClouds = new WToggleButton(
@@ -230,7 +230,7 @@ public class GuiEditWorld extends GuiScreen {
                 false,
                 0,
                 desiredConfig.isCloudsEnabled(),
-                () -> { desiredConfig.setCloudsEnabled(enableClouds.getValue()); });
+                () -> desiredConfig.setCloudsEnabled(enableClouds.getValue()));
         this.enableClouds.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.clouds"), false));
         rootWidget.addChild(this.enableClouds);
 
@@ -259,7 +259,7 @@ public class GuiEditWorld extends GuiScreen {
                             true,
                             WButton.DEFAULT_COLOR,
                             null,
-                            () -> { this.presetEntry.textField.setText(finalPreset); }));
+                            () -> this.presetEntry.textField.setText(finalPreset)));
             rootWidget.addChild(presetButtons.get(presetButtons.size() - 1));
             ++pi;
             px += 26;
@@ -283,7 +283,7 @@ public class GuiEditWorld extends GuiScreen {
                         true,
                         WButton.DEFAULT_COLOR,
                         Icons.CROSS,
-                        () -> { Minecraft.getMinecraft().displayGuiScreen(null); }));
+                        () -> Minecraft.getMinecraft().displayGuiScreen(null)));
         addWidget(save);
 
         this.presetEditor = new Widget();

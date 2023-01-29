@@ -156,10 +156,10 @@ public class PersonalSpaceMod {
         try {
             deregisterDimensions(false);
             File saveDir = DimensionManager.getCurrentSaveRootDirectory();
-            LOG.info("Searching for PS worlds at {}", saveDir.getPath());
             if (saveDir == null || !saveDir.isDirectory()) {
                 return;
             }
+            LOG.info("Searching for PS worlds at {}", saveDir.getPath());
             for (File dir : Objects.requireNonNull(saveDir.listFiles())) {
                 if (!dir.isDirectory()) {
                     continue;
@@ -247,6 +247,7 @@ public class PersonalSpaceMod {
         return gen;
     }
 
+    @SuppressWarnings("unchecked")
     private static HashMap<Integer, Integer> getThaumcraftDimensionBlacklist() {
         if (Loader.isModLoaded(THAUMCRAFT_MODID)) {
             try {

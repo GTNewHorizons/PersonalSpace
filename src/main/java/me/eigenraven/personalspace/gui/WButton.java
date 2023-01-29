@@ -39,6 +39,7 @@ public class WButton extends Widget {
         setText(text);
     }
 
+    @Nonnull
     public String getText() {
         return text;
     }

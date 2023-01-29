@@ -105,11 +105,10 @@ public enum Packets {
     }
 
     private static void handleWorldList(PacketCustom pkt) {
-        List<String> tmpList = new ArrayList<>();
         int allowedBiomes = pkt.readVarInt();
         // Use tmpList to only atomically swap references after the list is populated
         // to prevent concurrent modification by the network thread
-        tmpList = new ArrayList<>(allowedBiomes);
+        List<String> tmpList = new ArrayList<>(allowedBiomes);
         for (int i = 0; i < allowedBiomes; ++i) {
             tmpList.add(pkt.readString());
         }

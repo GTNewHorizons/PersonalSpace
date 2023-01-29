@@ -54,6 +54,7 @@ public class WSlider extends Widget {
         return MathHelper.clamp_double((rawValue - minValue) / Math.max(maxValue - minValue, 1.0e-6), 0, 1);
     }
 
+    @Nonnull
     public String getText() {
         return text;
     }
@@ -118,6 +119,6 @@ public class WSlider extends Widget {
 
     @Override
     protected boolean mouseClickMoveImpl(int x, int y, int lastBtn, long timeDragged) {
-        return dragged ? mouseMovedOrUpImpl(x, y, lastBtn) : false;
+        return dragged && mouseMovedOrUpImpl(x, y, lastBtn);
     }
 }
