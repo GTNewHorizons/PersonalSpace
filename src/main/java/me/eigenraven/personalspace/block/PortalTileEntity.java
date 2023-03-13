@@ -1,5 +1,6 @@
 package me.eigenraven.personalspace.block;
 
+import me.eigenraven.personalspace.Config;
 import me.eigenraven.personalspace.PersonalSpaceMod;
 import me.eigenraven.personalspace.net.Packets;
 import me.eigenraven.personalspace.world.DimensionConfig;
@@ -15,7 +16,9 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraftforge.event.world.BlockEvent;
 
 public class PortalTileEntity extends TileEntity {
 
@@ -57,20 +60,12 @@ public class PortalTileEntity extends TileEntity {
         if (tag.hasKey("remoteDir")) {
             isLegacy = true;
             byte remoteDir = tag.getByte("remoteDir");
-            switch (remoteDir) {
-                case 0:
-                    this.facing = ForgeDirection.NORTH;
-                    break;
-                case 1:
-                    this.facing = ForgeDirection.EAST;
-                    break;
-                case 3:
-                    this.facing = ForgeDirection.WEST;
-                    break;
-                default:
-                    this.facing = ForgeDirection.SOUTH;
-                    break;
-            }
+            this.facing = switch (remoteDir) {
+                case 0 -> ForgeDirection.NORTH;
+                case 1 -> ForgeDirection.EAST;
+                case 3 -> ForgeDirection.WEST;
+                default -> ForgeDirection.SOUTH;
+            };
         }
         if (tag.hasKey("localDimensionId")) {
             isLegacy = true;
@@ -241,14 +236,55 @@ public class PortalTileEntity extends TileEntity {
     }
 
     public void updateSettings(EntityPlayerMP player, DimensionConfig unsafeConfig) {
-        if (worldObj.isRemote) {
+        if (worldObj.isRemote || player == null) {
             return;
         }
         if (!worldObj.canMineBlock(player, xCoord, yCoord, zCoord)) {
             // permissions check
+            player.addChatMessage(new ChatComponentTranslation("chat.personalWorld.denied"));
+            PersonalSpaceMod.LOG.warn(
+                    "Player {} tried to modify settings for portal block @{},{},{} (dim {}, target dim {}), denied - spawn protection.",
+                    player,
+                    xCoord,
+                    yCoord,
+                    zCoord,
+                    worldObj.provider.dimensionId,
+                    targetDimId);
             return;
         }
+        // Send a fake block break event to test permissions further
+        if (Config.useBlockEventChecks) {
+            BlockEvent.BreakEvent fakeBreakEvent = new BlockEvent.BreakEvent(
+                    xCoord,
+                    yCoord,
+                    zCoord,
+                    worldObj,
+                    PersonalSpaceMod.BLOCK_PORTAL,
+                    0,
+                    player);
+            if (MinecraftForge.EVENT_BUS.post(fakeBreakEvent)) {
+                player.addChatMessage(new ChatComponentTranslation("chat.personalWorld.denied"));
+                PersonalSpaceMod.LOG.warn(
+                        "Player {} tried to modify settings for portal block @{},{},{} (dim {}, target dim {}), denied - block permission.",
+                        player,
+                        xCoord,
+                        yCoord,
+                        zCoord,
+                        worldObj.provider.dimensionId,
+                        targetDimId);
+                return;
+            }
+        }
         if (!DimensionConfig.canUseLayers(unsafeConfig.getLayersAsString(), false)) {
+            player.addChatMessage(new ChatComponentTranslation("chat.personalWorld.badLayers"));
+            PersonalSpaceMod.LOG.warn(
+                    "Player {} tried to modify settings for portal block @{},{},{} (dim {}, target dim {}), denied - using forbidden layers.",
+                    player,
+                    xCoord,
+                    yCoord,
+                    zCoord,
+                    worldObj.provider.dimensionId,
+                    targetDimId);
             return;
         }
         if (!DimensionConfig.canUseBiome(unsafeConfig.getBiomeId(), false)) {

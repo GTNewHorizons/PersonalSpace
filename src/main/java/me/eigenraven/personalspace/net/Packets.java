@@ -36,13 +36,10 @@ public enum Packets {
             return;
         }
         switch (PacketIds.VALUES[id]) {
-            case UPDATE_WORLDLIST: {
+            case UPDATE_WORLDLIST -> {
                 handleWorldList(packetCustom);
-                break;
             }
-            case CHANGE_WORLD_SETTINGS: {
-                break;
-            }
+            case CHANGE_WORLD_SETTINGS -> {}
         }
     }
 
@@ -52,10 +49,8 @@ public enum Packets {
             return;
         }
         switch (PacketIds.VALUES[id]) {
-            case UPDATE_WORLDLIST: {
-                break;
-            }
-            case CHANGE_WORLD_SETTINGS: {
+            case UPDATE_WORLDLIST -> {}
+            case CHANGE_WORLD_SETTINGS -> {
                 int dim = pkt.readVarInt();
                 int x = pkt.readVarInt();
                 int y = pkt.readVarInt();
@@ -67,7 +62,6 @@ public enum Packets {
                         ((PortalTileEntity) te).updateSettings(sender, desired);
                     }
                 }
-                break;
             }
         }
     }

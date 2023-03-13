@@ -163,20 +163,17 @@ public class PersonalSpaceCommand extends CommandBase {
      */
     @Override
     public List<String> addTabCompletionOptions(ICommandSender sender, String[] args) {
-        switch (args.length) {
-            case 0:
-            case 1:
-                return getListOfStringsMatchingLastWord(
-                        args,
-                        "ls",
-                        "where",
-                        "tpx",
-                        "give-portal",
-                        "allow-worldgen-change");
-            case 2:
-                return getListOfStringsMatchingLastWord(args, this.getPlayers());
-        }
-        return null;
+        return switch (args.length) {
+            case 0, 1 -> getListOfStringsMatchingLastWord(
+                    args,
+                    "ls",
+                    "where",
+                    "tpx",
+                    "give-portal",
+                    "allow-worldgen-change");
+            case 2 -> getListOfStringsMatchingLastWord(args, this.getPlayers());
+            default -> null;
+        };
     }
 
     protected String[] getPlayers() {

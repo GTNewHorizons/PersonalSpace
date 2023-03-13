@@ -73,10 +73,9 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void openPortalGui(World world, int x, int y, int z) {
         TileEntity wte = world.getTileEntity(x, y, z);
-        if (!(wte instanceof PortalTileEntity)) {
+        if (!(wte instanceof PortalTileEntity te)) {
             return;
         }
-        PortalTileEntity te = (PortalTileEntity) wte;
         EntityClientPlayerMP player = Minecraft.getMinecraft().thePlayer;
         if (!te.active && player.worldObj.provider.dimensionId != 0) {
             player.addChatMessage(new ChatComponentText(I18n.format("chat.overworldPersonalDimension")));
@@ -90,8 +89,7 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void closePortalGui(PortalTileEntity owner) {
         GuiScreen screen = Minecraft.getMinecraft().currentScreen;
-        if (screen instanceof GuiEditWorld) {
-            GuiEditWorld gui = (GuiEditWorld) screen;
+        if (screen instanceof GuiEditWorld gui) {
             if (gui.tile == owner) {
                 Minecraft.getMinecraft().displayGuiScreen(null);
             }

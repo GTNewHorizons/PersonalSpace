@@ -16,10 +16,9 @@ public class RenderPortal extends TileEntitySpecialRenderer {
 
     @Override
     public void renderTileEntityAt(TileEntity tile, double x, double y, double z, float partialTickTime) {
-        if (!(tile instanceof PortalTileEntity)) {
+        if (!(tile instanceof PortalTileEntity portal)) {
             return;
         }
-        PortalTileEntity portal = (PortalTileEntity) tile;
         GL11.glPushMatrix();
         GL11.glTranslatef((float) x + 0.5F, (float) y + 0.75F, (float) z + 0.5F);
         float time = ((float) tile.getWorldObj().getWorldInfo().getWorldTotalTime() + partialTickTime) / 100.0F;

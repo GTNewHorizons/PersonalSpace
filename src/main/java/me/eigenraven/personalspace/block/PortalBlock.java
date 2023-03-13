@@ -48,17 +48,14 @@ public class PortalBlock extends Block implements ITileEntityProvider {
 
     @SideOnly(Side.CLIENT)
     public IIcon getIcon(int side, int _meta) {
-        switch (side) {
+        return switch (side) {
             // top
-            case 1:
-                return Blocks.portal.getIcon(0, 0);
+            case 1 -> Blocks.portal.getIcon(0, 0);
             // bottom
-            case 0:
-                return Blocks.enchanting_table.getIcon(side, 0);
+            case 0 -> Blocks.enchanting_table.getIcon(side, 0);
             // sides
-            default:
-                return Blocks.obsidian.getIcon(side, 0);
-        }
+            default -> Blocks.obsidian.getIcon(side, 0);
+        };
     }
 
     @Override
@@ -74,10 +71,9 @@ public class PortalBlock extends Block implements ITileEntityProvider {
             return true;
         } else {
             TileEntity wte = world.getTileEntity(x, y, z);
-            if (!(wte instanceof PortalTileEntity)) {
+            if (!(wte instanceof PortalTileEntity te)) {
                 return false;
             }
-            PortalTileEntity te = (PortalTileEntity) wte;
             if (te.active && !player.isSneaking() && player instanceof EntityPlayerMP) {
                 te.transport((EntityPlayerMP) player);
                 return true;
@@ -89,10 +85,9 @@ public class PortalBlock extends Block implements ITileEntityProvider {
     @Override
     public void onBlockPlacedBy(World world, int x, int y, int z, EntityLivingBase placer, ItemStack fromItem) {
         TileEntity wte = world.getTileEntity(x, y, z);
-        if (!(wte instanceof PortalTileEntity)) {
+        if (!(wte instanceof PortalTileEntity te)) {
             return;
         }
-        PortalTileEntity te = (PortalTileEntity) wte;
         double dx = placer.posX - (double) x;
         double dz = placer.posZ - (double) z;
         if (Math.abs(dx) > Math.abs(dz)) {
@@ -117,8 +112,7 @@ public class PortalBlock extends Block implements ITileEntityProvider {
     ItemStack getItemStack(World w, int x, int y, int z) {
         ItemStack drop = new ItemStack(PersonalSpaceMod.BLOCK_PORTAL);
         TileEntity wte = w.getTileEntity(x, y, z);
-        if (wte instanceof PortalTileEntity) {
-            PortalTileEntity te = (PortalTileEntity) wte;
+        if (wte instanceof PortalTileEntity te) {
             NBTTagCompound tag = new NBTTagCompound();
             te.writeToNBT(tag);
             tag.removeTag("x");
