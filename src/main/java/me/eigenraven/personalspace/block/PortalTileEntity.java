@@ -57,20 +57,12 @@ public class PortalTileEntity extends TileEntity {
         if (tag.hasKey("remoteDir")) {
             isLegacy = true;
             byte remoteDir = tag.getByte("remoteDir");
-            switch (remoteDir) {
-                case 0:
-                    this.facing = ForgeDirection.NORTH;
-                    break;
-                case 1:
-                    this.facing = ForgeDirection.EAST;
-                    break;
-                case 3:
-                    this.facing = ForgeDirection.WEST;
-                    break;
-                default:
-                    this.facing = ForgeDirection.SOUTH;
-                    break;
-            }
+            this.facing = switch (remoteDir) {
+                case 0 -> ForgeDirection.NORTH;
+                case 1 -> ForgeDirection.EAST;
+                case 3 -> ForgeDirection.WEST;
+                default -> ForgeDirection.SOUTH;
+            };
         }
         if (tag.hasKey("localDimensionId")) {
             isLegacy = true;

@@ -48,17 +48,14 @@ public class PortalBlock extends Block implements ITileEntityProvider {
 
     @SideOnly(Side.CLIENT)
     public IIcon getIcon(int side, int _meta) {
-        switch (side) {
+        return switch (side) {
             // top
-            case 1:
-                return Blocks.portal.getIcon(0, 0);
+            case 1 -> Blocks.portal.getIcon(0, 0);
             // bottom
-            case 0:
-                return Blocks.enchanting_table.getIcon(side, 0);
+            case 0 -> Blocks.enchanting_table.getIcon(side, 0);
             // sides
-            default:
-                return Blocks.obsidian.getIcon(side, 0);
-        }
+            default -> Blocks.obsidian.getIcon(side, 0);
+        };
     }
 
     @Override
