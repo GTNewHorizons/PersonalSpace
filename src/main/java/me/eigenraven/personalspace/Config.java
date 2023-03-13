@@ -26,6 +26,8 @@ public class Config {
         public static final int firstDimensionId = 180;
 
         public static final boolean debugLogging = false;
+
+        public static final boolean useBlockEventChecks = true;
     }
 
     private static class Categories {
@@ -38,6 +40,7 @@ public class Config {
     public static HashSet<String> allowedBiomes = new HashSet<>(Arrays.asList(Defaults.allowedBiomes));
     public static int firstDimensionId = Defaults.firstDimensionId;
     public static boolean debugLogging = Defaults.debugLogging;
+    public static boolean useBlockEventChecks = true;
 
     public static void synchronizeConfiguration(File configFile) {
         Configuration configuration = new Configuration(configFile);
@@ -76,6 +79,12 @@ public class Config {
 
         debugLogging = configuration
                 .getBoolean("debugLogging", Categories.general, Defaults.debugLogging, "Debug logging toggle");
+
+        useBlockEventChecks = configuration.getBoolean(
+                "useBlockEventChecks",
+                Categories.general,
+                Defaults.useBlockEventChecks,
+                "Use fake Block break events to check for permissions, disable in case of broken event handlers");
 
         if (configuration.hasChanged()) {
             configuration.save();

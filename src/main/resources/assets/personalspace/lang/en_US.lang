@@ -8,6 +8,8 @@ chat.personalWorld.updated=Personal dimension successfully updated!
 chat.personalWorld.relinked=Portal successfully relinked in dimension %d
 chat.personalWorld.relinked.error=Portal was not relinked, it would cause losing access to the dimension.
 chat.personalWorld.proximity=Too close to another portal.
+chat.personalWorld.denied=Settings not changed: access denied.
+chat.personalWorld.badLayers=Settings not changed: using forbidden block layers.
 
 gui.personalWorld.voidWorld=Void world
 gui.personalWorld.biome=Biome name
