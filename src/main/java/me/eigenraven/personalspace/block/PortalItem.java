@@ -17,7 +17,7 @@ public class PortalItem extends ItemBlock {
     }
 
     @Override
-    public void addInformation(ItemStack itemStack, EntityPlayer player, List list, boolean displayMoreInfo) {
+    public void addInformation(ItemStack itemStack, EntityPlayer player, List<String> list, boolean displayMoreInfo) {
         if (itemStack.getTagCompound() != null) {
             int[] target = itemStack.getTagCompound().getIntArray("target");
             if (target.length >= 4) {
