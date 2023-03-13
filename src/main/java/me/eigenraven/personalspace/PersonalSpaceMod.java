@@ -210,10 +210,9 @@ public class PersonalSpaceMod {
     @SubscribeEvent
     public void worldSave(WorldEvent.Save event) {
         try {
-            if (!(event.world.provider instanceof PersonalWorldProvider)) {
+            if (!(event.world.provider instanceof PersonalWorldProvider provider)) {
                 return;
             }
-            PersonalWorldProvider provider = (PersonalWorldProvider) event.world.provider;
             DimensionConfig config = provider.getConfig();
             if (config == null || !config.needsSaving()) {
                 return;
@@ -384,10 +383,8 @@ public class PersonalSpaceMod {
 
     @SubscribeEvent
     public void netEventHandler(FMLNetworkEvent.CustomNetworkEvent event) {
-        if (event.wrappedEvent instanceof NetworkHandshakeEstablished) {
-            NetworkHandshakeEstablished hs = (NetworkHandshakeEstablished) event.wrappedEvent;
-            if (hs.netHandler instanceof NetHandlerPlayServer) {
-                NetHandlerPlayServer netHandler = (NetHandlerPlayServer) hs.netHandler;
+        if (event.wrappedEvent instanceof NetworkHandshakeEstablished hs) {
+            if (hs.netHandler instanceof NetHandlerPlayServer netHandler) {
                 PacketCustom pkt = Packets.INSTANCE.sendWorldList();
                 netHandler.sendPacket(pkt.toPacket());
             }
