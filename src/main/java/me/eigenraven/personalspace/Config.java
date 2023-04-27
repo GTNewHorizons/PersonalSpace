@@ -5,9 +5,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
-import me.eigenraven.personalspace.world.DimensionConfig;
-
 import net.minecraftforge.common.config.Configuration;
+
+import me.eigenraven.personalspace.world.DimensionConfig;
 
 public class Config {
 

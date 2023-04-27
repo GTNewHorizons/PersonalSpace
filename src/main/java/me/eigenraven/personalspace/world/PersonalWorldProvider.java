@@ -2,10 +2,6 @@ package me.eigenraven.personalspace.world;
 
 import java.util.Arrays;
 
-import me.eigenraven.personalspace.CommonProxy;
-import me.eigenraven.personalspace.Config;
-import me.eigenraven.personalspace.PersonalSpaceMod;
-
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.util.Vec3;
@@ -19,6 +15,9 @@ import net.minecraftforge.client.IRenderHandler;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import me.eigenraven.personalspace.CommonProxy;
+import me.eigenraven.personalspace.Config;
+import me.eigenraven.personalspace.PersonalSpaceMod;
 
 /**
  * Based on WorldProviderEnd

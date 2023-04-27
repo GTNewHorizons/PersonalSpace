@@ -2,8 +2,6 @@ package me.eigenraven.personalspace.block;
 
 import java.util.ArrayList;
 
-import me.eigenraven.personalspace.PersonalSpaceMod;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.ITileEntityProvider;
 import net.minecraft.block.material.Material;
@@ -22,6 +20,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import me.eigenraven.personalspace.PersonalSpaceMod;
 
 public class PortalBlock extends Block implements ITileEntityProvider {
 

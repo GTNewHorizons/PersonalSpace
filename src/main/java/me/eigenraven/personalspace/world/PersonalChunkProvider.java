@@ -6,9 +6,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
-import me.eigenraven.personalspace.Config;
-import me.eigenraven.personalspace.PersonalSpaceMod;
-
 import net.minecraft.block.Block;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.init.Blocks;
@@ -24,6 +21,9 @@ import net.minecraft.world.gen.feature.WorldGenAbstractTree;
 import net.minecraft.world.gen.feature.WorldGenTrees;
 import net.minecraftforge.event.terraingen.DecorateBiomeEvent;
 import net.minecraftforge.event.terraingen.TerrainGen;
+
+import me.eigenraven.personalspace.Config;
+import me.eigenraven.personalspace.PersonalSpaceMod;
 
 public class PersonalChunkProvider implements IChunkProvider {
 
