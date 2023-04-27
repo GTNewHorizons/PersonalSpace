@@ -1,9 +1,5 @@
 package me.eigenraven.personalspace;
 
-import me.eigenraven.personalspace.block.PortalTileEntity;
-import me.eigenraven.personalspace.block.RenderPortal;
-import me.eigenraven.personalspace.gui.GuiEditWorld;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.gui.GuiScreen;
@@ -21,6 +17,9 @@ import cpw.mods.fml.common.event.FMLServerStartedEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
+import me.eigenraven.personalspace.block.PortalTileEntity;
+import me.eigenraven.personalspace.block.RenderPortal;
+import me.eigenraven.personalspace.gui.GuiEditWorld;
 
 public class ClientProxy extends CommonProxy {
 

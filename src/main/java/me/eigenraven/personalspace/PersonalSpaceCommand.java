@@ -2,10 +2,6 @@ package me.eigenraven.personalspace;
 
 import java.util.List;
 
-import me.eigenraven.personalspace.net.Packets;
-import me.eigenraven.personalspace.world.DimensionConfig;
-import me.eigenraven.personalspace.world.PersonalTeleporter;
-
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -20,6 +16,10 @@ import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
+
+import me.eigenraven.personalspace.net.Packets;
+import me.eigenraven.personalspace.world.DimensionConfig;
+import me.eigenraven.personalspace.world.PersonalTeleporter;
 
 public class PersonalSpaceCommand extends CommandBase {
 

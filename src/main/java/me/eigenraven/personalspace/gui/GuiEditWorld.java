@@ -6,13 +6,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.IntConsumer;
 
-import me.eigenraven.personalspace.CommonProxy;
-import me.eigenraven.personalspace.Config;
-import me.eigenraven.personalspace.PersonalSpaceMod;
-import me.eigenraven.personalspace.block.PortalTileEntity;
-import me.eigenraven.personalspace.net.Packets;
-import me.eigenraven.personalspace.world.DimensionConfig;
-
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
@@ -28,6 +21,12 @@ import org.lwjgl.opengl.GL11;
 
 import codechicken.lib.gui.GuiDraw;
 import cpw.mods.fml.common.registry.GameRegistry;
+import me.eigenraven.personalspace.CommonProxy;
+import me.eigenraven.personalspace.Config;
+import me.eigenraven.personalspace.PersonalSpaceMod;
+import me.eigenraven.personalspace.block.PortalTileEntity;
+import me.eigenraven.personalspace.net.Packets;
+import me.eigenraven.personalspace.world.DimensionConfig;
 
 public class GuiEditWorld extends GuiScreen {
 

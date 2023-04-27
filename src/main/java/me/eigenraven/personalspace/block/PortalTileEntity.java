@@ -1,12 +1,5 @@
 package me.eigenraven.personalspace.block;
 
-import me.eigenraven.personalspace.Config;
-import me.eigenraven.personalspace.PersonalSpaceMod;
-import me.eigenraven.personalspace.net.Packets;
-import me.eigenraven.personalspace.world.DimensionConfig;
-import me.eigenraven.personalspace.world.PersonalTeleporter;
-import me.eigenraven.personalspace.world.PersonalWorldProvider;
-
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
@@ -19,6 +12,13 @@ import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.event.world.BlockEvent;
+
+import me.eigenraven.personalspace.Config;
+import me.eigenraven.personalspace.PersonalSpaceMod;
+import me.eigenraven.personalspace.net.Packets;
+import me.eigenraven.personalspace.world.DimensionConfig;
+import me.eigenraven.personalspace.world.PersonalTeleporter;
+import me.eigenraven.personalspace.world.PersonalWorldProvider;
 
 public class PortalTileEntity extends TileEntity {
 

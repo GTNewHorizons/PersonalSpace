@@ -1,10 +1,10 @@
 package me.eigenraven.personalspace.world;
 
-import me.eigenraven.personalspace.block.PortalTileEntity;
-
 import net.minecraft.entity.Entity;
 import net.minecraft.world.Teleporter;
 import net.minecraft.world.WorldServer;
+
+import me.eigenraven.personalspace.block.PortalTileEntity;
 
 public class PersonalTeleporter extends Teleporter {
 

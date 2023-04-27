@@ -9,10 +9,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
-import me.eigenraven.personalspace.CommonProxy;
-import me.eigenraven.personalspace.Config;
-import me.eigenraven.personalspace.PersonalSpaceMod;
-
 import net.minecraft.block.Block;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.StatCollector;
@@ -24,11 +20,14 @@ import net.minecraftforge.common.config.Property;
 
 import org.apache.commons.lang3.tuple.MutablePair;
 
+import com.google.common.collect.Lists;
+
 import codechicken.lib.data.MCDataInput;
 import codechicken.lib.data.MCDataOutput;
-
-import com.google.common.collect.Lists;
 import cpw.mods.fml.common.registry.GameRegistry;
+import me.eigenraven.personalspace.CommonProxy;
+import me.eigenraven.personalspace.Config;
+import me.eigenraven.personalspace.PersonalSpaceMod;
 
 /**
  * Current world generation settings for a given dimension

@@ -7,14 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
-import me.eigenraven.personalspace.block.PortalBlock;
-import me.eigenraven.personalspace.block.PortalEntityItem;
-import me.eigenraven.personalspace.block.PortalItem;
-import me.eigenraven.personalspace.block.PortalTileEntity;
-import me.eigenraven.personalspace.net.Packets;
-import me.eigenraven.personalspace.world.DimensionConfig;
-import me.eigenraven.personalspace.world.PersonalWorldProvider;
-
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraftforge.common.DimensionManager;
@@ -25,13 +17,12 @@ import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.common.collect.Lists;
+
 import appeng.api.AEApi;
 import appeng.api.IAppEngApi;
 import appeng.api.features.IWorldGen;
 import codechicken.lib.packet.PacketCustom;
-
-import com.google.common.collect.Lists;
-
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.common.Loader;
@@ -57,6 +48,13 @@ import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import me.eigenraven.personalspace.block.PortalBlock;
+import me.eigenraven.personalspace.block.PortalEntityItem;
+import me.eigenraven.personalspace.block.PortalItem;
+import me.eigenraven.personalspace.block.PortalTileEntity;
+import me.eigenraven.personalspace.net.Packets;
+import me.eigenraven.personalspace.world.DimensionConfig;
+import me.eigenraven.personalspace.world.PersonalWorldProvider;
 
 @Mod(
         modid = "personalspace",
@@ -276,7 +274,7 @@ public class PersonalSpaceMod {
                 if (config.isGeneratingTrees()) {
                     tcBlacklist.remove(dimId);
                 } else {
-                    tcBlacklist.put(dimId, 0);
+                    tcBlacklist.put(dimId, 1); // disable vegetation but not aura node functionality
                 }
             }
             return true;
