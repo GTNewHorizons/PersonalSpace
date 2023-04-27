@@ -274,7 +274,7 @@ public class PersonalSpaceMod {
                 if (config.isGeneratingTrees()) {
                     tcBlacklist.remove(dimId);
                 } else {
-                    tcBlacklist.put(dimId, 0);
+                    tcBlacklist.put(dimId, 1); // disable vegetation but not aura node functionality
                 }
             }
             return true;
