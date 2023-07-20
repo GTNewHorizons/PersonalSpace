@@ -139,7 +139,14 @@ public class PortalTileEntity extends TileEntity {
     }
 
     public void transport(EntityPlayerMP player) {
-        if (worldObj.isRemote || !this.active) {
+        if (worldObj.isRemote || !this.active || player == null) {
+            return;
+        }
+        if (!DimensionManager.isDimensionRegistered(this.targetDimId)) {
+            PersonalSpaceMod.LOG.warn(
+                    "Player {} attempted to teleport to dimension {} which is not registered yet",
+                    player.getGameProfile(),
+                    this.targetDimId);
             return;
         }
 
