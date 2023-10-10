@@ -79,6 +79,8 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @SideOnly(Side.CLIENT)
     public Vec3 getFogColor(float sunAngle, float timeSinceLastTick) {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE)
+            return super.getFogColor(sunAngle, timeSinceLastTick);
         int baseColor = this.config.getSkyColor();
 
         float red = (float) (baseColor >> 16 & 255) / 255.0F;
@@ -99,6 +101,8 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public Vec3 getSkyColor(Entity cameraEntity, float partialTicks) {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE)
+            return super.getSkyColor(cameraEntity, partialTicks);
         return getFogColor(0.0f, partialTicks);
     }
 
@@ -155,26 +159,37 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public boolean isDaytime() {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE) return super.isDaytime();
+
         return !this.getConfig().isNightTime();
     }
 
     @Override
     public float getSunBrightnessFactor(float par1) {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE)
+            return super.getSunBrightnessFactor(par1);
+
         return this.getConfig().isNightTime() ? 0.0F : 1.0F;
     }
 
     @Override
     public float getSunBrightness(float par1) {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE) return super.getSunBrightness(par1);
+
         return this.getConfig().isNightTime() ? 0.2F : 1.0F;
     }
 
     @Override
     public float getStarBrightness(float par1) {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE) return super.getStarBrightness(par1);
         return getConfig().getStarBrightness();
     }
 
     @Override
     public float calculateCelestialAngle(long p_76563_1_, float p_76563_3_) {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE)
+            return super.calculateCelestialAngle(p_76563_1_, p_76563_3_);
+
         return this.getConfig().isNightTime() ? 0.5f : 0.0f;
     }
 

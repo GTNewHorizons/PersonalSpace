@@ -97,11 +97,26 @@ public class DimensionConfig {
         }
     }
 
+    public enum DaylightCycle {
+
+        SUN,
+        MOON,
+        CYCLE;
+
+        DaylightCycle() {
+
+        }
+
+        public static DaylightCycle fromOrdinal(int ordinal) {
+            return (ordinal < 0 || ordinal >= values().length) ? DaylightCycle.CYCLE : values()[ordinal];
+        }
+    }
+
     private String saveDirOverride = "";
     private int skyColor = 0xc0d8ff;
     private float starBrightness = 1.0F;
     private boolean weatherEnabled = false;
-    private boolean nightTime = false;
+    private DaylightCycle daylightCycle = DaylightCycle.CYCLE;
     private boolean cloudsEnabled = true;
     private SkyType skyType = SkyType.VANILLA;
     private boolean generatingVegetation = false;
@@ -125,7 +140,7 @@ public class DimensionConfig {
         pkt.writeInt(skyColor);
         pkt.writeFloat(starBrightness);
         pkt.writeVarInt(getRawBiomeId());
-        pkt.writeBoolean(nightTime);
+        pkt.writeVarInt(daylightCycle.ordinal());
         pkt.writeBoolean(cloudsEnabled);
         pkt.writeVarInt(skyType.ordinal());
         pkt.writeBoolean(weatherEnabled);
@@ -145,7 +160,7 @@ public class DimensionConfig {
         this.setSkyColor(pkt.readInt());
         this.setStarBrightness(pkt.readFloat());
         this.setBiomeId(BiomeGenBase.getBiomeGenArray()[pkt.readVarInt()].biomeName);
-        this.setNightTime(pkt.readBoolean());
+        this.setDaylightCycle(DaylightCycle.fromOrdinal(pkt.readVarInt()));
         this.setCloudsEnabled(pkt.readBoolean());
         this.setSkyType(SkyType.fromOrdinal(pkt.readVarInt()));
         this.setWeatherEnabled(pkt.readBoolean());
@@ -198,11 +213,18 @@ public class DimensionConfig {
         } else {
             setWeatherEnabled(cur.getBoolean());
         }
-        cur = cfg.get(VISUAL, "nightTime", nightTime, "");
+        cur = cfg.get(VISUAL, "daylightCycle", daylightCycle.ordinal(), "");
         if (write) {
-            cur.set(nightTime);
+            cur.set(daylightCycle.ordinal());
         } else {
-            setNightTime(cur.getBoolean());
+            setDaylightCycle(DaylightCycle.fromOrdinal(cur.getInt()));
+        }
+        // handle old nightTime config
+        if (!write && cfg.hasKey(VISUAL, "nightTime")) {
+            Boolean isNight = cfg.getCategory(VISUAL).get("nightTime").getBoolean();
+            setDaylightCycle(isNight ? DaylightCycle.MOON : DaylightCycle.SUN);
+            cfg.getCategory(VISUAL).remove("nightTime");
+            needsSaving = true;
         }
         cur = cfg.get(VISUAL, "cloudsEnabled", cloudsEnabled, "");
         if (write) {
@@ -252,8 +274,8 @@ public class DimensionConfig {
         }
         if (write) {
             cfg.save();
+            needsSaving = false;
         }
-        needsSaving = false;
         return dimId;
     }
 
@@ -272,7 +294,7 @@ public class DimensionConfig {
         if (copyVisualInfo) {
             this.setSkyColor(source.getSkyColor());
             this.setStarBrightness(source.getStarBrightness());
-            this.setNightTime(source.isNightTime());
+            this.setDaylightCycle(source.getDaylightCycle());
             this.setCloudsEnabled(source.isCloudsEnabled());
             this.setSkyType(source.getSkyType());
             this.setWeatherEnabled(source.isWeatherEnabled());
@@ -391,15 +413,19 @@ public class DimensionConfig {
         }
     }
 
-    public boolean isNightTime() {
-        return nightTime;
+    public DaylightCycle getDaylightCycle() {
+        return daylightCycle;
     }
 
-    public void setNightTime(boolean nightTime) {
-        if (this.nightTime != nightTime) {
+    public void setDaylightCycle(DaylightCycle cycle) {
+        if (this.daylightCycle != cycle) {
             this.needsSaving = true;
-            this.nightTime = nightTime;
+            this.daylightCycle = cycle;
         }
+    }
+
+    public boolean isNightTime() {
+        return daylightCycle == DaylightCycle.MOON;
     }
 
     public boolean isCloudsEnabled() {

@@ -41,6 +41,7 @@ public enum Icons {
     PENCIL(64, 32, 16, 16),
     MOON(80, 32, 16, 16),
     SUN(96, 32, 16, 16),
+    SUN_MOON(112, 32, 16, 16),
     ALL(0, 0, 256, 256);
 
     public static final double TEXTURE_DIM = 256;

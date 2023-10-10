@@ -2,6 +2,7 @@ package me.eigenraven.personalspace.gui;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.IntConsumer;
@@ -41,7 +42,7 @@ public class GuiEditWorld extends GuiScreen {
     int biomeCycle = 0;
     WButton biomeEditButton;
     WToggleButton enableWeather;
-    WToggleButton enableNightTime;
+    WCycleButton enableDaylightCycle;
     WToggleButton enableClouds;
     WButton skyType;
     WToggleButton generateTrees;
@@ -141,17 +142,18 @@ public class GuiEditWorld extends GuiScreen {
 
         this.ySize += 4;
 
-        this.enableNightTime = new WToggleButton(
+        this.enableDaylightCycle = new WCycleButton(
                 new Rectangle(130, this.ySize, 18, 18),
                 "",
                 false,
                 0,
-                desiredConfig.isNightTime(),
-                () -> desiredConfig.setNightTime(enableNightTime.value));
-        this.enableNightTime.noIcon = Icons.SUN;
-        this.enableNightTime.yesIcon = Icons.MOON;
-        this.enableNightTime.setValue(this.enableNightTime.value);
-        this.rootWidget.addChild(this.enableNightTime);
+                Arrays.asList(
+                        new WCycleButton.ButtonState(DimensionConfig.DaylightCycle.SUN, Icons.SUN),
+                        new WCycleButton.ButtonState(DimensionConfig.DaylightCycle.MOON, Icons.MOON),
+                        new WCycleButton.ButtonState(DimensionConfig.DaylightCycle.CYCLE, Icons.SUN_MOON)),
+                desiredConfig.getDaylightCycle().ordinal(),
+                () -> desiredConfig.setDaylightCycle(enableDaylightCycle.getState()));
+        this.rootWidget.addChild(this.enableDaylightCycle);
         this.skyType = new WButton(
                 new Rectangle(150, this.ySize, 18, 18),
                 "?",
