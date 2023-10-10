@@ -1,6 +1,6 @@
 package me.eigenraven.personalspace.gui;
 
-import java.awt.*;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 
 import net.minecraft.client.Minecraft;
