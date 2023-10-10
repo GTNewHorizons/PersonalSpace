@@ -2,6 +2,7 @@ package me.eigenraven.personalspace.gui;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.IntConsumer;
@@ -146,14 +147,10 @@ public class GuiEditWorld extends GuiScreen {
                 "",
                 false,
                 0,
-                new ArrayList<>() {
-
-                    {
-                        add(new WCycleButton.ButtonState(DimensionConfig.DaylightCycle.SUN, Icons.SUN));
-                        add(new WCycleButton.ButtonState(DimensionConfig.DaylightCycle.MOON, Icons.MOON));
-                        add(new WCycleButton.ButtonState(DimensionConfig.DaylightCycle.CYCLE, Icons.SUN_MOON));
-                    }
-                },
+                Arrays.asList(
+                        new WCycleButton.ButtonState(DimensionConfig.DaylightCycle.SUN, Icons.SUN),
+                        new WCycleButton.ButtonState(DimensionConfig.DaylightCycle.MOON, Icons.MOON),
+                        new WCycleButton.ButtonState(DimensionConfig.DaylightCycle.CYCLE, Icons.SUN_MOON)),
                 desiredConfig.getDaylightCycle().ordinal(),
                 () -> desiredConfig.setDaylightCycle(enableDaylightCycle.getState()));
         this.rootWidget.addChild(this.enableDaylightCycle);
