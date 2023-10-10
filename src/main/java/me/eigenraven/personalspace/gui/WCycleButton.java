@@ -7,7 +7,7 @@ import me.eigenraven.personalspace.world.DimensionConfig;
 
 public class WCycleButton extends WButton {
 
-    List<ButtonState> stateList;
+    final List<ButtonState> stateList;
     int currentIndex = 0;
     int length = 0;
 
