@@ -215,15 +215,16 @@ public class DimensionConfig {
         }
         cur = cfg.get(VISUAL, "daylightCycle", daylightCycle.ordinal(), "");
         if (write) {
-            // handle old nightTime config
-            if (cfg.hasKey(VISUAL, "nightTime")) {
-                Boolean isNight = cfg.getCategory(VISUAL).get("nightTime").getBoolean();
-                setDaylightCycle(isNight ? DaylightCycle.MOON : DaylightCycle.SUN);
-                cfg.getCategory(VISUAL).remove("nightTime");
-            }
             cur.set(daylightCycle.ordinal());
         } else {
             setDaylightCycle(DaylightCycle.fromOrdinal(cur.getInt()));
+        }
+        // handle old nightTime config
+        if (!write && cfg.hasKey(VISUAL, "nightTime")) {
+            Boolean isNight = cfg.getCategory(VISUAL).get("nightTime").getBoolean();
+            setDaylightCycle(isNight ? DaylightCycle.MOON : DaylightCycle.SUN);
+            cfg.getCategory(VISUAL).remove("nightTime");
+            needsSaving = true;
         }
         cur = cfg.get(VISUAL, "cloudsEnabled", cloudsEnabled, "");
         if (write) {
@@ -273,8 +274,8 @@ public class DimensionConfig {
         }
         if (write) {
             cfg.save();
+            needsSaving = false;
         }
-        needsSaving = false;
         return dimId;
     }
 
