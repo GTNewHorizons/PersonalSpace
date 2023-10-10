@@ -1,6 +1,6 @@
 package me.eigenraven.personalspace.gui;
 
-import java.awt.*;
+import java.awt.Rectangle;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiTextField;
