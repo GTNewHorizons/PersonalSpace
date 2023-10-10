@@ -155,16 +155,23 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public boolean isDaytime() {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE) return super.isDaytime();
+
         return !this.getConfig().isNightTime();
     }
 
     @Override
     public float getSunBrightnessFactor(float par1) {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE)
+            return super.getSunBrightnessFactor(par1);
+
         return this.getConfig().isNightTime() ? 0.0F : 1.0F;
     }
 
     @Override
     public float getSunBrightness(float par1) {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE) return super.getSunBrightness(par1);
+
         return this.getConfig().isNightTime() ? 0.2F : 1.0F;
     }
 
@@ -175,6 +182,9 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public float calculateCelestialAngle(long p_76563_1_, float p_76563_3_) {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE)
+            return super.calculateCelestialAngle(p_76563_1_, p_76563_3_);
+
         return this.getConfig().isNightTime() ? 0.5f : 0.0f;
     }
 
