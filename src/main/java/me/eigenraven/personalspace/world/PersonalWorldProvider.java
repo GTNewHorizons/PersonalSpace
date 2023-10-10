@@ -79,6 +79,8 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @SideOnly(Side.CLIENT)
     public Vec3 getFogColor(float sunAngle, float timeSinceLastTick) {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE)
+            return super.getFogColor(sunAngle, timeSinceLastTick);
         int baseColor = this.config.getSkyColor();
 
         float red = (float) (baseColor >> 16 & 255) / 255.0F;
@@ -99,6 +101,8 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public Vec3 getSkyColor(Entity cameraEntity, float partialTicks) {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE)
+            return super.getSkyColor(cameraEntity, partialTicks);
         return getFogColor(0.0f, partialTicks);
     }
 
@@ -177,6 +181,7 @@ public class PersonalWorldProvider extends WorldProvider {
 
     @Override
     public float getStarBrightness(float par1) {
+        if (getConfig().getDaylightCycle() == DimensionConfig.DaylightCycle.CYCLE) return super.getStarBrightness(par1);
         return getConfig().getStarBrightness();
     }
 

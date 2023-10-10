@@ -154,7 +154,7 @@ public class GuiEditWorld extends GuiScreen {
                         add(new WCycleButton.ButtonState(DimensionConfig.DaylightCycle.CYCLE, Icons.SUN_MOON));
                     }
                 },
-                0,
+                desiredConfig.getDaylightCycle().ordinal(),
                 () -> desiredConfig.setDaylightCycle(enableDaylightCycle.getState()));
         this.rootWidget.addChild(this.enableDaylightCycle);
         // this.enableNightTime = new WToggleButton(
