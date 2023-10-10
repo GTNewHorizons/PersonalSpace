@@ -157,17 +157,6 @@ public class GuiEditWorld extends GuiScreen {
                 desiredConfig.getDaylightCycle().ordinal(),
                 () -> desiredConfig.setDaylightCycle(enableDaylightCycle.getState()));
         this.rootWidget.addChild(this.enableDaylightCycle);
-        // this.enableNightTime = new WToggleButton(
-        // new Rectangle(130, this.ySize, 18, 18),
-        // "",
-        // false,
-        // 0,
-        // desiredConfig.isNightTime(),
-        // () -> desiredConfig.setNightTime(enableNightTime.value));
-        // this.enableNightTime.noIcon = Icons.SUN;
-        // this.enableNightTime.yesIcon = Icons.MOON;
-        // this.enableNightTime.setValue(this.enableNightTime.value);
-        // this.rootWidget.addChild(this.enableNightTime);
         this.skyType = new WButton(
                 new Rectangle(150, this.ySize, 18, 18),
                 "?",
