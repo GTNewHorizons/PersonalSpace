@@ -220,11 +220,14 @@ public class DimensionConfig {
             setDaylightCycle(DaylightCycle.fromOrdinal(cur.getInt()));
         }
         // handle old nightTime config
-        if (!write && cfg.hasKey(VISUAL, "nightTime")) {
-            Boolean isNight = cfg.getCategory(VISUAL).get("nightTime").getBoolean();
-            setDaylightCycle(isNight ? DaylightCycle.MOON : DaylightCycle.SUN);
-            cfg.getCategory(VISUAL).remove("nightTime");
-            needsSaving = true;
+        if (cfg.hasKey(VISUAL, "nightTime")) {
+            if (write) {
+                cfg.getCategory(VISUAL).remove("nightTime");
+            } else {
+                boolean isNight = cfg.getCategory(VISUAL).get("nightTime").getBoolean();
+                setDaylightCycle(isNight ? DaylightCycle.MOON : DaylightCycle.SUN);
+                needsSaving = true;
+            }
         }
         cur = cfg.get(VISUAL, "cloudsEnabled", cloudsEnabled, "");
         if (write) {
