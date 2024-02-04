@@ -59,17 +59,20 @@ import me.eigenraven.personalspace.world.PersonalWorldProvider;
 @Mod(
         modid = "personalspace",
         version = Tags.VERSION,
-        name = Tags.MODNAME,
+        name = PersonalSpaceMod.MODNAME,
         acceptedMinecraftVersions = "[1.7.10]",
         dependencies = "after:utilityworlds;after:appliedenergistics2-core;after:GalaxySpace;after:Thaumcraft")
 public class PersonalSpaceMod {
+
+    public static final String MODID = "personalspace";
+    public static final String MODNAME = "PersonalSpace";
 
     public static final String DIM_METADATA_FILE = "personalspace_metadata.cfg";
 
     @Mod.Instance
     public static PersonalSpaceMod INSTANCE;
 
-    public static Logger LOG = LogManager.getLogger(Tags.MODID);
+    public static Logger LOG = LogManager.getLogger(MODID);
 
     @SidedProxy(
             clientSide = "me.eigenraven.personalspace.ClientProxy",
@@ -78,7 +81,7 @@ public class PersonalSpaceMod {
 
     public static PortalBlock BLOCK_PORTAL, BP_MIGRATION_2, BP_MIGRATION_3, BP_MIGRATION_4;
 
-    public static final String CHANNEL = Tags.MODID;
+    public static final String CHANNEL = MODID;
 
     public static List<String> clientAllowedBlocks = Lists.newArrayList(), clientAllowedBiomes = Lists.newArrayList();
 
@@ -402,25 +405,25 @@ public class PersonalSpaceMod {
             if (mapping.type == GameRegistry.Type.BLOCK) {
                 switch (mapping.name) {
                     case "utilityworlds:uw_portal_mining" -> mapping
-                            .remap(GameRegistry.findBlock(Tags.MODID, "personalPortal"));
+                            .remap(GameRegistry.findBlock(MODID, "personalPortal"));
                     case "utilityworlds:uw_portal_void" -> mapping
-                            .remap(GameRegistry.findBlock(Tags.MODID, "personalPortal_migration2"));
+                            .remap(GameRegistry.findBlock(MODID, "personalPortal_migration2"));
                     case "utilityworlds:uw_portal_garden" -> mapping
-                            .remap(GameRegistry.findBlock(Tags.MODID, "personalPortal_migration3"));
+                            .remap(GameRegistry.findBlock(MODID, "personalPortal_migration3"));
                     case "utilityworlds:uw_portal_return" -> mapping
-                            .remap(GameRegistry.findBlock(Tags.MODID, "personalPortal_migration4"));
+                            .remap(GameRegistry.findBlock(MODID, "personalPortal_migration4"));
                     default -> {}
                 }
             } else if (mapping.type == GameRegistry.Type.ITEM) {
                 switch (mapping.name) {
                     case "utilityworlds:uw_portal_mining" -> mapping
-                            .remap(GameRegistry.findItem(Tags.MODID, "personalPortal"));
+                            .remap(GameRegistry.findItem(MODID, "personalPortal"));
                     case "utilityworlds:uw_portal_void" -> mapping
-                            .remap(GameRegistry.findItem(Tags.MODID, "personalPortal_migration2"));
+                            .remap(GameRegistry.findItem(MODID, "personalPortal_migration2"));
                     case "utilityworlds:uw_portal_garden" -> mapping
-                            .remap(GameRegistry.findItem(Tags.MODID, "personalPortal_migration3"));
+                            .remap(GameRegistry.findItem(MODID, "personalPortal_migration3"));
                     case "utilityworlds:uw_portal_return" -> mapping
-                            .remap(GameRegistry.findItem(Tags.MODID, "personalPortal_migration4"));
+                            .remap(GameRegistry.findItem(MODID, "personalPortal_migration4"));
                     default -> {}
                 }
             }
