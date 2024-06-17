@@ -38,7 +38,9 @@ public class DimensionConfig {
 
         VANILLA(null, null),
         BARNADA_C("galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.SkyProviderBarnardaC",
-                "galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.CloudProviderBarnardaC"),;
+                "galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.CloudProviderBarnardaC")
+        GARDEN_OF_GLASS("vazkii.botania.client.render.world.SkyblockSkyRenderer",
+                null),;
 
         public final String skyProvider, cloudProvider;
         private Boolean isLoaded = null;
