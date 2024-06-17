@@ -59,8 +59,10 @@ public class DimensionConfig {
             }
             if (isLoaded == null) {
                 try {
-                    Class<?> skyClass = Class.forName(skyProvider);
-                    Class<?> cloudClass = Class.forName(cloudProvider);
+                    Class<?> skyClass;
+                    if (skyProvider != null) skyClass = Class.forName(skyProvider);
+                    Class<?> cloudClass;
+                    if (cloudProvider != null) cloudClass = Class.forName(cloudProvider);
                     isLoaded = Boolean.TRUE;
                 } catch (ClassNotFoundException e) {
                     isLoaded = Boolean.FALSE;
