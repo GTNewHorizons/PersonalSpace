@@ -38,7 +38,8 @@ public class DimensionConfig {
 
         VANILLA(null, null),
         BARNADA_C("galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.SkyProviderBarnardaC",
-                "galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.CloudProviderBarnardaC"),;
+                "galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.CloudProviderBarnardaC"),
+        GARDEN_OF_GLASS("vazkii.botania.client.render.world.SkyblockSkyRenderer", null),;
 
         public final String skyProvider, cloudProvider;
         private Boolean isLoaded = null;
@@ -58,8 +59,10 @@ public class DimensionConfig {
             }
             if (isLoaded == null) {
                 try {
-                    Class<?> skyClass = Class.forName(skyProvider);
-                    Class<?> cloudClass = Class.forName(cloudProvider);
+                    Class<?> skyClass;
+                    if (skyProvider != null) skyClass = Class.forName(skyProvider);
+                    Class<?> cloudClass;
+                    if (cloudProvider != null) cloudClass = Class.forName(cloudProvider);
                     isLoaded = Boolean.TRUE;
                 } catch (ClassNotFoundException e) {
                     isLoaded = Boolean.FALSE;
