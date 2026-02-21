@@ -128,6 +128,16 @@ public class DimensionConfig {
     private String biomeId = "Plains";
     private ArrayList<FlatLayerInfo> layers = Lists.newArrayList();
 
+    private long worldTime = 0;
+    private boolean raining = false;
+    private int rainTime = 0;
+    private boolean thundering = false;
+    private int thunderTime = 0;
+    // Tracks whether real time/weather data has been initialized (from file OR from WorldInfo clone).
+    // NOT persisted to file. Gates the write path in syncWithFile to prevent writing zeroed defaults
+    // for dimensions that were registered but never loaded this session.
+    private boolean timeDataPersisted = false;
+
     private boolean needsSaving = true;
 
     public static final String PRESET_UW_VOID = "";
@@ -272,6 +282,45 @@ public class DimensionConfig {
         } else {
             setLayers(cur.getString());
         }
+        final String TIME = "time";
+        // Check BEFORE cfg.get() — cfg.get() auto-creates keys with defaults.
+        final boolean hasTimeData = !write && cfg.hasCategory(TIME);
+
+        if (write && timeDataPersisted) {
+            // Only write [time] if real data exists. Prevents writing zeroed defaults
+            // for dimensions registered but never loaded this session.
+            cur = cfg.get(TIME, "worldTime", String.valueOf(worldTime), "");
+            cur.set(String.valueOf(worldTime));
+            cur = cfg.get(TIME, "raining", raining, "");
+            cur.set(raining);
+            cur = cfg.get(TIME, "rainTime", rainTime, "");
+            cur.set(rainTime);
+            cur = cfg.get(TIME, "thundering", thundering, "");
+            cur.set(thundering);
+            cur = cfg.get(TIME, "thunderTime", thunderTime, "");
+            cur.set(thunderTime);
+        } else if (!write && hasTimeData) {
+            try {
+                cur = cfg.get(TIME, "worldTime", String.valueOf(worldTime), "");
+                worldTime = Long.parseLong(cur.getString());
+                cur = cfg.get(TIME, "raining", raining, "");
+                raining = cur.getBoolean();
+                cur = cfg.get(TIME, "rainTime", rainTime, "");
+                rainTime = cur.getInt();
+                cur = cfg.get(TIME, "thundering", thundering, "");
+                thundering = cur.getBoolean();
+                cur = cfg.get(TIME, "thunderTime", thunderTime, "");
+                thunderTime = cur.getInt();
+                timeDataPersisted = true;
+            } catch (NumberFormatException e) {
+                // Malformed config — reset all fields to prevent stale partial reads,
+                // then fall back to cloning from WorldInfo at load time
+                PersonalSpaceMod.LOG.warn("Invalid time data in config, will initialize from world", e);
+                resetTimeFields();
+            }
+        }
+        // If !write && !hasTimeData: leave defaults, timeDataPersisted stays false
+
         cur = cfg.get(WORLDGEN, "dimId", dimId);
         if (write) {
             cur.set(dimId);
@@ -515,6 +564,67 @@ public class DimensionConfig {
 
     public boolean needsSaving() {
         return needsSaving;
+    }
+
+    public long getWorldTime() {
+        return worldTime;
+    }
+
+    public void setWorldTime(long worldTime) {
+        this.worldTime = worldTime;
+    }
+
+    public boolean isRaining() {
+        return raining;
+    }
+
+    public void setRaining(boolean raining) {
+        this.raining = raining;
+    }
+
+    public int getRainTime() {
+        return rainTime;
+    }
+
+    public void setRainTime(int rainTime) {
+        this.rainTime = rainTime;
+    }
+
+    public boolean isThundering() {
+        return thundering;
+    }
+
+    public void setThundering(boolean thundering) {
+        this.thundering = thundering;
+    }
+
+    public int getThunderTime() {
+        return thunderTime;
+    }
+
+    public void setThunderTime(int thunderTime) {
+        this.thunderTime = thunderTime;
+    }
+
+    public boolean isTimeDataPersisted() {
+        return timeDataPersisted;
+    }
+
+    public void markTimeDataInitialized() {
+        this.timeDataPersisted = true;
+    }
+
+    public void markDirty() {
+        this.needsSaving = true;
+    }
+
+    private void resetTimeFields() {
+        worldTime = 0;
+        raining = false;
+        rainTime = 0;
+        thundering = false;
+        thunderTime = 0;
+        timeDataPersisted = false;
     }
 
     public static ArrayList<FlatLayerInfo> parseLayers(String preset) {

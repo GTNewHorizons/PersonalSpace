@@ -9,6 +9,9 @@ import java.util.Objects;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetHandlerPlayServer;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
@@ -45,6 +48,7 @@ import cpw.mods.fml.common.network.NetworkHandshakeEstablished;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
+import cpw.mods.fml.relauncher.ReflectionHelper;
 import cpw.mods.fml.relauncher.Side;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -84,6 +88,8 @@ public class PersonalSpaceMod {
     public static final String CHANNEL = MODID;
 
     public static List<String> clientAllowedBlocks = Lists.newArrayList(), clientAllowedBiomes = Lists.newArrayList();
+
+    private boolean stopping = false;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -142,6 +148,7 @@ public class PersonalSpaceMod {
 
     @Mod.EventHandler
     public void serverAboutToStart(FMLServerAboutToStartEvent event) {
+        stopping = false;
         proxy.serverAboutToStart(event);
         loadDimensionConfigs();
     }
@@ -209,18 +216,89 @@ public class PersonalSpaceMod {
     }
 
     @SubscribeEvent
+    public void worldLoad(WorldEvent.Load event) {
+        if (event.world.isRemote) return;
+        if (!(event.world.provider instanceof PersonalWorldProvider provider)) return;
+        DimensionConfig config = provider.getConfig();
+        if (config == null) return;
+        try {
+            // Clone DerivedWorldInfo into standalone WorldInfo
+            WorldInfo standaloneInfo = new WorldInfo(event.world.getWorldInfo().cloneNBTCompound(null));
+
+            if (config.isTimeDataPersisted()) {
+                // Config has saved time/weather — apply persisted values
+                standaloneInfo.setWorldTime(config.getWorldTime());
+                standaloneInfo.setRaining(config.isRaining());
+                standaloneInfo.setRainTime(config.getRainTime());
+                standaloneInfo.setThundering(config.isThundering());
+                standaloneInfo.setThunderTime(config.getThunderTime());
+            } else {
+                // First load after patch OR corrupted config — no valid persisted data.
+                // Populate config FROM the cloned WorldInfo (inherits Overworld's current state).
+                config.setWorldTime(standaloneInfo.getWorldTime());
+                config.setRaining(standaloneInfo.isRaining());
+                config.setRainTime(standaloneInfo.getRainTime());
+                config.setThundering(standaloneInfo.isThundering());
+                config.setThunderTime(standaloneInfo.getThunderTime());
+                config.markTimeDataInitialized();
+            }
+
+            // If weather is disabled, force-clear flags to avoid brief inconsistent state
+            // before updateWeather() runs on the next tick
+            if (!config.isWeatherEnabled()) {
+                standaloneInfo.setRaining(false);
+                standaloneInfo.setThundering(false);
+            }
+
+            // Replace worldInfo field via reflection (MCP name + SRG name for prod)
+            Field worldInfoField = ReflectionHelper.findField(World.class, "worldInfo", "field_72986_A");
+            worldInfoField.set(event.world, standaloneInfo);
+            LOG.info("Decoupled WorldInfo for personal dimension {}", provider.dimensionId);
+        } catch (Exception e) {
+            LOG.error("Failed to decouple WorldInfo for dimension " + provider.dimensionId, e);
+        }
+    }
+
+    @SubscribeEvent
     public void worldSave(WorldEvent.Save event) {
         try {
-            if (!(event.world.provider instanceof PersonalWorldProvider provider)) {
-                return;
-            }
+            if (!(event.world.provider instanceof PersonalWorldProvider provider)) return;
             DimensionConfig config = provider.getConfig();
-            if (config == null || !config.needsSaving()) {
-                return;
+            if (config == null) return;
+            // Capture current weather/time and mark dirty for hard crash resilience
+            if (!event.world.isRemote) {
+                config.setWorldTime(event.world.getWorldInfo().getWorldTime());
+                config.setRaining(event.world.getWorldInfo().isRaining());
+                config.setRainTime(event.world.getWorldInfo().getRainTime());
+                config.setThundering(event.world.getWorldInfo().isThundering());
+                config.setThunderTime(event.world.getWorldInfo().getThunderTime());
+                config.markDirty();
             }
+            if (!config.needsSaving()) return;
             saveConfig(provider.dimensionId, config);
         } catch (Exception e) {
             LOG.fatal("Couldn't save personal dimension data for " + event.world.provider.getDimensionName(), e);
+        }
+    }
+
+    @SubscribeEvent
+    public void worldUnload(WorldEvent.Unload event) {
+        if (stopping) return;
+        if (event.world.isRemote) return;
+        if (!(event.world.provider instanceof PersonalWorldProvider provider)) return;
+        DimensionConfig config = provider.getConfig();
+        if (config == null) return;
+        config.setWorldTime(event.world.getWorldInfo().getWorldTime());
+        config.setRaining(event.world.getWorldInfo().isRaining());
+        config.setRainTime(event.world.getWorldInfo().getRainTime());
+        config.setThundering(event.world.getWorldInfo().isThundering());
+        config.setThunderTime(event.world.getWorldInfo().getThunderTime());
+        config.markTimeDataInitialized();
+        config.markDirty();
+        try {
+            saveConfig(provider.dimensionId, config);
+        } catch (IOException e) {
+            LOG.error("Couldn't save dimension " + provider.dimensionId + " on unload", e);
         }
     }
 
@@ -337,12 +415,28 @@ public class PersonalSpaceMod {
 
     @Mod.EventHandler
     public void serverStopping(FMLServerStoppingEvent event) {
+        stopping = true;
         proxy.serverStopping(event);
         TIntObjectHashMap<DimensionConfig> configs = CommonProxy.getDimensionConfigObjects(false);
+        // Capture final time/weather from all loaded personal worlds unconditionally.
+        // No isTimeDataPersisted() gate — if the world is loaded, we have valid data.
         configs.forEachEntry((dimId, dimCfg) -> {
-            if (dimCfg == null || !dimCfg.needsSaving()) {
-                return true;
+            if (dimCfg == null) return true;
+            WorldServer world = DimensionManager.getWorld(dimId);
+            if (world != null && !world.isRemote) {
+                dimCfg.setWorldTime(world.getWorldInfo().getWorldTime());
+                dimCfg.setRaining(world.getWorldInfo().isRaining());
+                dimCfg.setRainTime(world.getWorldInfo().getRainTime());
+                dimCfg.setThundering(world.getWorldInfo().isThundering());
+                dimCfg.setThunderTime(world.getWorldInfo().getThunderTime());
+                dimCfg.markTimeDataInitialized();
+                dimCfg.markDirty();
             }
+            return true;
+        });
+        // Save all dirty configs
+        configs.forEachEntry((dimId, dimCfg) -> {
+            if (dimCfg == null || !dimCfg.needsSaving()) return true;
             try {
                 saveConfig(dimId, dimCfg);
             } catch (IOException e) {
@@ -372,6 +466,7 @@ public class PersonalSpaceMod {
 
     @Mod.EventHandler
     public void serverStopped(FMLServerStoppedEvent event) {
+        stopping = false;
         proxy.serverStopped(event);
         deregisterDimensions(false);
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
