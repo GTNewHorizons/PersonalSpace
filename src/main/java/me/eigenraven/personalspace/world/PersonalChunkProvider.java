@@ -96,6 +96,9 @@ public class PersonalChunkProvider implements IChunkProvider {
             boolean isBoundaryX = intervalX > 0 && mod(chunkX, intervalX) == 0;
             boolean isBoundaryZ = intervalZ > 0 && mod(chunkZ, intervalZ) == 0;
 
+            boolean prevBoundaryX = intervalX > 0 && mod(chunkX - 1, intervalX) == 0;
+            boolean prevBoundaryZ = intervalZ > 0 && mod(chunkZ - 1, intervalZ) == 0;
+
             Block boundaryBlockA = cfg.getBoundaryBlockAResolved();
             int boundaryMetaA = cfg.getBoundaryMetaA();
             Block boundaryBlockB = cfg.getBoundaryBlockBResolved();
@@ -104,10 +107,9 @@ public class PersonalChunkProvider implements IChunkProvider {
             boolean hasA = boundaryBlockA != null && boundaryBlockA != Blocks.air;
             boolean hasB = boundaryBlockB != null && boundaryBlockB != Blocks.air;
 
-            boolean drawBoundaryX = isBoundaryX && (hasA || hasB);
-            boolean drawBoundaryZ = isBoundaryZ && (hasA || hasB);
+            boolean canDrawBoundary = hasA || hasB;
 
-            if (drawBoundaryX || drawBoundaryZ) {
+            if (canDrawBoundary && (isBoundaryX || prevBoundaryX || isBoundaryZ || prevBoundaryZ)) {
                 ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[bYChunk];
                 if (ebs == null) {
                     ebs = new ExtendedBlockStorage(groundLevel & ~15, true);
@@ -121,8 +123,9 @@ public class PersonalChunkProvider implements IChunkProvider {
                 }
 
                 for (int localZ = 0; localZ < 16; localZ++) {
-                    if (drawBoundaryX) {
-                        int worldX = chunkX << 4;
+                    if (isBoundaryX) {
+                        int localX = 0;
+                        int worldX = (chunkX << 4) + localX;
                         int worldZ = (chunkZ << 4) + localZ;
 
                         StripeBlock stripe = getStripeBlock(
@@ -133,16 +136,15 @@ public class PersonalChunkProvider implements IChunkProvider {
                                 boundaryBlockB,
                                 boundaryMetaB);
                         if (stripe.block != null && stripe.block != Blocks.air) {
-                            ebs.func_150818_a(0, groundLevel & 15, localZ, stripe.block);
-                            ebs.setExtBlockMetadata(0, groundLevel & 15, localZ, stripe.meta);
+                            ebs.func_150818_a(localX, groundLevel & 15, localZ, stripe.block);
+                            ebs.setExtBlockMetadata(localX, groundLevel & 15, localZ, stripe.meta);
                         }
                     }
-                }
 
-                for (int localX = 0; localX < 16; localX++) {
-                    if (drawBoundaryZ) {
+                    if (prevBoundaryX) {
+                        int localX = 15;
                         int worldX = (chunkX << 4) + localX;
-                        int worldZ = chunkZ << 4;
+                        int worldZ = (chunkZ << 4) + localZ;
 
                         StripeBlock stripe = getStripeBlock(
                                 worldX,
@@ -152,8 +154,46 @@ public class PersonalChunkProvider implements IChunkProvider {
                                 boundaryBlockB,
                                 boundaryMetaB);
                         if (stripe.block != null && stripe.block != Blocks.air) {
-                            ebs.func_150818_a(localX, groundLevel & 15, 0, stripe.block);
-                            ebs.setExtBlockMetadata(localX, groundLevel & 15, 0, stripe.meta);
+                            ebs.func_150818_a(localX, groundLevel & 15, localZ, stripe.block);
+                            ebs.setExtBlockMetadata(localX, groundLevel & 15, localZ, stripe.meta);
+                        }
+                    }
+                }
+
+                for (int localX = 0; localX < 16; localX++) {
+                    if (isBoundaryZ) {
+                        int localZ = 0;
+                        int worldX = (chunkX << 4) + localX;
+                        int worldZ = (chunkZ << 4) + localZ;
+
+                        StripeBlock stripe = getStripeBlock(
+                                worldX,
+                                worldZ,
+                                boundaryBlockA,
+                                boundaryMetaA,
+                                boundaryBlockB,
+                                boundaryMetaB);
+                        if (stripe.block != null && stripe.block != Blocks.air) {
+                            ebs.func_150818_a(localX, groundLevel & 15, localZ, stripe.block);
+                            ebs.setExtBlockMetadata(localX, groundLevel & 15, localZ, stripe.meta);
+                        }
+                    }
+
+                    if (prevBoundaryZ) {
+                        int localZ = 15;
+                        int worldX = (chunkX << 4) + localX;
+                        int worldZ = (chunkZ << 4) + localZ;
+
+                        StripeBlock stripe = getStripeBlock(
+                                worldX,
+                                worldZ,
+                                boundaryBlockA,
+                                boundaryMetaA,
+                                boundaryBlockB,
+                                boundaryMetaB);
+                        if (stripe.block != null && stripe.block != Blocks.air) {
+                            ebs.func_150818_a(localX, groundLevel & 15, localZ, stripe.block);
+                            ebs.setExtBlockMetadata(localX, groundLevel & 15, localZ, stripe.meta);
                         }
                     }
                 }
