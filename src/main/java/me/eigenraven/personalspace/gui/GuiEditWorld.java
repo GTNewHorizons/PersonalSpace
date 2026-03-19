@@ -153,10 +153,11 @@ public class GuiEditWorld extends GuiScreen {
 
     private String getBoundaryButtonText(String s) {
         if (s == null || s.isEmpty()) {
-            return "-";
+            return I18n.format("gui.personalWorld.boundary.none.short");
         }
         String[] sp = s.split(":");
-        return sp.length == 2 ? sp[1].substring(0, Math.min(1, sp[1].length())).toUpperCase() : "?";
+        return sp.length == 2 ? sp[1].substring(0, Math.min(1, sp[1].length())).toUpperCase()
+                : I18n.format("gui.personalWorld.boundary.unknown.short");
     }
 
     private Block getBoundaryBlock(String s) {
@@ -215,19 +216,34 @@ public class GuiEditWorld extends GuiScreen {
         return MathHelper.clamp_int(v, 0, 20);
     }
 
-    private String getBoundaryButtonTooltip(String s, int meta, String label) {
+    private String getBoundaryButtonTooltip(String s, int meta, String labelKey) {
         if (s == null || s.isEmpty()) {
-            return label + ": <none>, meta=0";
+            return I18n.format(labelKey) + ": "
+                    + I18n.format("gui.personalWorld.boundary.none")
+                    + ", "
+                    + I18n.format("gui.personalWorld.boundary.metaValue", meta);
         }
         AllowedBoundaryBlock rule = getBoundaryRule(s);
         Block b = getBoundaryBlock(s);
         ItemStack is = getBoundaryPreviewStack(s, meta);
         String dn = (is != null && is.getItem() != null) ? is.getDisplayName() : s;
-        String rangeText = rule != null ? rule.getMetaDescription() : "none";
+        String rangeText = rule != null ? rule.getMetaDescription() : I18n.format("gui.personalWorld.boundary.none");
         if (b == null) {
-            return label + ": " + s + ", meta=" + meta + ", allowed=" + rangeText;
+            return I18n.format(labelKey) + ": "
+                    + s
+                    + ", "
+                    + I18n.format("gui.personalWorld.boundary.metaValue", meta)
+                    + ", "
+                    + I18n.format("gui.personalWorld.boundary.allowedValue", rangeText);
         }
-        return label + ": " + dn + " (" + s + "), meta=" + meta + ", allowed=" + rangeText;
+        return I18n.format(labelKey) + ": "
+                + dn
+                + " ("
+                + s
+                + "), "
+                + I18n.format("gui.personalWorld.boundary.metaValue", meta)
+                + ", "
+                + I18n.format("gui.personalWorld.boundary.allowedValue", rangeText);
     }
 
     private void updateBoundaryButtons() {
@@ -240,11 +256,11 @@ public class GuiEditWorld extends GuiScreen {
         desiredConfig.setBoundaryMetaB(metaB);
 
         boundaryBlockAButton.text = getBoundaryButtonText(a);
-        boundaryBlockAButton.tooltip = getBoundaryButtonTooltip(a, metaA, "Boundary A");
+        boundaryBlockAButton.tooltip = getBoundaryButtonTooltip(a, metaA, "gui.personalWorld.boundary.a");
         boundaryBlockAButton.itemStack = getBoundaryPreviewStack(a, metaA);
 
         boundaryBlockBButton.text = getBoundaryButtonText(b);
-        boundaryBlockBButton.tooltip = getBoundaryButtonTooltip(b, metaB, "Boundary B");
+        boundaryBlockBButton.tooltip = getBoundaryButtonTooltip(b, metaB, "gui.personalWorld.boundary.b");
         boundaryBlockBButton.itemStack = getBoundaryPreviewStack(b, metaB);
 
         if (boundaryMetaAField != null && !boundaryMetaAField.textField.isFocused()) {
@@ -434,7 +450,7 @@ public class GuiEditWorld extends GuiScreen {
         }
         this.ySize += 30;
 
-        addWidget(new WLabel(0, this.ySize, "Boundary", false));
+        addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.boundary"), false));
 
         this.boundaryBlockAButton = new WButton(
                 new Rectangle(0, this.ySize, 20, 20),
@@ -451,12 +467,12 @@ public class GuiEditWorld extends GuiScreen {
                     desiredConfig.setBoundaryMetaA(clampBoundaryMeta(desiredConfig.getBoundaryMetaA(), newBlock));
                     updateBoundaryButtons();
                 });
-        this.boundaryBlockAButton.addChild(new WLabel(24, 4, "A", false));
+        this.boundaryBlockAButton.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.boundary.a.short"), false));
         addWidget(this.boundaryBlockAButton);
 
         this.boundaryMetaAMinus = new WButton(
                 new Rectangle(40, this.boundaryBlockAButton.position.y, 18, 18),
-                "-",
+                I18n.format("gui.personalWorld.button.minus"),
                 true,
                 WButton.DEFAULT_COLOR,
                 null,
@@ -475,7 +491,7 @@ public class GuiEditWorld extends GuiScreen {
 
         this.boundaryMetaAPlus = new WButton(
                 new Rectangle(90, this.boundaryBlockAButton.position.y, 18, 18),
-                "+",
+                I18n.format("gui.personalWorld.button.plus"),
                 true,
                 WButton.DEFAULT_COLOR,
                 null,
@@ -502,12 +518,12 @@ public class GuiEditWorld extends GuiScreen {
                     desiredConfig.setBoundaryMetaB(clampBoundaryMeta(desiredConfig.getBoundaryMetaB(), newBlock));
                     updateBoundaryButtons();
                 });
-        this.boundaryBlockBButton.addChild(new WLabel(24, 4, "B", false));
+        this.boundaryBlockBButton.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.boundary.b.short"), false));
         rootWidget.addChild(this.boundaryBlockBButton);
 
         this.boundaryMetaBMinus = new WButton(
                 new Rectangle(160, this.boundaryBlockAButton.position.y, 18, 18),
-                "-",
+                I18n.format("gui.personalWorld.button.minus"),
                 true,
                 WButton.DEFAULT_COLOR,
                 null,
@@ -526,7 +542,7 @@ public class GuiEditWorld extends GuiScreen {
 
         this.boundaryMetaBPlus = new WButton(
                 new Rectangle(210, this.boundaryBlockAButton.position.y, 18, 18),
-                "+",
+                I18n.format("gui.personalWorld.button.plus"),
                 true,
                 WButton.DEFAULT_COLOR,
                 null,
@@ -540,11 +556,11 @@ public class GuiEditWorld extends GuiScreen {
 
         this.ySize += 6;
 
-        addWidget(new WLabel(0, this.ySize, "Boundary Chunks X x Z (0-20)", false));
+        addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.boundary.chunks"), false));
 
         this.boundaryChunkXMinus = new WButton(
                 new Rectangle(0, this.ySize, 18, 18),
-                "-",
+                I18n.format("gui.personalWorld.button.minus"),
                 true,
                 WButton.DEFAULT_COLOR,
                 null,
@@ -565,7 +581,7 @@ public class GuiEditWorld extends GuiScreen {
 
         this.boundaryChunkXPlus = new WButton(
                 new Rectangle(54, this.ySize, 18, 18),
-                "+",
+                I18n.format("gui.personalWorld.button.plus"),
                 true,
                 WButton.DEFAULT_COLOR,
                 null,
@@ -579,11 +595,11 @@ public class GuiEditWorld extends GuiScreen {
                 });
         rootWidget.addChild(this.boundaryChunkXPlus);
 
-        this.rootWidget.addChild(new WLabel(78, this.ySize + 4, "x", false));
+        this.rootWidget.addChild(new WLabel(78, this.ySize + 4, I18n.format("gui.personalWorld.multiply"), false));
 
         this.boundaryChunkZMinus = new WButton(
                 new Rectangle(90, this.ySize, 18, 18),
-                "-",
+                I18n.format("gui.personalWorld.button.minus"),
                 true,
                 WButton.DEFAULT_COLOR,
                 null,
@@ -604,7 +620,7 @@ public class GuiEditWorld extends GuiScreen {
 
         this.boundaryChunkZPlus = new WButton(
                 new Rectangle(144, this.ySize, 18, 18),
-                "+",
+                I18n.format("gui.personalWorld.button.plus"),
                 true,
                 WButton.DEFAULT_COLOR,
                 null,
@@ -657,7 +673,6 @@ public class GuiEditWorld extends GuiScreen {
     private void regeneratePresetEditor() {
         final boolean generationEnabled = desiredConfig.getAllowGenerationChanges();
         this.presetEditor.children.clear();
-        // Palette
         int curX = 0;
         int curY = 0;
         for (String bl : PersonalSpaceMod.clientAllowedBlocks) {
@@ -673,7 +688,7 @@ public class GuiEditWorld extends GuiScreen {
                 this.configToPreset();
             });
             addBtn.itemStack = is;
-            addBtn.itemStackText = "+";
+            addBtn.itemStackText = I18n.format("gui.personalWorld.button.plus");
             addBtn.tooltip = (is.getItem() != null) ? is.getDisplayName() : block.getLocalizedName();
             addBtn.enabled = generationEnabled;
             this.presetEditor.addChild(addBtn);
@@ -683,7 +698,7 @@ public class GuiEditWorld extends GuiScreen {
                 curX += 21;
             }
         }
-        // Layers
+
         curY = 0;
         curX += 22;
         this.presetEditor.addChild(new WLabel(curX, curY, I18n.format("gui.personalWorld.layers"), false));
@@ -700,7 +715,6 @@ public class GuiEditWorld extends GuiScreen {
             block.tooltip = gameBlock.getLocalizedName();
             this.presetEditor.addChild(block);
 
-            // up
             if (i < fli.size() - 1) {
                 block.addChild(new WButton(new Rectangle(-12, 0, 10, 10), "", false, 0, Icons.SMALL_UP, () -> {
                     Collections.swap(this.desiredConfig.getMutableLayers(), finalI, finalI + 1);
@@ -855,11 +869,13 @@ public class GuiEditWorld extends GuiScreen {
             if (!isBoundaryMetaAllowed(desiredConfig.getBoundaryBlockA(), rawMetaA)) {
                 this.boundaryMetaAField.textField.setTextColor(0xFF0000);
                 AllowedBoundaryBlock rule = getBoundaryRule(desiredConfig.getBoundaryBlockA());
-                this.boundaryMetaAField.tooltip = rule != null ? ("Allowed: " + rule.getMetaDescription())
-                        : "Invalid boundary meta";
+                this.boundaryMetaAField.tooltip = rule != null
+                        ? I18n.format("gui.personalWorld.boundary.allowed", rule.getMetaDescription())
+                        : I18n.format("gui.personalWorld.boundary.invalidMeta");
                 inputsValid = false;
             } else {
                 this.boundaryMetaAField.textField.setTextColor(0xA0FFA0);
+                this.boundaryMetaAField.tooltip = null;
                 desiredConfig.setBoundaryMetaA(rawMetaA);
             }
 
@@ -867,11 +883,13 @@ public class GuiEditWorld extends GuiScreen {
             if (!isBoundaryMetaAllowed(desiredConfig.getBoundaryBlockB(), rawMetaB)) {
                 this.boundaryMetaBField.textField.setTextColor(0xFF0000);
                 AllowedBoundaryBlock rule = getBoundaryRule(desiredConfig.getBoundaryBlockB());
-                this.boundaryMetaBField.tooltip = rule != null ? ("Allowed: " + rule.getMetaDescription())
-                        : "Invalid boundary meta";
+                this.boundaryMetaBField.tooltip = rule != null
+                        ? I18n.format("gui.personalWorld.boundary.allowed", rule.getMetaDescription())
+                        : I18n.format("gui.personalWorld.boundary.invalidMeta");
                 inputsValid = false;
             } else {
                 this.boundaryMetaBField.textField.setTextColor(0xA0FFA0);
+                this.boundaryMetaBField.tooltip = null;
                 desiredConfig.setBoundaryMetaB(rawMetaB);
             }
 
@@ -879,11 +897,11 @@ public class GuiEditWorld extends GuiScreen {
             boolean bxOk = bx >= 0 && bx <= 20;
             if (!bxOk) {
                 this.boundaryChunkXField.textField.setTextColor(0xFF0000);
-                this.boundaryChunkXField.tooltip = "0-20";
+                this.boundaryChunkXField.tooltip = I18n.format("gui.personalWorld.boundary.range");
                 inputsValid = false;
             } else {
                 this.boundaryChunkXField.textField.setTextColor(0xA0FFA0);
-                this.boundaryChunkXField.tooltip = "0-20";
+                this.boundaryChunkXField.tooltip = I18n.format("gui.personalWorld.boundary.range");
                 this.desiredConfig.setBoundaryChunkIntervalX(bx);
             }
 
@@ -891,24 +909,24 @@ public class GuiEditWorld extends GuiScreen {
             boolean bzOk = bz >= 0 && bz <= 20;
             if (!bzOk) {
                 this.boundaryChunkZField.textField.setTextColor(0xFF0000);
-                this.boundaryChunkZField.tooltip = "0-20";
+                this.boundaryChunkZField.tooltip = I18n.format("gui.personalWorld.boundary.range");
                 inputsValid = false;
             } else {
                 this.boundaryChunkZField.textField.setTextColor(0xA0FFA0);
-                this.boundaryChunkZField.tooltip = "0-20";
+                this.boundaryChunkZField.tooltip = I18n.format("gui.personalWorld.boundary.range");
                 this.desiredConfig.setBoundaryChunkIntervalZ(bz);
             }
 
             if (!desiredConfig.getBoundaryBlockA().isEmpty()
                     && getBoundaryRule(desiredConfig.getBoundaryBlockA()) == null) {
                 inputsValid = false;
-                this.boundaryBlockAButton.tooltip = "Boundary A block not allowed";
+                this.boundaryBlockAButton.tooltip = I18n.format("gui.personalWorld.boundary.blockNotAllowed.a");
             }
 
             if (!desiredConfig.getBoundaryBlockB().isEmpty()
                     && getBoundaryRule(desiredConfig.getBoundaryBlockB()) == null) {
                 inputsValid = false;
-                this.boundaryBlockBButton.tooltip = "Boundary B block not allowed";
+                this.boundaryBlockBButton.tooltip = I18n.format("gui.personalWorld.boundary.blockNotAllowed.b");
             }
 
             updateBoundaryButtons();

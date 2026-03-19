@@ -32,6 +32,28 @@ gui.personalWorld.skyType.VANILLA=原版天空
 gui.personalWorld.skyType.BARNADA_C=巴纳德C天空
 gui.personalWorld.skyType.GARDEN_OF_GLASS=水晶花园天空
 
+gui.personalWorld.boundary=边界
+gui.personalWorld.boundary.a=边界 A
+gui.personalWorld.boundary.b=边界 B
+gui.personalWorld.boundary.a.short=A
+gui.personalWorld.boundary.b.short=B
+gui.personalWorld.boundary.chunks=边界区块 X x Z (0-20)
+
+gui.personalWorld.boundary.none=无
+gui.personalWorld.boundary.none.short=-
+gui.personalWorld.boundary.unknown.short=?
+gui.personalWorld.boundary.metaValue=元数据=%d
+gui.personalWorld.boundary.allowedValue=允许=%s
+gui.personalWorld.boundary.allowed=允许: %s
+gui.personalWorld.boundary.invalidMeta=无效的元数据
+gui.personalWorld.boundary.blockNotAllowed.a=边界 A 方块不被允许
+gui.personalWorld.boundary.blockNotAllowed.b=边界 B 方块不被允许
+gui.personalWorld.boundary.range=0-20
+
+gui.personalWorld.button.plus=+
+gui.personalWorld.button.minus=-
+gui.personalWorld.multiply=x
+
 commands.pspace.usage=/pspace (give-portal <玩家> <维度> [X] [Y] [Z])|(tpx <玩家> <维度> [X Y Z])|(ls)|(where <玩家>)|(allow-worldgen-change <维度>)
 commands.pspace.badDimension=指定维度不存在
 commands.pspace.where=玩家 %s 位于维度 %d
