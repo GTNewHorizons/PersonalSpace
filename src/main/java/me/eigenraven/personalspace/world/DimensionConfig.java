@@ -26,8 +26,8 @@ import codechicken.lib.data.MCDataInput;
 import codechicken.lib.data.MCDataOutput;
 import cpw.mods.fml.common.registry.GameRegistry;
 import me.eigenraven.personalspace.CommonProxy;
-import me.eigenraven.personalspace.Config;
 import me.eigenraven.personalspace.PersonalSpaceMod;
+import me.eigenraven.personalspace.config.Config;
 
 /**
  * Current world generation settings for a given dimension
@@ -128,6 +128,13 @@ public class DimensionConfig {
     private String biomeId = "Plains";
     private ArrayList<FlatLayerInfo> layers = Lists.newArrayList();
 
+    private String boundaryBlockA = "minecraft:wool";
+    private int boundaryMetaA = 4;
+    private String boundaryBlockB = "minecraft:wool";
+    private int boundaryMetaB = 15;
+    private int boundaryChunkIntervalX = 0;
+    private int boundaryChunkIntervalZ = 0;
+
     private boolean needsSaving = true;
 
     public static final String PRESET_UW_VOID = "";
@@ -155,6 +162,13 @@ public class DimensionConfig {
             pkt.writeVarInt(Block.getIdFromBlock(info.func_151536_b()));
             pkt.writeVarInt(info.getLayerCount());
         }
+
+        pkt.writeString(boundaryBlockA == null ? "" : boundaryBlockA);
+        pkt.writeVarInt(boundaryMetaA);
+        pkt.writeString(boundaryBlockB == null ? "" : boundaryBlockB);
+        pkt.writeVarInt(boundaryMetaB);
+        pkt.writeVarInt(boundaryChunkIntervalX);
+        pkt.writeVarInt(boundaryChunkIntervalZ);
     }
 
     public void readFromPacket(MCDataInput pkt) {
@@ -182,6 +196,13 @@ public class DimensionConfig {
             y += count;
         }
         this.layers = layers;
+
+        this.setBoundaryBlockA(pkt.readString());
+        this.setBoundaryMetaA(pkt.readVarInt());
+        this.setBoundaryBlockB(pkt.readString());
+        this.setBoundaryMetaB(pkt.readVarInt());
+        this.setBoundaryChunkIntervalX(pkt.readVarInt());
+        this.setBoundaryChunkIntervalZ(pkt.readVarInt());
     }
 
     /**
@@ -190,38 +211,45 @@ public class DimensionConfig {
     public int syncWithFile(File file, boolean write, int dimId) {
         final String VISUAL = "visual";
         final String WORLDGEN = "worldgen";
+        final String BOUNDARY = "boundary";
         Configuration cfg = new Configuration(file);
         Property cur;
+
         cur = cfg.get(VISUAL, "skyColor", skyColor, "", 0, 0xFFFFFF);
         if (write) {
             cur.set(skyColor);
         } else {
             setSkyColor(cur.getInt());
         }
+
         cur = cfg.get(VISUAL, "starBrightness", starBrightness, "", 0.0F, 1.0F);
         if (write) {
             cur.set(starBrightness);
         } else {
             setStarBrightness((float) cur.getDouble());
         }
+
         cur = cfg.get(WORLDGEN, "biomeId", getBiomeId());
         if (write) {
             cur.set(getBiomeId());
         } else {
             setBiomeId(cur.getString());
         }
+
         cur = cfg.get(VISUAL, "weatherEnabled", weatherEnabled, "");
         if (write) {
             cur.set(weatherEnabled);
         } else {
             setWeatherEnabled(cur.getBoolean());
         }
+
         cur = cfg.get(VISUAL, "daylightCycle", daylightCycle.ordinal(), "");
         if (write) {
             cur.set(daylightCycle.ordinal());
         } else {
             setDaylightCycle(DaylightCycle.fromOrdinal(cur.getInt()));
         }
+
         // handle old nightTime config
         if (cfg.hasKey(VISUAL, "nightTime")) {
             if (write) {
@@ -232,30 +260,35 @@ public class DimensionConfig {
                 needsSaving = true;
             }
         }
+
         cur = cfg.get(VISUAL, "cloudsEnabled", cloudsEnabled, "");
         if (write) {
             cur.set(cloudsEnabled);
         } else {
             setCloudsEnabled(cur.getBoolean());
         }
+
         cur = cfg.get(VISUAL, "skyType", skyType.ordinal(), "");
         if (write) {
             cur.set(skyType.ordinal());
         } else {
             setSkyType(SkyType.fromOrdinal(cur.getInt()));
         }
+
         cur = cfg.get(WORLDGEN, "generatingTrees", generatingTrees, "");
         if (write) {
             cur.set(generatingTrees);
         } else {
             setGeneratingTrees(cur.getBoolean());
         }
+
         cur = cfg.get(WORLDGEN, "generatingVegetation", generatingVegetation, "");
         if (write) {
             cur.set(generatingVegetation);
         } else {
             setGeneratingVegetation(cur.getBoolean());
         }
+
         cur = cfg.get(
                 WORLDGEN,
                 "allowGenerationChanges",
@@ -266,18 +299,63 @@ public class DimensionConfig {
         } else {
             setAllowGenerationChanges(cur.getBoolean());
         }
+
         cur = cfg.get(WORLDGEN, "layers", getLayersAsString());
         if (write) {
             cur.set(getLayersAsString());
         } else {
             setLayers(cur.getString());
         }
+
+        cur = cfg.get(BOUNDARY, "blockA", getBoundaryBlockA());
+        if (write) {
+            cur.set(getBoundaryBlockA());
+        } else {
+            setBoundaryBlockA(cur.getString());
+        }
+
+        cur = cfg.get(BOUNDARY, "metaA", getBoundaryMetaA(), "", 0, 15);
+        if (write) {
+            cur.set(getBoundaryMetaA());
+        } else {
+            setBoundaryMetaA(cur.getInt());
+        }
+
+        cur = cfg.get(BOUNDARY, "blockB", getBoundaryBlockB());
+        if (write) {
+            cur.set(getBoundaryBlockB());
+        } else {
+            setBoundaryBlockB(cur.getString());
+        }
+
+        cur = cfg.get(BOUNDARY, "metaB", getBoundaryMetaB(), "", 0, 15);
+        if (write) {
+            cur.set(getBoundaryMetaB());
+        } else {
+            setBoundaryMetaB(cur.getInt());
+        }
+
+        cur = cfg.get(BOUNDARY, "chunkIntervalX", getBoundaryChunkIntervalX(), "", 0, 20);
+        if (write) {
+            cur.set(getBoundaryChunkIntervalX());
+        } else {
+            setBoundaryChunkIntervalX(cur.getInt());
+        }
+
+        cur = cfg.get(BOUNDARY, "chunkIntervalZ", getBoundaryChunkIntervalZ(), "", 0, 20);
+        if (write) {
+            cur.set(getBoundaryChunkIntervalZ());
+        } else {
+            setBoundaryChunkIntervalZ(cur.getInt());
+        }
+
         cur = cfg.get(WORLDGEN, "dimId", dimId);
         if (write) {
             cur.set(dimId);
         } else {
             dimId = cur.getInt();
         }
+
         if (write) {
             cfg.save();
             needsSaving = false;
@@ -311,6 +389,14 @@ public class DimensionConfig {
             this.setGeneratingTrees(source.isGeneratingTrees());
             this.setGeneratingVegetation(source.isGeneratingVegetation());
             this.layers = source.layers;
+
+            this.setBoundaryBlockA(source.getBoundaryBlockA());
+            this.setBoundaryMetaA(source.getBoundaryMetaA());
+            this.setBoundaryBlockB(source.getBoundaryBlockB());
+            this.setBoundaryMetaB(source.getBoundaryMetaB());
+            this.setBoundaryChunkIntervalX(source.getBoundaryChunkIntervalX());
+            this.setBoundaryChunkIntervalZ(source.getBoundaryChunkIntervalZ());
+
             this.needsSaving = true;
         }
         boolean modified = this.needsSaving;
@@ -678,5 +764,111 @@ public class DimensionConfig {
             y += info.getLayerCount();
         }
         return MathHelper.clamp_int(y, 0, 255);
+    }
+
+    public static String blockToString(Block block) {
+        if (block == null) {
+            return "";
+        }
+        GameRegistry.UniqueIdentifier uid = GameRegistry.findUniqueIdentifierFor(block);
+        if (uid == null) {
+            return "";
+        }
+        return uid.modId + ":" + uid.name;
+    }
+
+    public static Block blockFromString(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return null;
+        }
+        String[] sp = name.split(":");
+        if (sp.length != 2) {
+            return null;
+        }
+        return GameRegistry.findBlock(sp[0], sp[1]);
+    }
+
+    public String getBoundaryBlockA() {
+        return boundaryBlockA == null ? "" : boundaryBlockA;
+    }
+
+    public void setBoundaryBlockA(String boundaryBlockA) {
+        if (boundaryBlockA == null) {
+            boundaryBlockA = "";
+        }
+        if (!this.getBoundaryBlockA().equals(boundaryBlockA)) {
+            this.needsSaving = true;
+            this.boundaryBlockA = boundaryBlockA;
+        }
+    }
+
+    public int getBoundaryMetaA() {
+        return boundaryMetaA;
+    }
+
+    public void setBoundaryMetaA(int boundaryMetaA) {
+        int v = MathHelper.clamp_int(boundaryMetaA, 0, 15);
+        if (this.boundaryMetaA != v) {
+            this.needsSaving = true;
+            this.boundaryMetaA = v;
+        }
+    }
+
+    public String getBoundaryBlockB() {
+        return boundaryBlockB == null ? "" : boundaryBlockB;
+    }
+
+    public void setBoundaryBlockB(String boundaryBlockB) {
+        if (boundaryBlockB == null) {
+            boundaryBlockB = "";
+        }
+        if (!this.getBoundaryBlockB().equals(boundaryBlockB)) {
+            this.needsSaving = true;
+            this.boundaryBlockB = boundaryBlockB;
+        }
+    }
+
+    public int getBoundaryMetaB() {
+        return boundaryMetaB;
+    }
+
+    public void setBoundaryMetaB(int boundaryMetaB) {
+        int v = MathHelper.clamp_int(boundaryMetaB, 0, 15);
+        if (this.boundaryMetaB != v) {
+            this.needsSaving = true;
+            this.boundaryMetaB = v;
+        }
+    }
+
+    public int getBoundaryChunkIntervalX() {
+        return boundaryChunkIntervalX;
+    }
+
+    public void setBoundaryChunkIntervalX(int boundaryChunkIntervalX) {
+        int v = MathHelper.clamp_int(boundaryChunkIntervalX, 0, 20);
+        if (this.boundaryChunkIntervalX != v) {
+            this.needsSaving = true;
+            this.boundaryChunkIntervalX = v;
+        }
+    }
+
+    public int getBoundaryChunkIntervalZ() {
+        return boundaryChunkIntervalZ;
+    }
+
+    public void setBoundaryChunkIntervalZ(int boundaryChunkIntervalZ) {
+        int v = MathHelper.clamp_int(boundaryChunkIntervalZ, 0, 20);
+        if (this.boundaryChunkIntervalZ != v) {
+            this.needsSaving = true;
+            this.boundaryChunkIntervalZ = v;
+        }
+    }
+
+    public Block getBoundaryBlockAResolved() {
+        return blockFromString(boundaryBlockA);
+    }
+
+    public Block getBoundaryBlockBResolved() {
+        return blockFromString(boundaryBlockB);
     }
 }

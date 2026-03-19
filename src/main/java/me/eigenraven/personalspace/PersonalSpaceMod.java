@@ -83,7 +83,9 @@ public class PersonalSpaceMod {
 
     public static final String CHANNEL = MODID;
 
-    public static List<String> clientAllowedBlocks = Lists.newArrayList(), clientAllowedBiomes = Lists.newArrayList();
+    public static List<String> clientAllowedBlocks = Lists.newArrayList();
+    public static List<String> clientAllowedBiomes = Lists.newArrayList();
+    public static List<String> clientAllowedBoundaryBlocks = Lists.newArrayList();
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {

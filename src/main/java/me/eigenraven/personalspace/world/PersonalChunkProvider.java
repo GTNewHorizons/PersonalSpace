@@ -10,11 +10,13 @@ import net.minecraft.block.Block;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.IProgressUpdate;
+import net.minecraft.util.MathHelper;
 import net.minecraft.world.ChunkPosition;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraft.world.gen.FlatLayerInfo;
 import net.minecraft.world.gen.feature.WorldGenAbstractTree;
@@ -22,8 +24,10 @@ import net.minecraft.world.gen.feature.WorldGenTrees;
 import net.minecraftforge.event.terraingen.DecorateBiomeEvent;
 import net.minecraftforge.event.terraingen.TerrainGen;
 
-import me.eigenraven.personalspace.Config;
+import com.github.bsideup.jabel.Desugar;
+
 import me.eigenraven.personalspace.PersonalSpaceMod;
+import me.eigenraven.personalspace.config.Config;
 
 public class PersonalChunkProvider implements IChunkProvider {
 
@@ -80,6 +84,82 @@ public class PersonalChunkProvider implements IChunkProvider {
             }
         }
 
+        DimensionConfig cfg = world.getConfig();
+
+        int groundLevel = cfg.getGroundLevel() - 1;
+        if (groundLevel >= 0 && groundLevel < worldHeight) {
+            int bYChunk = groundLevel >> 4;
+
+            int intervalX = MathHelper.clamp_int(cfg.getBoundaryChunkIntervalX(), 0, 20);
+            int intervalZ = MathHelper.clamp_int(cfg.getBoundaryChunkIntervalZ(), 0, 20);
+
+            boolean isBoundaryX = intervalX > 0 && mod(chunkX, intervalX) == 0;
+            boolean isBoundaryZ = intervalZ > 0 && mod(chunkZ, intervalZ) == 0;
+
+            Block boundaryBlockA = cfg.getBoundaryBlockAResolved();
+            int boundaryMetaA = cfg.getBoundaryMetaA();
+            Block boundaryBlockB = cfg.getBoundaryBlockBResolved();
+            int boundaryMetaB = cfg.getBoundaryMetaB();
+
+            boolean hasA = boundaryBlockA != null && boundaryBlockA != Blocks.air;
+            boolean hasB = boundaryBlockB != null && boundaryBlockB != Blocks.air;
+
+            boolean drawBoundaryX = isBoundaryX && (hasA || hasB);
+            boolean drawBoundaryZ = isBoundaryZ && (hasA || hasB);
+
+            if (drawBoundaryX || drawBoundaryZ) {
+                ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[bYChunk];
+                if (ebs == null) {
+                    ebs = new ExtendedBlockStorage(groundLevel & ~15, true);
+                    chunk.getBlockStorageArray()[bYChunk] = ebs;
+                }
+
+                NibbleArray metaArray = ebs.getMetadataArray();
+                if (metaArray == null) {
+                    metaArray = new NibbleArray(4096, 4);
+                    ebs.setBlockMetadataArray(metaArray);
+                }
+
+                for (int localZ = 0; localZ < 16; localZ++) {
+                    if (drawBoundaryX) {
+                        int worldX = chunkX << 4;
+                        int worldZ = (chunkZ << 4) + localZ;
+
+                        StripeBlock stripe = getStripeBlock(
+                                worldX,
+                                worldZ,
+                                boundaryBlockA,
+                                boundaryMetaA,
+                                boundaryBlockB,
+                                boundaryMetaB);
+                        if (stripe.block != null && stripe.block != Blocks.air) {
+                            ebs.func_150818_a(0, groundLevel & 15, localZ, stripe.block);
+                            ebs.setExtBlockMetadata(0, groundLevel & 15, localZ, stripe.meta);
+                        }
+                    }
+                }
+
+                for (int localX = 0; localX < 16; localX++) {
+                    if (drawBoundaryZ) {
+                        int worldX = (chunkX << 4) + localX;
+                        int worldZ = chunkZ << 4;
+
+                        StripeBlock stripe = getStripeBlock(
+                                worldX,
+                                worldZ,
+                                boundaryBlockA,
+                                boundaryMetaA,
+                                boundaryBlockB,
+                                boundaryMetaB);
+                        if (stripe.block != null && stripe.block != Blocks.air) {
+                            ebs.func_150818_a(localX, groundLevel & 15, 0, stripe.block);
+                            ebs.setExtBlockMetadata(localX, groundLevel & 15, 0, stripe.meta);
+                        }
+                    }
+                }
+            }
+        }
+
         if (chunkX == 0 && chunkZ == 0) {
             int platformLevel = this.world.getAverageGroundLevel();
             int yChunk = platformLevel >> 4;
@@ -104,6 +184,36 @@ public class PersonalChunkProvider implements IChunkProvider {
         chunk.generateSkylightMap();
 
         return chunk;
+    }
+
+    @Desugar
+    private record StripeBlock(Block block, int meta) {}
+
+    private StripeBlock getStripeBlock(int worldX, int worldZ, Block blockA, int metaA, Block blockB, int metaB) {
+        boolean useA = ((worldX + worldZ) & 1) == 0;
+
+        if (useA) {
+            if (blockA != null && blockA != Blocks.air) {
+                return new StripeBlock(blockA, metaA);
+            }
+            if (blockB != null && blockB != Blocks.air) {
+                return new StripeBlock(blockB, metaB);
+            }
+        } else {
+            if (blockB != null && blockB != Blocks.air) {
+                return new StripeBlock(blockB, metaB);
+            }
+            if (blockA != null && blockA != Blocks.air) {
+                return new StripeBlock(blockA, metaA);
+            }
+        }
+
+        return new StripeBlock(null, 0);
+    }
+
+    private int mod(int a, int b) {
+        int m = a % b;
+        return m < 0 ? m + b : m;
     }
 
     @Override

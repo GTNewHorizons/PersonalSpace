@@ -12,6 +12,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.biome.BiomeGenBase;
@@ -23,9 +24,11 @@ import org.lwjgl.opengl.GL11;
 import codechicken.lib.gui.GuiDraw;
 import cpw.mods.fml.common.registry.GameRegistry;
 import me.eigenraven.personalspace.CommonProxy;
-import me.eigenraven.personalspace.Config;
 import me.eigenraven.personalspace.PersonalSpaceMod;
 import me.eigenraven.personalspace.block.PortalTileEntity;
+import me.eigenraven.personalspace.config.AllowedBoundaryBlock;
+import me.eigenraven.personalspace.config.BoundaryBlockRules;
+import me.eigenraven.personalspace.config.Config;
 import me.eigenraven.personalspace.net.Packets;
 import me.eigenraven.personalspace.world.DimensionConfig;
 
@@ -50,9 +53,34 @@ public class GuiEditWorld extends GuiScreen {
     WButton save;
     WTextField presetEntry;
     List<WButton> presetButtons = new ArrayList<>();
+
+    WButton boundaryBlockAButton;
+    WButton boundaryBlockBButton;
+
+    WButton boundaryMetaAMinus;
+    WButton boundaryMetaAPlus;
+    WButton boundaryMetaBMinus;
+    WButton boundaryMetaBPlus;
+
+    WTextField boundaryMetaAField;
+    WTextField boundaryMetaBField;
+
+    WButton boundaryChunkXMinus;
+    WButton boundaryChunkXPlus;
+    WButton boundaryChunkZMinus;
+    WButton boundaryChunkZPlus;
+    WTextField boundaryChunkXField;
+    WTextField boundaryChunkZField;
+
+    int boundaryBlockACycle = 0;
+    int boundaryBlockBCycle = 0;
+
     Widget presetEditor;
     Widget rootWidget = new Widget();
     String voidPresetName = "gui.personalWorld.voidWorld";
+
+    private List<AllowedBoundaryBlock> allowedBoundaryRules = new ArrayList<>();
+    private List<String> allowedBoundaryBlockNames = new ArrayList<>();
 
     public GuiEditWorld(PortalTileEntity tile) {
         super();
@@ -71,6 +99,26 @@ public class GuiEditWorld extends GuiScreen {
             }
         } else {
             this.desiredConfig.setAllowGenerationChanges(true);
+        }
+
+        reloadBoundaryRules();
+
+        this.desiredConfig.setBoundaryMetaA(
+                clampBoundaryMeta(this.desiredConfig.getBoundaryMetaA(), this.desiredConfig.getBoundaryBlockA()));
+        this.desiredConfig.setBoundaryMetaB(
+                clampBoundaryMeta(this.desiredConfig.getBoundaryMetaB(), this.desiredConfig.getBoundaryBlockB()));
+        this.desiredConfig
+                .setBoundaryChunkIntervalX(clampBoundaryChunk(this.desiredConfig.getBoundaryChunkIntervalX()));
+        this.desiredConfig
+                .setBoundaryChunkIntervalZ(clampBoundaryChunk(this.desiredConfig.getBoundaryChunkIntervalZ()));
+    }
+
+    private void reloadBoundaryRules() {
+        this.allowedBoundaryRules = BoundaryBlockRules.parseAll(PersonalSpaceMod.clientAllowedBoundaryBlocks);
+        this.allowedBoundaryBlockNames = BoundaryBlockRules.extractBlockNames(this.allowedBoundaryRules);
+        if (this.allowedBoundaryBlockNames.isEmpty()) {
+            this.allowedBoundaryBlockNames = new ArrayList<>();
+            this.allowedBoundaryBlockNames.add("");
         }
     }
 
@@ -99,8 +147,125 @@ public class GuiEditWorld extends GuiScreen {
         skyType.tooltip = currentType.getButtonTooltip();
     }
 
+    private AllowedBoundaryBlock getBoundaryRule(String blockName) {
+        return BoundaryBlockRules.findByBlockName(this.allowedBoundaryRules, blockName);
+    }
+
+    private String getBoundaryButtonText(String s) {
+        if (s == null || s.isEmpty()) {
+            return "-";
+        }
+        String[] sp = s.split(":");
+        return sp.length == 2 ? sp[1].substring(0, Math.min(1, sp[1].length())).toUpperCase() : "?";
+    }
+
+    private Block getBoundaryBlock(String s) {
+        if (s == null || s.isEmpty()) {
+            return null;
+        }
+        return DimensionConfig.blockFromString(s);
+    }
+
+    private ItemStack getBoundaryPreviewStack(String s, int meta) {
+        Block b = getBoundaryBlock(s);
+        if (b == null) {
+            return null;
+        }
+        try {
+            Item item = Item.getItemFromBlock(b);
+            if (item == null) {
+                return null;
+            }
+            return new ItemStack(item, 1, clampBoundaryMeta(meta, s));
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private int getBoundaryMetaMin(String blockName) {
+        AllowedBoundaryBlock rule = getBoundaryRule(blockName);
+        return rule != null ? rule.getMinAllowedMeta() : 0;
+    }
+
+    private int getBoundaryMetaMax(String blockName) {
+        AllowedBoundaryBlock rule = getBoundaryRule(blockName);
+        return rule != null ? rule.getMaxAllowedMeta() : 0;
+    }
+
+    private boolean isBoundaryMetaAllowed(String blockName, int meta) {
+        if (blockName == null || blockName.isEmpty()) {
+            return meta == 0;
+        }
+        AllowedBoundaryBlock rule = getBoundaryRule(blockName);
+        return rule != null && rule.isMetaAllowed(meta);
+    }
+
+    private int clampBoundaryMeta(int meta, String blockName) {
+        if (blockName == null || blockName.isEmpty()) {
+            return 0;
+        }
+        AllowedBoundaryBlock rule = getBoundaryRule(blockName);
+        if (rule == null) {
+            return 0;
+        }
+        return rule.clampMeta(meta);
+    }
+
+    private int clampBoundaryChunk(int v) {
+        return MathHelper.clamp_int(v, 0, 20);
+    }
+
+    private String getBoundaryButtonTooltip(String s, int meta, String label) {
+        if (s == null || s.isEmpty()) {
+            return label + ": <none>, meta=0";
+        }
+        AllowedBoundaryBlock rule = getBoundaryRule(s);
+        Block b = getBoundaryBlock(s);
+        ItemStack is = getBoundaryPreviewStack(s, meta);
+        String dn = (is != null && is.getItem() != null) ? is.getDisplayName() : s;
+        String rangeText = rule != null ? rule.getMetaDescription() : "none";
+        if (b == null) {
+            return label + ": " + s + ", meta=" + meta + ", allowed=" + rangeText;
+        }
+        return label + ": " + dn + " (" + s + "), meta=" + meta + ", allowed=" + rangeText;
+    }
+
+    private void updateBoundaryButtons() {
+        String a = desiredConfig.getBoundaryBlockA();
+        String b = desiredConfig.getBoundaryBlockB();
+
+        int metaA = clampBoundaryMeta(desiredConfig.getBoundaryMetaA(), a);
+        int metaB = clampBoundaryMeta(desiredConfig.getBoundaryMetaB(), b);
+        desiredConfig.setBoundaryMetaA(metaA);
+        desiredConfig.setBoundaryMetaB(metaB);
+
+        boundaryBlockAButton.text = getBoundaryButtonText(a);
+        boundaryBlockAButton.tooltip = getBoundaryButtonTooltip(a, metaA, "Boundary A");
+        boundaryBlockAButton.itemStack = getBoundaryPreviewStack(a, metaA);
+
+        boundaryBlockBButton.text = getBoundaryButtonText(b);
+        boundaryBlockBButton.tooltip = getBoundaryButtonTooltip(b, metaB, "Boundary B");
+        boundaryBlockBButton.itemStack = getBoundaryPreviewStack(b, metaB);
+
+        if (boundaryMetaAField != null && !boundaryMetaAField.textField.isFocused()) {
+            boundaryMetaAField.textField.setText(Integer.toString(metaA));
+        }
+        if (boundaryMetaBField != null && !boundaryMetaBField.textField.isFocused()) {
+            boundaryMetaBField.textField.setText(Integer.toString(metaB));
+        }
+    }
+
+    private int parseIntOrDefault(String s, int def) {
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (Exception e) {
+            return def;
+        }
+    }
+
     @Override
     public void initGui() {
+        reloadBoundaryRules();
         this.ySize = 0;
         addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.skyColor"), false));
         this.skyRed = new WSlider(
@@ -216,6 +381,7 @@ public class GuiEditWorld extends GuiScreen {
                 () -> desiredConfig.setWeatherEnabled(enableWeather.getValue()));
         this.enableWeather.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.weather"), false));
         rootWidget.addChild(this.enableWeather);
+
         this.generateVegetation = new WToggleButton(
                 new Rectangle(0, this.ySize, 18, 18),
                 "",
@@ -225,6 +391,7 @@ public class GuiEditWorld extends GuiScreen {
                 () -> desiredConfig.setGeneratingVegetation(generateVegetation.getValue()));
         this.generateVegetation.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.vegetation"), false));
         addWidget(generateVegetation);
+
         this.enableClouds = new WToggleButton(
                 new Rectangle(90, this.generateVegetation.position.y, 18, 18),
                 "",
@@ -265,7 +432,195 @@ public class GuiEditWorld extends GuiScreen {
             ++pi;
             px += 26;
         }
-        this.ySize += 20;
+        this.ySize += 30;
+
+        addWidget(new WLabel(0, this.ySize, "Boundary", false));
+
+        this.boundaryBlockAButton = new WButton(
+                new Rectangle(0, this.ySize, 20, 20),
+                "?",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    boundaryBlockACycle = (boundaryBlockAButton.lastButton == 0) ? (boundaryBlockACycle + 1)
+                            : (boundaryBlockACycle + allowedBoundaryBlockNames.size() - 1);
+                    boundaryBlockACycle %= allowedBoundaryBlockNames.size();
+                    String newBlock = allowedBoundaryBlockNames.get(boundaryBlockACycle);
+                    desiredConfig.setBoundaryBlockA(newBlock);
+                    desiredConfig.setBoundaryMetaA(clampBoundaryMeta(desiredConfig.getBoundaryMetaA(), newBlock));
+                    updateBoundaryButtons();
+                });
+        this.boundaryBlockAButton.addChild(new WLabel(24, 4, "A", false));
+        addWidget(this.boundaryBlockAButton);
+
+        this.boundaryMetaAMinus = new WButton(
+                new Rectangle(40, this.boundaryBlockAButton.position.y, 18, 18),
+                "-",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    int v = desiredConfig.getBoundaryMetaA() - 1;
+                    v = clampBoundaryMeta(v, desiredConfig.getBoundaryBlockA());
+                    desiredConfig.setBoundaryMetaA(v);
+                    updateBoundaryButtons();
+                });
+        rootWidget.addChild(this.boundaryMetaAMinus);
+
+        this.boundaryMetaAField = new WTextField(
+                new Rectangle(60, this.boundaryBlockAButton.position.y, 28, 18),
+                Integer.toString(desiredConfig.getBoundaryMetaA()));
+        rootWidget.addChild(this.boundaryMetaAField);
+
+        this.boundaryMetaAPlus = new WButton(
+                new Rectangle(90, this.boundaryBlockAButton.position.y, 18, 18),
+                "+",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    int v = desiredConfig.getBoundaryMetaA() + 1;
+                    v = clampBoundaryMeta(v, desiredConfig.getBoundaryBlockA());
+                    desiredConfig.setBoundaryMetaA(v);
+                    updateBoundaryButtons();
+                });
+        rootWidget.addChild(this.boundaryMetaAPlus);
+
+        this.boundaryBlockBButton = new WButton(
+                new Rectangle(120, this.boundaryBlockAButton.position.y, 20, 20),
+                "?",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    boundaryBlockBCycle = (boundaryBlockBButton.lastButton == 0) ? (boundaryBlockBCycle + 1)
+                            : (boundaryBlockBCycle + allowedBoundaryBlockNames.size() - 1);
+                    boundaryBlockBCycle %= allowedBoundaryBlockNames.size();
+                    String newBlock = allowedBoundaryBlockNames.get(boundaryBlockBCycle);
+                    desiredConfig.setBoundaryBlockB(newBlock);
+                    desiredConfig.setBoundaryMetaB(clampBoundaryMeta(desiredConfig.getBoundaryMetaB(), newBlock));
+                    updateBoundaryButtons();
+                });
+        this.boundaryBlockBButton.addChild(new WLabel(24, 4, "B", false));
+        rootWidget.addChild(this.boundaryBlockBButton);
+
+        this.boundaryMetaBMinus = new WButton(
+                new Rectangle(160, this.boundaryBlockAButton.position.y, 18, 18),
+                "-",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    int v = desiredConfig.getBoundaryMetaB() - 1;
+                    v = clampBoundaryMeta(v, desiredConfig.getBoundaryBlockB());
+                    desiredConfig.setBoundaryMetaB(v);
+                    updateBoundaryButtons();
+                });
+        rootWidget.addChild(this.boundaryMetaBMinus);
+
+        this.boundaryMetaBField = new WTextField(
+                new Rectangle(180, this.boundaryBlockAButton.position.y, 28, 18),
+                Integer.toString(desiredConfig.getBoundaryMetaB()));
+        rootWidget.addChild(this.boundaryMetaBField);
+
+        this.boundaryMetaBPlus = new WButton(
+                new Rectangle(210, this.boundaryBlockAButton.position.y, 18, 18),
+                "+",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    int v = desiredConfig.getBoundaryMetaB() + 1;
+                    v = clampBoundaryMeta(v, desiredConfig.getBoundaryBlockB());
+                    desiredConfig.setBoundaryMetaB(v);
+                    updateBoundaryButtons();
+                });
+        rootWidget.addChild(this.boundaryMetaBPlus);
+
+        this.ySize += 6;
+
+        addWidget(new WLabel(0, this.ySize, "Boundary Chunks X x Z (0-20)", false));
+
+        this.boundaryChunkXMinus = new WButton(
+                new Rectangle(0, this.ySize, 18, 18),
+                "-",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    int v = clampBoundaryChunk(
+                            parseIntOrDefault(
+                                    boundaryChunkXField.textField.getText(),
+                                    desiredConfig.getBoundaryChunkIntervalX()) - 1);
+                    desiredConfig.setBoundaryChunkIntervalX(v);
+                    boundaryChunkXField.textField.setText(Integer.toString(v));
+                });
+        rootWidget.addChild(this.boundaryChunkXMinus);
+
+        this.boundaryChunkXField = new WTextField(
+                new Rectangle(20, this.ySize, 32, 18),
+                Integer.toString(desiredConfig.getBoundaryChunkIntervalX()));
+        rootWidget.addChild(this.boundaryChunkXField);
+
+        this.boundaryChunkXPlus = new WButton(
+                new Rectangle(54, this.ySize, 18, 18),
+                "+",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    int v = clampBoundaryChunk(
+                            parseIntOrDefault(
+                                    boundaryChunkXField.textField.getText(),
+                                    desiredConfig.getBoundaryChunkIntervalX()) + 1);
+                    desiredConfig.setBoundaryChunkIntervalX(v);
+                    boundaryChunkXField.textField.setText(Integer.toString(v));
+                });
+        rootWidget.addChild(this.boundaryChunkXPlus);
+
+        this.rootWidget.addChild(new WLabel(78, this.ySize + 4, "x", false));
+
+        this.boundaryChunkZMinus = new WButton(
+                new Rectangle(90, this.ySize, 18, 18),
+                "-",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    int v = clampBoundaryChunk(
+                            parseIntOrDefault(
+                                    boundaryChunkZField.textField.getText(),
+                                    desiredConfig.getBoundaryChunkIntervalZ()) - 1);
+                    desiredConfig.setBoundaryChunkIntervalZ(v);
+                    boundaryChunkZField.textField.setText(Integer.toString(v));
+                });
+        rootWidget.addChild(this.boundaryChunkZMinus);
+
+        this.boundaryChunkZField = new WTextField(
+                new Rectangle(110, this.ySize, 32, 18),
+                Integer.toString(desiredConfig.getBoundaryChunkIntervalZ()));
+        rootWidget.addChild(this.boundaryChunkZField);
+
+        this.boundaryChunkZPlus = new WButton(
+                new Rectangle(144, this.ySize, 18, 18),
+                "+",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    int v = clampBoundaryChunk(
+                            parseIntOrDefault(
+                                    boundaryChunkZField.textField.getText(),
+                                    desiredConfig.getBoundaryChunkIntervalZ()) + 1);
+                    desiredConfig.setBoundaryChunkIntervalZ(v);
+                    boundaryChunkZField.textField.setText(Integer.toString(v));
+                });
+        rootWidget.addChild(this.boundaryChunkZPlus);
+
+        this.ySize += 24;
+
+        updateBoundaryButtons();
 
         this.save = new WButton(
                 new Rectangle(0, ySize, 128, 20),
@@ -294,7 +649,7 @@ public class GuiEditWorld extends GuiScreen {
         regeneratePresetEditor();
 
         this.xSize = 320 - 16;
-        this.ySize = 240 - 16;
+        this.ySize = 320 - 16;
         this.guiLeft = (this.width - this.xSize) / 2;
         this.guiTop = (this.height - this.ySize) / 2;
     }
@@ -309,6 +664,7 @@ public class GuiEditWorld extends GuiScreen {
             String[] blName = bl.split(":");
             if (blName.length != 2) continue;
             Block block = GameRegistry.findBlock(blName[0], blName[1]);
+            if (block == null) continue;
             ItemStack is = new ItemStack(block);
             WButton addBtn = new WButton(new Rectangle(curX, curY, 20, 20), "", false, 0, null, () -> {
                 FlatLayerInfo fli = new FlatLayerInfo(1, block);
@@ -438,6 +794,23 @@ public class GuiEditWorld extends GuiScreen {
         this.biomeEditButton.enabled = generationEnabled;
         this.biomeEditButton.buttonIcon = generationEnabled ? Icons.PENCIL : Icons.LOCK;
         this.presetEntry.enabled = generationEnabled;
+
+        this.boundaryBlockAButton.enabled = generationEnabled;
+        this.boundaryBlockBButton.enabled = generationEnabled;
+        this.boundaryMetaAMinus.enabled = generationEnabled;
+        this.boundaryMetaAPlus.enabled = generationEnabled;
+        this.boundaryMetaBMinus.enabled = generationEnabled;
+        this.boundaryMetaBPlus.enabled = generationEnabled;
+        this.boundaryMetaAField.enabled = generationEnabled;
+        this.boundaryMetaBField.enabled = generationEnabled;
+
+        this.boundaryChunkXMinus.enabled = generationEnabled;
+        this.boundaryChunkXPlus.enabled = generationEnabled;
+        this.boundaryChunkZMinus.enabled = generationEnabled;
+        this.boundaryChunkZPlus.enabled = generationEnabled;
+        this.boundaryChunkXField.enabled = generationEnabled;
+        this.boundaryChunkZField.enabled = generationEnabled;
+
         String actualText = this.presetEntry.textField.getText();
         if (voidPresetName.equals(actualText)) {
             actualText = "";
@@ -458,10 +831,11 @@ public class GuiEditWorld extends GuiScreen {
             this.desiredConfig.setLayers(actualText);
             this.regeneratePresetEditor();
         }
+
         this.desiredConfig.setBiomeId(this.biome.textField.getText());
         if (!generationEnabled) {
             this.biome.textField.setTextColor(0x909090);
-        } else if (!this.desiredConfig.getBiomeId()
+        } else if (BiomeGenBase.getBiome(this.desiredConfig.getRawBiomeId()) == null || !this.desiredConfig.getBiomeId()
                 .equalsIgnoreCase(BiomeGenBase.getBiome(this.desiredConfig.getRawBiomeId()).biomeName)) {
                     this.biome.textField.setTextColor(0xFF0000);
                     this.biome.tooltip = I18n.format("gui.personalWorld.invalidSyntax");
@@ -475,6 +849,75 @@ public class GuiEditWorld extends GuiScreen {
                 this.biome.textField.setTextColor(0xA0FFA0);
                 this.biome.tooltip = null;
             }
+
+        if (generationEnabled) {
+            int rawMetaA = parseIntOrDefault(boundaryMetaAField.textField.getText(), desiredConfig.getBoundaryMetaA());
+            if (!isBoundaryMetaAllowed(desiredConfig.getBoundaryBlockA(), rawMetaA)) {
+                this.boundaryMetaAField.textField.setTextColor(0xFF0000);
+                AllowedBoundaryBlock rule = getBoundaryRule(desiredConfig.getBoundaryBlockA());
+                this.boundaryMetaAField.tooltip = rule != null ? ("Allowed: " + rule.getMetaDescription())
+                        : "Invalid boundary meta";
+                inputsValid = false;
+            } else {
+                this.boundaryMetaAField.textField.setTextColor(0xA0FFA0);
+                desiredConfig.setBoundaryMetaA(rawMetaA);
+            }
+
+            int rawMetaB = parseIntOrDefault(boundaryMetaBField.textField.getText(), desiredConfig.getBoundaryMetaB());
+            if (!isBoundaryMetaAllowed(desiredConfig.getBoundaryBlockB(), rawMetaB)) {
+                this.boundaryMetaBField.textField.setTextColor(0xFF0000);
+                AllowedBoundaryBlock rule = getBoundaryRule(desiredConfig.getBoundaryBlockB());
+                this.boundaryMetaBField.tooltip = rule != null ? ("Allowed: " + rule.getMetaDescription())
+                        : "Invalid boundary meta";
+                inputsValid = false;
+            } else {
+                this.boundaryMetaBField.textField.setTextColor(0xA0FFA0);
+                desiredConfig.setBoundaryMetaB(rawMetaB);
+            }
+
+            int bx = parseIntOrDefault(this.boundaryChunkXField.textField.getText(), 0);
+            boolean bxOk = bx >= 0 && bx <= 20;
+            if (!bxOk) {
+                this.boundaryChunkXField.textField.setTextColor(0xFF0000);
+                this.boundaryChunkXField.tooltip = "0-20";
+                inputsValid = false;
+            } else {
+                this.boundaryChunkXField.textField.setTextColor(0xA0FFA0);
+                this.boundaryChunkXField.tooltip = "0-20";
+                this.desiredConfig.setBoundaryChunkIntervalX(bx);
+            }
+
+            int bz = parseIntOrDefault(this.boundaryChunkZField.textField.getText(), 0);
+            boolean bzOk = bz >= 0 && bz <= 20;
+            if (!bzOk) {
+                this.boundaryChunkZField.textField.setTextColor(0xFF0000);
+                this.boundaryChunkZField.tooltip = "0-20";
+                inputsValid = false;
+            } else {
+                this.boundaryChunkZField.textField.setTextColor(0xA0FFA0);
+                this.boundaryChunkZField.tooltip = "0-20";
+                this.desiredConfig.setBoundaryChunkIntervalZ(bz);
+            }
+
+            if (!desiredConfig.getBoundaryBlockA().isEmpty()
+                    && getBoundaryRule(desiredConfig.getBoundaryBlockA()) == null) {
+                inputsValid = false;
+                this.boundaryBlockAButton.tooltip = "Boundary A block not allowed";
+            }
+
+            if (!desiredConfig.getBoundaryBlockB().isEmpty()
+                    && getBoundaryRule(desiredConfig.getBoundaryBlockB()) == null) {
+                inputsValid = false;
+                this.boundaryBlockBButton.tooltip = "Boundary B block not allowed";
+            }
+
+            updateBoundaryButtons();
+        } else {
+            this.boundaryMetaAField.textField.setTextColor(0x909090);
+            this.boundaryMetaBField.textField.setTextColor(0x909090);
+            this.boundaryChunkXField.textField.setTextColor(0x909090);
+            this.boundaryChunkZField.textField.setTextColor(0x909090);
+        }
 
         this.save.enabled = inputsValid;
 

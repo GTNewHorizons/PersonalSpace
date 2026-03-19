@@ -12,6 +12,7 @@ import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import me.eigenraven.personalspace.block.PortalTileEntity;
+import me.eigenraven.personalspace.config.Config;
 import me.eigenraven.personalspace.world.DimensionConfig;
 
 public class CommonProxy {

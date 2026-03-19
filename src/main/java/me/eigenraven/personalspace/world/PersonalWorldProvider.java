@@ -16,8 +16,8 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import me.eigenraven.personalspace.CommonProxy;
-import me.eigenraven.personalspace.Config;
 import me.eigenraven.personalspace.PersonalSpaceMod;
+import me.eigenraven.personalspace.config.Config;
 
 /**
  * Based on WorldProviderEnd
