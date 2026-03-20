@@ -448,7 +448,7 @@ public class GuiEditWorld extends GuiScreen {
             ++pi;
             px += 26;
         }
-        this.ySize += 30;
+        this.ySize += 20;
 
         addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.boundary"), false));
 
@@ -554,7 +554,7 @@ public class GuiEditWorld extends GuiScreen {
                 });
         rootWidget.addChild(this.boundaryMetaBPlus);
 
-        this.ySize += 6;
+        this.ySize += 1;
 
         addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.boundary.chunks"), false));
 
@@ -665,7 +665,7 @@ public class GuiEditWorld extends GuiScreen {
         regeneratePresetEditor();
 
         this.xSize = 320 - 16;
-        this.ySize = 320 - 16;
+        this.ySize = 310 - 16;
         this.guiLeft = (this.width - this.xSize) / 2;
         this.guiTop = (this.height - this.ySize) / 2;
     }
