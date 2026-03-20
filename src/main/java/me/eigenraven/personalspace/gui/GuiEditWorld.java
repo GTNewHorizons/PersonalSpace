@@ -430,7 +430,7 @@ public class GuiEditWorld extends GuiScreen {
 
         addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.presets"), false));
 
-        int px = 8, pi = 1;
+        int px = 0, pi = 1;
         for (String preset : Config.defaultPresets) {
             if (preset.isEmpty()) {
                 preset = voidPresetName;
@@ -467,11 +467,11 @@ public class GuiEditWorld extends GuiScreen {
                     desiredConfig.setBoundaryMetaA(clampBoundaryMeta(desiredConfig.getBoundaryMetaA(), newBlock));
                     updateBoundaryButtons();
                 });
-        this.boundaryBlockAButton.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.boundary.a.short"), false));
+        this.boundaryBlockAButton.addChild(new WLabel(26, 6, I18n.format("gui.personalWorld.boundary.a.short"), false));
         addWidget(this.boundaryBlockAButton);
 
         this.boundaryMetaAMinus = new WButton(
-                new Rectangle(40, this.boundaryBlockAButton.position.y, 18, 18),
+                new Rectangle(40, this.boundaryBlockAButton.position.y + 1, 18, 18),
                 I18n.format("gui.personalWorld.button.minus"),
                 true,
                 WButton.DEFAULT_COLOR,
@@ -485,12 +485,12 @@ public class GuiEditWorld extends GuiScreen {
         rootWidget.addChild(this.boundaryMetaAMinus);
 
         this.boundaryMetaAField = new WTextField(
-                new Rectangle(60, this.boundaryBlockAButton.position.y, 28, 18),
+                new Rectangle(60, this.boundaryBlockAButton.position.y + 1, 28, 18),
                 Integer.toString(desiredConfig.getBoundaryMetaA()));
         rootWidget.addChild(this.boundaryMetaAField);
 
         this.boundaryMetaAPlus = new WButton(
-                new Rectangle(90, this.boundaryBlockAButton.position.y, 18, 18),
+                new Rectangle(90, this.boundaryBlockAButton.position.y + 1, 18, 18),
                 I18n.format("gui.personalWorld.button.plus"),
                 true,
                 WButton.DEFAULT_COLOR,
@@ -518,11 +518,11 @@ public class GuiEditWorld extends GuiScreen {
                     desiredConfig.setBoundaryMetaB(clampBoundaryMeta(desiredConfig.getBoundaryMetaB(), newBlock));
                     updateBoundaryButtons();
                 });
-        this.boundaryBlockBButton.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.boundary.b.short"), false));
+        this.boundaryBlockBButton.addChild(new WLabel(26, 6, I18n.format("gui.personalWorld.boundary.b.short"), false));
         rootWidget.addChild(this.boundaryBlockBButton);
 
         this.boundaryMetaBMinus = new WButton(
-                new Rectangle(160, this.boundaryBlockAButton.position.y, 18, 18),
+                new Rectangle(160, this.boundaryBlockAButton.position.y + 1, 18, 18),
                 I18n.format("gui.personalWorld.button.minus"),
                 true,
                 WButton.DEFAULT_COLOR,
@@ -536,12 +536,12 @@ public class GuiEditWorld extends GuiScreen {
         rootWidget.addChild(this.boundaryMetaBMinus);
 
         this.boundaryMetaBField = new WTextField(
-                new Rectangle(180, this.boundaryBlockAButton.position.y, 28, 18),
+                new Rectangle(180, this.boundaryBlockAButton.position.y + 1, 28, 18),
                 Integer.toString(desiredConfig.getBoundaryMetaB()));
         rootWidget.addChild(this.boundaryMetaBField);
 
         this.boundaryMetaBPlus = new WButton(
-                new Rectangle(210, this.boundaryBlockAButton.position.y, 18, 18),
+                new Rectangle(210, this.boundaryBlockAButton.position.y + 1, 18, 18),
                 I18n.format("gui.personalWorld.button.plus"),
                 true,
                 WButton.DEFAULT_COLOR,
