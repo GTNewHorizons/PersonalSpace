@@ -120,6 +120,13 @@ public class GuiEditWorld extends GuiScreen {
             this.allowedBoundaryBlockNames = new ArrayList<>();
             this.allowedBoundaryBlockNames.add("");
         }
+        this.boundaryBlockACycle = findCycleIndex(desiredConfig.getBoundaryBlockA());
+        this.boundaryBlockBCycle = findCycleIndex(desiredConfig.getBoundaryBlockB());
+    }
+
+    private int findCycleIndex(String blockName) {
+        int idx = allowedBoundaryBlockNames.indexOf(blockName);
+        return Math.max(idx, 0);
     }
 
     @Override
