@@ -52,6 +52,17 @@ gui.personalWorld.boundary.blockNotAllowed.a=Boundary A block not allowed
 gui.personalWorld.boundary.blockNotAllowed.b=Boundary B block not allowed
 gui.personalWorld.boundary.range=0-20
 
+gui.personalWorld.gap=Gap Chunks (0-5)
+gui.personalWorld.gap.a=Gap A
+gui.personalWorld.gap.b=Gap B
+gui.personalWorld.gap.a.short=A
+gui.personalWorld.gap.b.short=B
+gui.personalWorld.gap.widthRange=0-5
+gui.personalWorld.gap.preset.ROAD=Road
+gui.personalWorld.gap.preset.SOLID=Solid
+gui.personalWorld.gap.blockNotAllowed.a=Gap A block not allowed
+gui.personalWorld.gap.blockNotAllowed.b=Gap B block not allowed
+
 gui.personalWorld.button.plus=+
 gui.personalWorld.button.minus=-
 gui.personalWorld.multiply=x

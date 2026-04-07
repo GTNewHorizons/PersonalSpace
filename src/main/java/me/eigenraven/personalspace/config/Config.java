@@ -22,6 +22,8 @@ public class Config {
 
         public static final String[] allowedBoundaryBlocks = new String[] { "minecraft:wool:0~15" };
 
+        public static final String[] allowedGapBlocks = new String[] { "minecraft:wool:0~15" };
+
         public static final String[] allowedBiomes = new String[] { "Plains", "Ocean", "Desert", "Extreme Hills",
                 "Forest", "Taiga", "Swampland", "River", "MushroomIsland", "Swampland", "Jungle", "Savanna", "Mesa" };
 
@@ -38,6 +40,7 @@ public class Config {
     public static String[] defaultPresets = Arrays.copyOf(Defaults.defaultPresets, Defaults.defaultPresets.length);
     public static HashSet<String> allowedBlocks = new HashSet<>(Arrays.asList(Defaults.allowedBlocks));
     public static HashSet<String> allowedBoundaryBlocks = new HashSet<>(Arrays.asList(Defaults.allowedBoundaryBlocks));
+    public static HashSet<String> allowedGapBlocks = new HashSet<>(Arrays.asList(Defaults.allowedGapBlocks));
     public static HashSet<String> allowedBiomes = new HashSet<>(Arrays.asList(Defaults.allowedBiomes));
     public static int firstDimensionId = Defaults.firstDimensionId;
     public static boolean debugLogging = Defaults.debugLogging;
@@ -68,6 +71,14 @@ public class Config {
                                 "allowedBoundaryBlocks",
                                 Defaults.allowedBoundaryBlocks,
                                 "Allowed boundary blocks with meta ranges. Format: modid:block:meta~meta,meta... Example: minecraft:stone:0~6")));
+
+        allowedGapBlocks = new HashSet<>(
+                Arrays.asList(
+                        configuration.getStringList(
+                                Categories.general,
+                                "allowedGapBlocks",
+                                Defaults.allowedGapBlocks,
+                                "Allowed gap blocks with meta ranges. Format: modid:block:meta~meta,meta... Example: minecraft:wool:0~15")));
 
         allowedBiomes = Arrays
                 .stream(

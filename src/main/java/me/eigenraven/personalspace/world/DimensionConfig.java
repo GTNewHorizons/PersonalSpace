@@ -115,6 +115,18 @@ public class DimensionConfig {
         }
     }
 
+    public enum GapPreset {
+
+        ROAD,
+        SOLID;
+
+        GapPreset() {}
+
+        public static GapPreset fromOrdinal(int ordinal) {
+            return (ordinal < 0 || ordinal >= values().length) ? GapPreset.ROAD : values()[ordinal];
+        }
+    }
+
     private String saveDirOverride = "";
     private int skyColor = 0xc0d8ff;
     private float starBrightness = 1.0F;
@@ -134,6 +146,13 @@ public class DimensionConfig {
     private int boundaryMetaB = 15;
     private int boundaryChunkIntervalX = 0;
     private int boundaryChunkIntervalZ = 0;
+
+    private int gapWidth = 0;
+    private GapPreset gapPreset = GapPreset.ROAD;
+    private String gapBlockA = "minecraft:wool";
+    private int gapMetaA = 15;
+    private String gapBlockB = "minecraft:wool";
+    private int gapMetaB = 0;
 
     private boolean needsSaving = true;
 
@@ -169,6 +188,13 @@ public class DimensionConfig {
         pkt.writeVarInt(boundaryMetaB);
         pkt.writeVarInt(boundaryChunkIntervalX);
         pkt.writeVarInt(boundaryChunkIntervalZ);
+
+        pkt.writeVarInt(gapWidth);
+        pkt.writeVarInt(gapPreset.ordinal());
+        pkt.writeString(gapBlockA == null ? "" : gapBlockA);
+        pkt.writeVarInt(gapMetaA);
+        pkt.writeString(gapBlockB == null ? "" : gapBlockB);
+        pkt.writeVarInt(gapMetaB);
     }
 
     public void readFromPacket(MCDataInput pkt) {
@@ -203,6 +229,13 @@ public class DimensionConfig {
         this.setBoundaryMetaB(pkt.readVarInt());
         this.setBoundaryChunkIntervalX(pkt.readVarInt());
         this.setBoundaryChunkIntervalZ(pkt.readVarInt());
+
+        this.setGapWidth(pkt.readVarInt());
+        this.setGapPreset(GapPreset.fromOrdinal(pkt.readVarInt()));
+        this.setGapBlockA(pkt.readString());
+        this.setGapMetaA(pkt.readVarInt());
+        this.setGapBlockB(pkt.readString());
+        this.setGapMetaB(pkt.readVarInt());
     }
 
     /**
@@ -349,6 +382,50 @@ public class DimensionConfig {
             setBoundaryChunkIntervalZ(cur.getInt());
         }
 
+        final String GAP = "gap";
+
+        cur = cfg.get(GAP, "width", getGapWidth(), "", 0, 5);
+        if (write) {
+            cur.set(getGapWidth());
+        } else {
+            setGapWidth(cur.getInt());
+        }
+
+        cur = cfg.get(GAP, "preset", getGapPreset().ordinal(), "");
+        if (write) {
+            cur.set(getGapPreset().ordinal());
+        } else {
+            setGapPreset(GapPreset.fromOrdinal(cur.getInt()));
+        }
+
+        cur = cfg.get(GAP, "blockA", getGapBlockA());
+        if (write) {
+            cur.set(getGapBlockA());
+        } else {
+            setGapBlockA(cur.getString());
+        }
+
+        cur = cfg.get(GAP, "metaA", getGapMetaA(), "", 0, 15);
+        if (write) {
+            cur.set(getGapMetaA());
+        } else {
+            setGapMetaA(cur.getInt());
+        }
+
+        cur = cfg.get(GAP, "blockB", getGapBlockB());
+        if (write) {
+            cur.set(getGapBlockB());
+        } else {
+            setGapBlockB(cur.getString());
+        }
+
+        cur = cfg.get(GAP, "metaB", getGapMetaB(), "", 0, 15);
+        if (write) {
+            cur.set(getGapMetaB());
+        } else {
+            setGapMetaB(cur.getInt());
+        }
+
         cur = cfg.get(WORLDGEN, "dimId", dimId);
         if (write) {
             cur.set(dimId);
@@ -396,6 +473,13 @@ public class DimensionConfig {
             this.setBoundaryMetaB(source.getBoundaryMetaB());
             this.setBoundaryChunkIntervalX(source.getBoundaryChunkIntervalX());
             this.setBoundaryChunkIntervalZ(source.getBoundaryChunkIntervalZ());
+
+            this.setGapWidth(source.getGapWidth());
+            this.setGapPreset(source.getGapPreset());
+            this.setGapBlockA(source.getGapBlockA());
+            this.setGapMetaA(source.getGapMetaA());
+            this.setGapBlockB(source.getGapBlockB());
+            this.setGapMetaB(source.getGapMetaB());
 
             this.needsSaving = true;
         }
@@ -870,5 +954,88 @@ public class DimensionConfig {
 
     public Block getBoundaryBlockBResolved() {
         return blockFromString(boundaryBlockB);
+    }
+
+    public int getGapWidth() {
+        return gapWidth;
+    }
+
+    public void setGapWidth(int gapWidth) {
+        int v = MathHelper.clamp_int(gapWidth, 0, 5);
+        if (this.gapWidth != v) {
+            this.needsSaving = true;
+            this.gapWidth = v;
+        }
+    }
+
+    public GapPreset getGapPreset() {
+        return gapPreset;
+    }
+
+    public void setGapPreset(GapPreset gapPreset) {
+        if (this.gapPreset != gapPreset) {
+            this.needsSaving = true;
+            this.gapPreset = gapPreset;
+        }
+    }
+
+    public String getGapBlockA() {
+        return gapBlockA == null ? "" : gapBlockA;
+    }
+
+    public void setGapBlockA(String gapBlockA) {
+        if (gapBlockA == null) {
+            gapBlockA = "";
+        }
+        if (!this.getGapBlockA().equals(gapBlockA)) {
+            this.needsSaving = true;
+            this.gapBlockA = gapBlockA;
+        }
+    }
+
+    public int getGapMetaA() {
+        return gapMetaA;
+    }
+
+    public void setGapMetaA(int gapMetaA) {
+        int v = MathHelper.clamp_int(gapMetaA, 0, 15);
+        if (this.gapMetaA != v) {
+            this.needsSaving = true;
+            this.gapMetaA = v;
+        }
+    }
+
+    public String getGapBlockB() {
+        return gapBlockB == null ? "" : gapBlockB;
+    }
+
+    public void setGapBlockB(String gapBlockB) {
+        if (gapBlockB == null) {
+            gapBlockB = "";
+        }
+        if (!this.getGapBlockB().equals(gapBlockB)) {
+            this.needsSaving = true;
+            this.gapBlockB = gapBlockB;
+        }
+    }
+
+    public int getGapMetaB() {
+        return gapMetaB;
+    }
+
+    public void setGapMetaB(int gapMetaB) {
+        int v = MathHelper.clamp_int(gapMetaB, 0, 15);
+        if (this.gapMetaB != v) {
+            this.needsSaving = true;
+            this.gapMetaB = v;
+        }
+    }
+
+    public Block getGapBlockAResolved() {
+        return blockFromString(gapBlockA);
+    }
+
+    public Block getGapBlockBResolved() {
+        return blockFromString(gapBlockB);
     }
 }

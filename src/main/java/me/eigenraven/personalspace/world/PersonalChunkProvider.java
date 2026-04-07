@@ -93,11 +93,43 @@ public class PersonalChunkProvider implements IChunkProvider {
             int intervalX = MathHelper.clamp_int(cfg.getBoundaryChunkIntervalX(), 0, 20);
             int intervalZ = MathHelper.clamp_int(cfg.getBoundaryChunkIntervalZ(), 0, 20);
 
-            boolean isBoundaryX = intervalX > 0 && mod(chunkX, intervalX) == 0;
-            boolean isBoundaryZ = intervalZ > 0 && mod(chunkZ, intervalZ) == 0;
+            int gapWidth = MathHelper.clamp_int(cfg.getGapWidth(), 0, 5);
+            int periodX = intervalX + gapWidth;
+            int periodZ = intervalZ + gapWidth;
+            boolean isGapChunkX = gapWidth > 0 && intervalX > 0 && mod(chunkX, periodX) >= intervalX;
+            boolean isGapChunkZ = gapWidth > 0 && intervalZ > 0 && mod(chunkZ, periodZ) >= intervalZ;
 
-            boolean prevBoundaryX = intervalX > 0 && mod(chunkX - 1, intervalX) == 0;
-            boolean prevBoundaryZ = intervalZ > 0 && mod(chunkZ - 1, intervalZ) == 0;
+            if (isGapChunkX || isGapChunkZ) {
+                generateGapInChunk(
+                        chunk,
+                        chunkX,
+                        chunkZ,
+                        groundLevel,
+                        bYChunk,
+                        cfg,
+                        isGapChunkX,
+                        isGapChunkZ,
+                        periodX,
+                        periodZ,
+                        gapWidth,
+                        intervalX,
+                        intervalZ);
+            }
+
+            boolean isBoundaryX, prevBoundaryX, isBoundaryZ, prevBoundaryZ;
+            if (gapWidth > 0) {
+                // isBoundaryX: draw at localX=0 → first area chunk after gap (mod == 0)
+                isBoundaryX = intervalX > 0 && mod(chunkX, periodX) == 0;
+                // prevBoundaryX: draw at localX=15 → last area chunk before gap (mod == interval-1)
+                prevBoundaryX = intervalX > 0 && mod(chunkX, periodX) == intervalX - 1;
+                isBoundaryZ = intervalZ > 0 && mod(chunkZ, periodZ) == 0;
+                prevBoundaryZ = intervalZ > 0 && mod(chunkZ, periodZ) == intervalZ - 1;
+            } else {
+                isBoundaryX = intervalX > 0 && mod(chunkX, intervalX) == 0;
+                isBoundaryZ = intervalZ > 0 && mod(chunkZ, intervalZ) == 0;
+                prevBoundaryX = intervalX > 0 && mod(chunkX - 1, intervalX) == 0;
+                prevBoundaryZ = intervalZ > 0 && mod(chunkZ - 1, intervalZ) == 0;
+            }
 
             Block boundaryBlockA = cfg.getBoundaryBlockAResolved();
             int boundaryMetaA = cfg.getBoundaryMetaA();
@@ -109,7 +141,9 @@ public class PersonalChunkProvider implements IChunkProvider {
 
             boolean canDrawBoundary = hasA || hasB;
 
-            if (canDrawBoundary && (isBoundaryX || prevBoundaryX || isBoundaryZ || prevBoundaryZ)) {
+            if (canDrawBoundary && !isGapChunkX
+                    && !isGapChunkZ
+                    && (isBoundaryX || prevBoundaryX || isBoundaryZ || prevBoundaryZ)) {
                 ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[bYChunk];
                 if (ebs == null) {
                     ebs = new ExtendedBlockStorage(groundLevel & ~15, true);
@@ -254,6 +288,114 @@ public class PersonalChunkProvider implements IChunkProvider {
     private int mod(int a, int b) {
         int m = a % b;
         return m < 0 ? m + b : m;
+    }
+
+    private void generateGapInChunk(Chunk chunk, int chunkX, int chunkZ, int groundLevel, int bYChunk,
+            DimensionConfig cfg, boolean isGapX, boolean isGapZ, int periodX, int periodZ, int gapWidth, int intervalX,
+            int intervalZ) {
+        ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[bYChunk];
+        if (ebs == null) {
+            ebs = new ExtendedBlockStorage(groundLevel & ~15, true);
+            chunk.getBlockStorageArray()[bYChunk] = ebs;
+        }
+
+        DimensionConfig.GapPreset preset = cfg.getGapPreset();
+        Block gapBlockA = cfg.getGapBlockAResolved();
+        int gapMetaA = cfg.getGapMetaA();
+        Block gapBlockB = cfg.getGapBlockBResolved();
+        int gapMetaB = cfg.getGapMetaB();
+
+        if (gapBlockA == null || gapBlockA == Blocks.air) return;
+
+        int gapWidthBlocks = gapWidth * 16;
+        int yLocal = groundLevel & 15;
+
+        for (int localZ = 0; localZ < 16; localZ++) {
+            for (int localX = 0; localX < 16; localX++) {
+                int worldX = (chunkX << 4) + localX;
+                int worldZ = (chunkZ << 4) + localZ;
+
+                Block block = gapBlockA;
+                int meta = gapMetaA;
+
+                if (preset == DimensionConfig.GapPreset.ROAD) {
+                    boolean isIntersection = isGapX && isGapZ;
+                    boolean hasStripe = gapBlockB != null && gapBlockB != Blocks.air;
+                    if (isIntersection) {
+                        // At intersection: draw corner blocks where both edges meet
+                        if (hasStripe) {
+                            int gapOffsetX = mod(chunkX, periodX) - intervalX;
+                            int offsetX = gapOffsetX * 16 + localX;
+                            int gapOffsetZ = mod(chunkZ, periodZ) - intervalZ;
+                            int offsetZ = gapOffsetZ * 16 + localZ;
+                            boolean onEdgeX = offsetX == 0 || offsetX == gapWidthBlocks - 1;
+                            boolean onEdgeZ = offsetZ == 0 || offsetZ == gapWidthBlocks - 1;
+                            if (onEdgeX && onEdgeZ) {
+                                block = gapBlockB;
+                                meta = gapMetaB;
+                            }
+                        }
+                    } else {
+                        if (isGapX && periodX > 0) {
+                            int gapChunkOffset = mod(chunkX, periodX) - intervalX;
+                            int offsetInGap = gapChunkOffset * 16 + localX;
+                            StripeBlock road = getRoadBlock(
+                                    offsetInGap,
+                                    worldZ,
+                                    gapWidthBlocks,
+                                    gapBlockA,
+                                    gapMetaA,
+                                    gapBlockB,
+                                    gapMetaB);
+                            block = road.block;
+                            meta = road.meta;
+                        } else if (isGapZ && periodZ > 0) {
+                            int gapChunkOffset = mod(chunkZ, periodZ) - intervalZ;
+                            int offsetInGap = gapChunkOffset * 16 + localZ;
+                            StripeBlock road = getRoadBlock(
+                                    offsetInGap,
+                                    worldX,
+                                    gapWidthBlocks,
+                                    gapBlockA,
+                                    gapMetaA,
+                                    gapBlockB,
+                                    gapMetaB);
+                            block = road.block;
+                            meta = road.meta;
+                        }
+                    }
+                } else {
+                    // SOLID preset: use block A with configured meta
+                    block = gapBlockA;
+                    meta = gapMetaA;
+                }
+
+                if (block != null && block != Blocks.air) {
+                    ebs.func_150818_a(localX, yLocal, localZ, block);
+                    ebs.setExtBlockMetadata(localX, yLocal, localZ, meta);
+                }
+            }
+        }
+    }
+
+    private StripeBlock getRoadBlock(int offsetInGap, int alongRoad, int gapWidthBlocks, Block blockA, int metaA,
+            Block blockB, int metaB) {
+        boolean hasStripe = blockB != null && blockB != Blocks.air;
+
+        // Edge lines
+        if (hasStripe && (offsetInGap == 0 || offsetInGap == gapWidthBlocks - 1)) {
+            return new StripeBlock(blockB, metaB);
+        }
+
+        // Center dashed line
+        if (hasStripe && gapWidthBlocks >= 4) {
+            int center = gapWidthBlocks / 2;
+            if ((offsetInGap == center || offsetInGap == center - 1) && mod(alongRoad, 8) < 4) {
+                return new StripeBlock(blockB, metaB);
+            }
+        }
+
+        return new StripeBlock(blockA, metaA);
     }
 
     @Override
