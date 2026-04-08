@@ -88,6 +88,11 @@ public enum Packets {
             pkt.writeString(blockRule);
         }
 
+        pkt.writeVarInt(Config.allowedCenterBlocks.size());
+        for (String blockRule : Config.allowedCenterBlocks) {
+            pkt.writeString(blockRule);
+        }
+
         synchronized (CommonProxy.getDimensionConfigObjects(false)) {
             pkt.writeVarInt(CommonProxy.getDimensionConfigObjects(false).size());
             CommonProxy.getDimensionConfigObjects(false).forEachEntry((dimId, dimCfg) -> {
@@ -138,6 +143,13 @@ public enum Packets {
             tmpList.add(pkt.readString());
         }
         PersonalSpaceMod.clientAllowedGapBlocks = tmpList;
+
+        int allowedCenterBlocks = pkt.readVarInt();
+        tmpList = new ArrayList<>(allowedCenterBlocks);
+        for (int i = 0; i < allowedCenterBlocks; ++i) {
+            tmpList.add(pkt.readString());
+        }
+        PersonalSpaceMod.clientAllowedCenterBlocks = tmpList;
 
         int dimConfigs = pkt.readVarInt();
         for (int i = 0; i < dimConfigs; i++) {

@@ -127,6 +127,20 @@ public class DimensionConfig {
         }
     }
 
+    public enum CenterDirection {
+
+        SE, // x+ z+ (default)
+        SW, // x- z+
+        NE, // x+ z-
+        NW; // x- z-
+
+        CenterDirection() {}
+
+        public static CenterDirection fromOrdinal(int ordinal) {
+            return (ordinal < 0 || ordinal >= values().length) ? CenterDirection.SE : values()[ordinal];
+        }
+    }
+
     private String saveDirOverride = "";
     private int skyColor = 0xc0d8ff;
     private float starBrightness = 1.0F;
@@ -153,6 +167,11 @@ public class DimensionConfig {
     private int gapMetaA = 15;
     private String gapBlockB = "minecraft:wool";
     private int gapMetaB = 0;
+
+    private boolean centerEnabled = false;
+    private CenterDirection centerDirection = CenterDirection.SE;
+    private String centerBlock = "minecraft:wool";
+    private int centerMeta = 14;
 
     private boolean needsSaving = true;
 
@@ -195,6 +214,11 @@ public class DimensionConfig {
         pkt.writeVarInt(gapMetaA);
         pkt.writeString(gapBlockB == null ? "" : gapBlockB);
         pkt.writeVarInt(gapMetaB);
+
+        pkt.writeBoolean(centerEnabled);
+        pkt.writeVarInt(centerDirection.ordinal());
+        pkt.writeString(centerBlock == null ? "" : centerBlock);
+        pkt.writeVarInt(centerMeta);
     }
 
     public void readFromPacket(MCDataInput pkt) {
@@ -236,6 +260,11 @@ public class DimensionConfig {
         this.setGapMetaA(pkt.readVarInt());
         this.setGapBlockB(pkt.readString());
         this.setGapMetaB(pkt.readVarInt());
+
+        this.setCenterEnabled(pkt.readBoolean());
+        this.setCenterDirection(CenterDirection.fromOrdinal(pkt.readVarInt()));
+        this.setCenterBlock(pkt.readString());
+        this.setCenterMeta(pkt.readVarInt());
     }
 
     /**
@@ -426,6 +455,36 @@ public class DimensionConfig {
             setGapMetaB(cur.getInt());
         }
 
+        final String CENTER = "center";
+
+        cur = cfg.get(CENTER, "enabled", isCenterEnabled(), "");
+        if (write) {
+            cur.set(isCenterEnabled());
+        } else {
+            setCenterEnabled(cur.getBoolean());
+        }
+
+        cur = cfg.get(CENTER, "direction", getCenterDirection().ordinal(), "");
+        if (write) {
+            cur.set(getCenterDirection().ordinal());
+        } else {
+            setCenterDirection(CenterDirection.fromOrdinal(cur.getInt()));
+        }
+
+        cur = cfg.get(CENTER, "block", getCenterBlock());
+        if (write) {
+            cur.set(getCenterBlock());
+        } else {
+            setCenterBlock(cur.getString());
+        }
+
+        cur = cfg.get(CENTER, "meta", getCenterMeta(), "", 0, 15);
+        if (write) {
+            cur.set(getCenterMeta());
+        } else {
+            setCenterMeta(cur.getInt());
+        }
+
         cur = cfg.get(WORLDGEN, "dimId", dimId);
         if (write) {
             cur.set(dimId);
@@ -480,6 +539,11 @@ public class DimensionConfig {
             this.setGapMetaA(source.getGapMetaA());
             this.setGapBlockB(source.getGapBlockB());
             this.setGapMetaB(source.getGapMetaB());
+
+            this.setCenterEnabled(source.isCenterEnabled());
+            this.setCenterDirection(source.getCenterDirection());
+            this.setCenterBlock(source.getCenterBlock());
+            this.setCenterMeta(source.getCenterMeta());
 
             this.needsSaving = true;
         }
@@ -552,7 +616,7 @@ public class DimensionConfig {
     }
 
     public String getSaveDir(int dimId) {
-        return (saveDirOverride != null && saveDirOverride.length() > 0) ? saveDirOverride
+        return (saveDirOverride != null && !saveDirOverride.isEmpty()) ? saveDirOverride
                 : String.format("PERSONAL_DIM_%d", dimId);
     }
 
@@ -692,7 +756,7 @@ public class DimensionConfig {
             return Lists.newArrayList();
         }
         preset = preset.replaceAll("\\s+", "");
-        if (preset.length() < 1 || !PRESET_VALIDATION_PATTERN.matcher(preset).matches()) {
+        if (preset.isEmpty() || !PRESET_VALIDATION_PATTERN.matcher(preset).matches()) {
             return Lists.newArrayList();
         }
         ArrayList<FlatLayerInfo> infos = new ArrayList<>();
@@ -891,7 +955,7 @@ public class DimensionConfig {
     }
 
     public void setBoundaryMetaA(int boundaryMetaA) {
-        int v = MathHelper.clamp_int(boundaryMetaA, 0, 15);
+        int v = Math.max(boundaryMetaA, 0);
         if (this.boundaryMetaA != v) {
             this.needsSaving = true;
             this.boundaryMetaA = v;
@@ -917,7 +981,7 @@ public class DimensionConfig {
     }
 
     public void setBoundaryMetaB(int boundaryMetaB) {
-        int v = MathHelper.clamp_int(boundaryMetaB, 0, 15);
+        int v = Math.max(boundaryMetaB, 0);
         if (this.boundaryMetaB != v) {
             this.needsSaving = true;
             this.boundaryMetaB = v;
@@ -998,7 +1062,7 @@ public class DimensionConfig {
     }
 
     public void setGapMetaA(int gapMetaA) {
-        int v = MathHelper.clamp_int(gapMetaA, 0, 15);
+        int v = Math.max(gapMetaA, 0);
         if (this.gapMetaA != v) {
             this.needsSaving = true;
             this.gapMetaA = v;
@@ -1024,7 +1088,7 @@ public class DimensionConfig {
     }
 
     public void setGapMetaB(int gapMetaB) {
-        int v = MathHelper.clamp_int(gapMetaB, 0, 15);
+        int v = Math.max(gapMetaB, 0);
         if (this.gapMetaB != v) {
             this.needsSaving = true;
             this.gapMetaB = v;
@@ -1037,5 +1101,57 @@ public class DimensionConfig {
 
     public Block getGapBlockBResolved() {
         return blockFromString(gapBlockB);
+    }
+
+    public boolean isCenterEnabled() {
+        return centerEnabled;
+    }
+
+    public void setCenterEnabled(boolean centerEnabled) {
+        if (this.centerEnabled != centerEnabled) {
+            this.needsSaving = true;
+            this.centerEnabled = centerEnabled;
+        }
+    }
+
+    public CenterDirection getCenterDirection() {
+        return centerDirection;
+    }
+
+    public void setCenterDirection(CenterDirection centerDirection) {
+        if (this.centerDirection != centerDirection) {
+            this.needsSaving = true;
+            this.centerDirection = centerDirection;
+        }
+    }
+
+    public String getCenterBlock() {
+        return centerBlock == null ? "" : centerBlock;
+    }
+
+    public void setCenterBlock(String centerBlock) {
+        if (centerBlock == null) {
+            centerBlock = "";
+        }
+        if (!this.getCenterBlock().equals(centerBlock)) {
+            this.needsSaving = true;
+            this.centerBlock = centerBlock;
+        }
+    }
+
+    public int getCenterMeta() {
+        return centerMeta;
+    }
+
+    public void setCenterMeta(int centerMeta) {
+        int v = Math.max(centerMeta, 0);
+        if (this.centerMeta != v) {
+            this.needsSaving = true;
+            this.centerMeta = v;
+        }
+    }
+
+    public Block getCenterBlockResolved() {
+        return blockFromString(centerBlock);
     }
 }

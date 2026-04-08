@@ -92,6 +92,14 @@ public class GuiEditWorld extends GuiScreen {
     public int gapBlockACycle = 0;
     public int gapBlockBCycle = 0;
 
+    public WToggleButton centerEnabledToggle;
+    public WButton centerDirectionButton;
+    public WButton centerBlockButton;
+    public WButton centerMetaMinus;
+    public WButton centerMetaPlus;
+    public WTextField centerMetaField;
+    public int centerBlockCycle = 0;
+
     public Widget presetEditor;
     public Widget rootWidget = new Widget();
     public String voidPresetName = "gui.personalWorld.voidWorld";
@@ -101,6 +109,9 @@ public class GuiEditWorld extends GuiScreen {
 
     public List<AllowedBoundaryBlock> allowedGapRules = new ArrayList<>();
     public List<String> allowedGapBlockNames = new ArrayList<>();
+
+    public List<AllowedBoundaryBlock> allowedCenterRules = new ArrayList<>();
+    public List<String> allowedCenterBlockNames = new ArrayList<>();
 
     public GuiEditWorld(PortalTileEntity tile) {
         super();
@@ -137,6 +148,8 @@ public class GuiEditWorld extends GuiScreen {
                 .setGapMetaA(clampGapMeta(this.desiredConfig.getGapMetaA(), this.desiredConfig.getGapBlockA()));
         this.desiredConfig
                 .setGapMetaB(clampGapMeta(this.desiredConfig.getGapMetaB(), this.desiredConfig.getGapBlockB()));
+        this.desiredConfig.setCenterMeta(
+                clampCenterMeta(this.desiredConfig.getCenterMeta(), this.desiredConfig.getCenterBlock()));
     }
 
     private int clampGapWidth(int v) {
@@ -161,6 +174,14 @@ public class GuiEditWorld extends GuiScreen {
         }
         this.gapBlockACycle = findCycleIndex(desiredConfig.getGapBlockA(), allowedGapBlockNames);
         this.gapBlockBCycle = findCycleIndex(desiredConfig.getGapBlockB(), allowedGapBlockNames);
+
+        this.allowedCenterRules = BoundaryBlockRules.parseAll(PersonalSpaceMod.clientAllowedCenterBlocks);
+        this.allowedCenterBlockNames = BoundaryBlockRules.extractBlockNames(this.allowedCenterRules);
+        if (this.allowedCenterBlockNames.isEmpty()) {
+            this.allowedCenterBlockNames = new ArrayList<>();
+            this.allowedCenterBlockNames.add("");
+        }
+        this.centerBlockCycle = findCycleIndex(desiredConfig.getCenterBlock(), allowedCenterBlockNames);
     }
 
     private int findCycleIndex(String blockName, List<String> blockNames) {
@@ -248,6 +269,91 @@ public class GuiEditWorld extends GuiScreen {
                 + I18n.format("gui.personalWorld.boundary.metaValue", meta)
                 + ", "
                 + I18n.format("gui.personalWorld.boundary.allowedValue", rangeText);
+    }
+
+    private AllowedBoundaryBlock getCenterRule(String blockName) {
+        return BoundaryBlockRules.findByBlockName(this.allowedCenterRules, blockName);
+    }
+
+    private boolean isCenterMetaAllowed(String blockName, int meta) {
+        if (blockName == null || blockName.isEmpty()) {
+            return meta == 0;
+        }
+        AllowedBoundaryBlock rule = getCenterRule(blockName);
+        return rule != null && rule.isMetaAllowed(meta);
+    }
+
+    private int clampCenterMeta(int meta, String blockName) {
+        if (blockName == null || blockName.isEmpty()) {
+            return 0;
+        }
+        AllowedBoundaryBlock rule = getCenterRule(blockName);
+        if (rule == null) {
+            return 0;
+        }
+        return rule.clampMeta(meta);
+    }
+
+    private String getCenterButtonTooltip(String s, int meta, String labelKey) {
+        if (s == null || s.isEmpty()) {
+            return I18n.format(labelKey) + ": "
+                    + I18n.format("gui.personalWorld.boundary.none")
+                    + ", "
+                    + I18n.format("gui.personalWorld.boundary.metaValue", meta);
+        }
+        AllowedBoundaryBlock rule = getCenterRule(s);
+        Block b = getBoundaryBlock(s);
+        ItemStack is = getBoundaryPreviewStack(s, meta);
+        String dn = (is != null && is.getItem() != null) ? is.getDisplayName() : s;
+        String rangeText = rule != null ? rule.getMetaDescription() : I18n.format("gui.personalWorld.boundary.none");
+        if (b == null) {
+            return I18n.format(labelKey) + ": "
+                    + s
+                    + ", "
+                    + I18n.format("gui.personalWorld.boundary.metaValue", meta)
+                    + ", "
+                    + I18n.format("gui.personalWorld.boundary.allowedValue", rangeText);
+        }
+        return I18n.format(labelKey) + ": "
+                + dn
+                + " ("
+                + s
+                + "), "
+                + I18n.format("gui.personalWorld.boundary.metaValue", meta)
+                + ", "
+                + I18n.format("gui.personalWorld.boundary.allowedValue", rangeText);
+    }
+
+    private String getCenterDirectionText() {
+        DimensionConfig.CenterDirection dir = desiredConfig.getCenterDirection();
+        return I18n.format("gui.personalWorld.center.dir." + dir.name());
+    }
+
+    private void updateCenterButtons() {
+        String block = desiredConfig.getCenterBlock();
+        int meta = clampCenterMeta(desiredConfig.getCenterMeta(), block);
+        desiredConfig.setCenterMeta(meta);
+
+        boolean centerVisible = desiredConfig.isCenterEnabled();
+
+        if (centerDirectionButton != null) {
+            centerDirectionButton.visible = centerVisible;
+            centerDirectionButton.text = getCenterDirectionText();
+        }
+        if (centerBlockButton != null) {
+            centerBlockButton.visible = centerVisible;
+            centerBlockButton.text = getBoundaryButtonText(block);
+            centerBlockButton.tooltip = getCenterButtonTooltip(block, meta, "gui.personalWorld.center.block");
+            centerBlockButton.itemStack = getBoundaryPreviewStack(block, meta);
+        }
+        if (centerMetaMinus != null) centerMetaMinus.visible = centerVisible;
+        if (centerMetaPlus != null) centerMetaPlus.visible = centerVisible;
+        if (centerMetaField != null) {
+            centerMetaField.visible = centerVisible;
+            if (!centerMetaField.textField.isFocused()) {
+                centerMetaField.textField.setText(Integer.toString(meta));
+            }
+        }
     }
 
     private String getBoundaryButtonText(String s) {
@@ -818,7 +924,7 @@ public class GuiEditWorld extends GuiScreen {
         rootWidget.addChild(this.gapWidthPlus);
 
         this.gapPresetButton = new WButton(
-                new Rectangle(80, this.ySize, 80, 18),
+                new Rectangle(120, this.ySize, 80, 18),
                 getGapPresetText(),
                 true,
                 WButton.DEFAULT_COLOR,
@@ -938,6 +1044,88 @@ public class GuiEditWorld extends GuiScreen {
         this.ySize += 2;
         updateGapButtons();
 
+        // --- Center marker section ---
+        this.centerEnabledToggle = new WToggleButton(
+                new Rectangle(0, this.ySize, 18, 18),
+                "",
+                false,
+                0,
+                desiredConfig.isCenterEnabled(),
+                () -> {
+                    desiredConfig.setCenterEnabled(centerEnabledToggle.getValue());
+                    updateCenterButtons();
+                });
+        this.centerEnabledToggle.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.center.enable"), false));
+        addWidget(this.centerEnabledToggle);
+
+        this.centerDirectionButton = new WButton(
+                new Rectangle(120, this.centerEnabledToggle.position.y, 80, 18),
+                getCenterDirectionText(),
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    int next = (desiredConfig.getCenterDirection().ordinal() + 1)
+                            % DimensionConfig.CenterDirection.values().length;
+                    desiredConfig.setCenterDirection(DimensionConfig.CenterDirection.fromOrdinal(next));
+                    updateCenterButtons();
+                });
+        rootWidget.addChild(this.centerDirectionButton);
+
+        this.centerBlockButton = new WButton(
+                new Rectangle(0, this.ySize, 20, 20),
+                "?",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    centerBlockCycle = (centerBlockButton.lastButton == 0) ? (centerBlockCycle + 1)
+                            : (centerBlockCycle + allowedCenterBlockNames.size() - 1);
+                    centerBlockCycle %= allowedCenterBlockNames.size();
+                    String newBlock = allowedCenterBlockNames.get(centerBlockCycle);
+                    desiredConfig.setCenterBlock(newBlock);
+                    desiredConfig.setCenterMeta(clampCenterMeta(desiredConfig.getCenterMeta(), newBlock));
+                    updateCenterButtons();
+                });
+        this.centerBlockButton.addChild(new WLabel(26, 6, I18n.format("gui.personalWorld.center.block.short"), false));
+        addWidget(this.centerBlockButton);
+
+        this.centerMetaMinus = new WButton(
+                new Rectangle(40, this.centerBlockButton.position.y + 1, 18, 18),
+                I18n.format("gui.personalWorld.button.minus"),
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    int v = desiredConfig.getCenterMeta() - 1;
+                    v = clampCenterMeta(v, desiredConfig.getCenterBlock());
+                    desiredConfig.setCenterMeta(v);
+                    updateCenterButtons();
+                });
+        rootWidget.addChild(this.centerMetaMinus);
+
+        this.centerMetaField = new WTextField(
+                new Rectangle(60, this.centerBlockButton.position.y + 1, 28, 18),
+                Integer.toString(desiredConfig.getCenterMeta()));
+        rootWidget.addChild(this.centerMetaField);
+
+        this.centerMetaPlus = new WButton(
+                new Rectangle(90, this.centerBlockButton.position.y + 1, 18, 18),
+                I18n.format("gui.personalWorld.button.plus"),
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    int v = desiredConfig.getCenterMeta() + 1;
+                    v = clampCenterMeta(v, desiredConfig.getCenterBlock());
+                    desiredConfig.setCenterMeta(v);
+                    updateCenterButtons();
+                });
+        rootWidget.addChild(this.centerMetaPlus);
+
+        this.ySize += 2;
+        updateCenterButtons();
+
         this.save = new WButton(
                 new Rectangle(0, ySize, 128, 20),
                 I18n.format("gui.done"),
@@ -965,7 +1153,7 @@ public class GuiEditWorld extends GuiScreen {
         regeneratePresetEditor();
 
         this.xSize = 320 - 16;
-        this.ySize = 360 - 16;
+        this.ySize = 400 - 16;
         this.guiLeft = (this.width - this.xSize) / 2;
         this.guiTop = (this.height - this.ySize) / 2;
     }
@@ -1146,6 +1334,15 @@ public class GuiEditWorld extends GuiScreen {
         this.gapMetaAField.enabled = gapEnabled;
         this.gapMetaBField.enabled = gapEnabled && !gapIsSolid;
 
+        boolean centerCanEnable = generationEnabled && !boundaryIsZero;
+        this.centerEnabledToggle.enabled = centerCanEnable;
+        boolean centerActive = centerCanEnable && desiredConfig.isCenterEnabled();
+        this.centerDirectionButton.enabled = centerActive;
+        this.centerBlockButton.enabled = centerActive;
+        this.centerMetaMinus.enabled = centerActive;
+        this.centerMetaPlus.enabled = centerActive;
+        this.centerMetaField.enabled = centerActive;
+
         String actualText = this.presetEntry.textField.getText();
         if (voidPresetName.equals(actualText)) {
             actualText = "";
@@ -1317,6 +1514,36 @@ public class GuiEditWorld extends GuiScreen {
                 this.gapMetaBField.textField.setTextColor(0x909090);
                 updateGapButtons();
             }
+
+            // Center validation
+            if (!boundaryIsZero && desiredConfig.isCenterEnabled()) {
+                int centerRawMeta = parseIntOrDefault(
+                        centerMetaField.textField.getText(),
+                        desiredConfig.getCenterMeta());
+                if (!isCenterMetaAllowed(desiredConfig.getCenterBlock(), centerRawMeta)) {
+                    this.centerMetaField.textField.setTextColor(0xFF0000);
+                    AllowedBoundaryBlock cRule = getCenterRule(desiredConfig.getCenterBlock());
+                    this.centerMetaField.tooltip = cRule != null
+                            ? I18n.format("gui.personalWorld.boundary.allowed", cRule.getMetaDescription())
+                            : I18n.format("gui.personalWorld.boundary.invalidMeta");
+                    inputsValid = false;
+                } else {
+                    this.centerMetaField.textField.setTextColor(0xA0FFA0);
+                    this.centerMetaField.tooltip = null;
+                    desiredConfig.setCenterMeta(centerRawMeta);
+                }
+
+                if (!desiredConfig.getCenterBlock().isEmpty()
+                        && getCenterRule(desiredConfig.getCenterBlock()) == null) {
+                    inputsValid = false;
+                    this.centerBlockButton.tooltip = I18n.format("gui.personalWorld.center.blockNotAllowed");
+                }
+
+                updateCenterButtons();
+            } else {
+                this.centerMetaField.textField.setTextColor(0x909090);
+                updateCenterButtons();
+            }
         } else {
             this.boundaryMetaAField.textField.setTextColor(0x909090);
             this.boundaryMetaBField.textField.setTextColor(0x909090);
@@ -1325,6 +1552,7 @@ public class GuiEditWorld extends GuiScreen {
             this.gapWidthField.textField.setTextColor(0x909090);
             this.gapMetaAField.textField.setTextColor(0x909090);
             this.gapMetaBField.textField.setTextColor(0x909090);
+            this.centerMetaField.textField.setTextColor(0x909090);
         }
 
         this.save.enabled = inputsValid;

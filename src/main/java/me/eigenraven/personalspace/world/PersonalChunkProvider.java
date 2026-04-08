@@ -232,6 +232,42 @@ public class PersonalChunkProvider implements IChunkProvider {
                     }
                 }
             }
+
+            // --- Center block generation ---
+            if (cfg.isCenterEnabled() && intervalX > 0 && intervalZ > 0) {
+                Block centerBlock = cfg.getCenterBlockResolved();
+                int centerMeta = cfg.getCenterMeta();
+                if (centerBlock != null && centerBlock != Blocks.air) {
+                    DimensionConfig.CenterDirection dir = cfg.getCenterDirection();
+                    int dirOffX = (dir == DimensionConfig.CenterDirection.SW
+                            || dir == DimensionConfig.CenterDirection.NW) ? -1 : 0;
+                    int dirOffZ = (dir == DimensionConfig.CenterDirection.NE
+                            || dir == DimensionConfig.CenterDirection.NW) ? -1 : 0;
+                    int centerLocalX = intervalX * 8 + dirOffX;
+                    int centerLocalZ = intervalZ * 8 + dirOffZ;
+
+                    int modCX = mod(chunkX, periodX);
+                    int modCZ = mod(chunkZ, periodZ);
+
+                    if (modCX < intervalX && modCZ < intervalZ) {
+                        int blockStartX = modCX * 16;
+                        int blockStartZ = modCZ * 16;
+                        if (centerLocalX >= blockStartX && centerLocalX < blockStartX + 16
+                                && centerLocalZ >= blockStartZ
+                                && centerLocalZ < blockStartZ + 16) {
+                            int lx = centerLocalX - blockStartX;
+                            int lz = centerLocalZ - blockStartZ;
+                            ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[bYChunk];
+                            if (ebs == null) {
+                                ebs = new ExtendedBlockStorage(groundLevel & ~15, true);
+                                chunk.getBlockStorageArray()[bYChunk] = ebs;
+                            }
+                            ebs.func_150818_a(lx, groundLevel & 15, lz, centerBlock);
+                            ebs.setExtBlockMetadata(lx, groundLevel & 15, lz, centerMeta);
+                        }
+                    }
+                }
+            }
         }
 
         if (chunkX == 0 && chunkZ == 0) {

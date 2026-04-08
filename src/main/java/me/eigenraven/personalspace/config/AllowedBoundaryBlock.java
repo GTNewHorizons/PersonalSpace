@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import net.minecraft.util.MathHelper;
+import javax.annotation.Nonnull;
 
 import com.github.bsideup.jabel.Desugar;
 
@@ -12,20 +12,23 @@ import com.github.bsideup.jabel.Desugar;
 public record AllowedBoundaryBlock(String blockName, List<MetaRange> ranges, String original) {
 
     @Desugar
-    public record MetaRange(int min, int max) {
+    public record MetaRange(int min, int max, boolean negated) {
 
-        public MetaRange(int min, int max) {
+        public MetaRange(int min, int max, boolean negated) {
             this.min = Math.min(min, max);
             this.max = Math.max(min, max);
+            this.negated = negated;
         }
 
         public boolean contains(int value) {
             return value >= min && value <= max;
         }
 
+        @Nonnull
         @Override
         public String toString() {
-            return min == max ? Integer.toString(min) : (min + "~" + max);
+            String range = min == max ? Integer.toString(min) : (min + "-" + max);
+            return negated ? ("!" + range) : range;
         }
     }
 
@@ -36,12 +39,23 @@ public record AllowedBoundaryBlock(String blockName, List<MetaRange> ranges, Str
     }
 
     public boolean isMetaAllowed(int meta) {
+        boolean hasPositive = false;
+        boolean matchedPositive = false;
+
         for (MetaRange range : ranges) {
-            if (range.contains(meta)) {
-                return true;
+            if (range.negated()) {
+                if (range.contains(meta)) {
+                    return false;
+                }
+            } else {
+                hasPositive = true;
+                if (range.contains(meta)) {
+                    matchedPositive = true;
+                }
             }
         }
-        return false;
+
+        return !hasPositive || matchedPositive;
     }
 
     public int clampMeta(int meta) {
@@ -52,44 +66,55 @@ public record AllowedBoundaryBlock(String blockName, List<MetaRange> ranges, Str
             return meta;
         }
 
-        int best = ranges.get(0).min;
-        int bestDist = Math.abs(meta - best);
+        int best = -1;
+        int bestDist = Integer.MAX_VALUE;
 
-        for (MetaRange range : ranges) {
-            int candidate = MathHelper.clamp_int(meta, range.min, range.max);
-            int dist = Math.abs(meta - candidate);
-            if (dist < bestDist) {
-                best = candidate;
-                bestDist = dist;
+        int lo = getMinAllowedMeta();
+        int hi = getMaxAllowedMeta();
+        for (int i = lo; i <= hi; i++) {
+            if (isMetaAllowed(i)) {
+                int dist = Math.abs(meta - i);
+                if (dist < bestDist) {
+                    best = i;
+                    bestDist = dist;
+                }
             }
         }
-        return best;
+        return Math.max(best, 0);
     }
 
     public int getMinAllowedMeta() {
-        if (ranges.isEmpty()) {
-            return 0;
-        }
         int min = Integer.MAX_VALUE;
         for (MetaRange range : ranges) {
-            if (range.min < min) {
+            if (!range.negated() && range.min < min) {
                 min = range.min;
             }
+        }
+        if (min == Integer.MAX_VALUE) {
+            return 0;
+        }
+        for (int i = min;; i++) {
+            if (isMetaAllowed(i)) {
+                return i;
+            }
+            if (i > min + 1000) break;
         }
         return min;
     }
 
     public int getMaxAllowedMeta() {
-        if (ranges.isEmpty()) {
-            return 0;
-        }
-        int max = Integer.MIN_VALUE;
+        int max = 0;
         for (MetaRange range : ranges) {
-            if (range.max > max) {
+            if (!range.negated() && range.max > max) {
                 max = range.max;
             }
         }
-        return max;
+        for (int i = max; i >= 0; i--) {
+            if (isMetaAllowed(i)) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     public String getMetaDescription() {
@@ -136,17 +161,30 @@ public record AllowedBoundaryBlock(String blockName, List<MetaRange> ranges, Str
             if (part.isEmpty()) {
                 continue;
             }
-            int sep = part.indexOf('~');
+
+            boolean negated = false;
+            if (part.startsWith("!")) {
+                negated = true;
+                part = part.substring(1).trim();
+                if (part.isEmpty()) {
+                    continue;
+                }
+            }
+
+            int sep = part.indexOf('-');
+            if (sep < 0) {
+                sep = part.indexOf('~');
+            }
             if (sep >= 0) {
                 int a = Integer.parseInt(part.substring(0, sep).trim());
                 int b = Integer.parseInt(part.substring(sep + 1).trim());
-                a = MathHelper.clamp_int(a, 0, 15);
-                b = MathHelper.clamp_int(b, 0, 15);
-                ranges.add(new MetaRange(a, b));
+                a = Math.max(a, 0);
+                b = Math.max(b, 0);
+                ranges.add(new MetaRange(a, b, negated));
             } else {
                 int m = Integer.parseInt(part);
-                m = MathHelper.clamp_int(m, 0, 15);
-                ranges.add(new MetaRange(m, m));
+                m = Math.max(m, 0);
+                ranges.add(new MetaRange(m, m, negated));
             }
         }
 

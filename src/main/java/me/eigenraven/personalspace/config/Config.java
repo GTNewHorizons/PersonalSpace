@@ -3,10 +3,13 @@ package me.eigenraven.personalspace.config;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.stream.Collectors;
 
+import net.minecraft.block.Block;
 import net.minecraftforge.common.config.Configuration;
 
+import me.eigenraven.personalspace.PersonalSpaceMod;
 import me.eigenraven.personalspace.world.DimensionConfig;
 
 public class Config {
@@ -20,9 +23,11 @@ public class Config {
                 "minecraft:stone", "minecraft:cobblestone", "minecraft:dirt", "minecraft:grass",
                 "minecraft:double_stone_slab", "minecraft:netherrack" };
 
-        public static final String[] allowedBoundaryBlocks = new String[] { "minecraft:wool:0~15" };
+        public static final String[] allowedBoundaryBlocks = new String[] { "minecraft:wool:0-15" };
 
-        public static final String[] allowedGapBlocks = new String[] { "minecraft:wool:0~15" };
+        public static final String[] allowedGapBlocks = new String[] { "minecraft:wool:0-15" };
+
+        public static final String[] allowedCenterBlocks = new String[] { "minecraft:wool:0-15" };
 
         public static final String[] allowedBiomes = new String[] { "Plains", "Ocean", "Desert", "Extreme Hills",
                 "Forest", "Taiga", "Swampland", "River", "MushroomIsland", "Swampland", "Jungle", "Savanna", "Mesa" };
@@ -41,6 +46,7 @@ public class Config {
     public static HashSet<String> allowedBlocks = new HashSet<>(Arrays.asList(Defaults.allowedBlocks));
     public static HashSet<String> allowedBoundaryBlocks = new HashSet<>(Arrays.asList(Defaults.allowedBoundaryBlocks));
     public static HashSet<String> allowedGapBlocks = new HashSet<>(Arrays.asList(Defaults.allowedGapBlocks));
+    public static HashSet<String> allowedCenterBlocks = new HashSet<>(Arrays.asList(Defaults.allowedCenterBlocks));
     public static HashSet<String> allowedBiomes = new HashSet<>(Arrays.asList(Defaults.allowedBiomes));
     public static int firstDimensionId = Defaults.firstDimensionId;
     public static boolean debugLogging = Defaults.debugLogging;
@@ -70,7 +76,7 @@ public class Config {
                                 Categories.general,
                                 "allowedBoundaryBlocks",
                                 Defaults.allowedBoundaryBlocks,
-                                "Allowed boundary blocks with meta ranges. Format: modid:block:meta~meta,meta... Example: minecraft:stone:0~6")));
+                                "Allowed boundary blocks with meta ranges. Format: modid:block:damage  damage: 0, 0-12, !5, 0-15,!3. Example: minecraft:stone:0-6")));
 
         allowedGapBlocks = new HashSet<>(
                 Arrays.asList(
@@ -78,7 +84,15 @@ public class Config {
                                 Categories.general,
                                 "allowedGapBlocks",
                                 Defaults.allowedGapBlocks,
-                                "Allowed gap blocks with meta ranges. Format: modid:block:meta~meta,meta... Example: minecraft:wool:0~15")));
+                                "Allowed gap blocks with meta ranges. Format: modid:block:damage  damage: 0, 0-12, !5, 0-15,!3. Example: minecraft:wool:0-15")));
+
+        allowedCenterBlocks = new HashSet<>(
+                Arrays.asList(
+                        configuration.getStringList(
+                                Categories.general,
+                                "allowedCenterBlocks",
+                                Defaults.allowedCenterBlocks,
+                                "Allowed center marker blocks with meta ranges. Format: modid:block:damage  damage: 0, 0-12, !5, 0-15,!3. Example: minecraft:wool:0-15")));
 
         allowedBiomes = Arrays
                 .stream(
@@ -108,6 +122,40 @@ public class Config {
 
         if (configuration.hasChanged()) {
             configuration.save();
+        }
+    }
+
+    public static void validateBlocks() {
+        filterInvalidBlocks(allowedBlocks, false);
+        filterInvalidBlocks(allowedBoundaryBlocks, true);
+        filterInvalidBlocks(allowedGapBlocks, true);
+        filterInvalidBlocks(allowedCenterBlocks, true);
+    }
+
+    private static void filterInvalidBlocks(HashSet<String> blockSet, boolean hasMetaSpec) {
+        Iterator<String> it = blockSet.iterator();
+        while (it.hasNext()) {
+            String entry = it.next();
+            String blockName;
+            if (hasMetaSpec) {
+                AllowedBoundaryBlock parsed = null;
+                try {
+                    parsed = AllowedBoundaryBlock.parse(entry);
+                } catch (Exception ignored) {}
+                if (parsed == null) {
+                    PersonalSpaceMod.LOG.warn("Removing invalid block config entry: {}", entry);
+                    it.remove();
+                    continue;
+                }
+                blockName = parsed.blockName();
+            } else {
+                blockName = entry;
+            }
+            Block block = DimensionConfig.blockFromString(blockName);
+            if (block == null) {
+                PersonalSpaceMod.LOG.warn("Removing non-existent block from config: {}", entry);
+                it.remove();
+            }
         }
     }
 }

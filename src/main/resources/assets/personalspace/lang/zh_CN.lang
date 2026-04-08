@@ -61,6 +61,15 @@ gui.personalWorld.gap.preset.SOLID=纯方块
 gui.personalWorld.gap.blockNotAllowed.a=隔段 A 方块不被允许
 gui.personalWorld.gap.blockNotAllowed.b=隔段 B 方块不被允许
 
+gui.personalWorld.center.enable=中心标记
+gui.personalWorld.center.block=中心方块
+gui.personalWorld.center.block.short=C
+gui.personalWorld.center.blockNotAllowed=中心方块不被允许
+gui.personalWorld.center.dir.SE=东南 (X+ Z+)
+gui.personalWorld.center.dir.SW=西南 (X- Z+)
+gui.personalWorld.center.dir.NE=东北 (X+ Z-)
+gui.personalWorld.center.dir.NW=西北 (X- Z-)
+
 gui.personalWorld.button.plus=+
 gui.personalWorld.button.minus=-
 gui.personalWorld.multiply=x
