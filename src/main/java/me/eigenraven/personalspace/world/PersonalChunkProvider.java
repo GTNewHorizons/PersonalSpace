@@ -127,8 +127,8 @@ public class PersonalChunkProvider implements IChunkProvider {
             } else {
                 isBoundaryX = intervalX > 0 && mod(chunkX, intervalX) == 0;
                 isBoundaryZ = intervalZ > 0 && mod(chunkZ, intervalZ) == 0;
-                prevBoundaryX = intervalX > 0 && mod(chunkX - 1, intervalX) == 0;
-                prevBoundaryZ = intervalZ > 0 && mod(chunkZ - 1, intervalZ) == 0;
+                prevBoundaryX = intervalX > 0 && mod(chunkX + 1, intervalX) == 0;
+                prevBoundaryZ = intervalZ > 0 && mod(chunkZ + 1, intervalZ) == 0;
             }
 
             Block boundaryBlockA = cfg.getBoundaryBlockAResolved();

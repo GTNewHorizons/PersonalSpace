@@ -74,6 +74,11 @@ gui.personalWorld.button.plus=+
 gui.personalWorld.button.minus=-
 gui.personalWorld.multiply=x
 
+gui.personalWorld.moreSettings=更多设置
+gui.personalWorld.moreSettings.tooltip=更多设置
+gui.personalWorld.backToMain=返回
+gui.personalWorld.backToMain.tooltip=返回主页
+
 commands.pspace.usage=/pspace (give-portal <玩家> <维度> [X] [Y] [Z])|(tpx <玩家> <维度> [X Y Z])|(ls)|(where <玩家>)|(allow-worldgen-change <维度>)
 commands.pspace.badDimension=指定维度不存在
 commands.pspace.where=玩家 %s 位于维度 %d

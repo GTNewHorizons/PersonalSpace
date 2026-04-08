@@ -51,6 +51,7 @@ public class GuiEditWorld extends GuiScreen {
     public WToggleButton generateTrees;
     public WToggleButton generateVegetation;
     public WButton save;
+    public WButton cancel;
     public WTextField presetEntry;
     public List<WButton> presetButtons = new ArrayList<>();
 
@@ -99,6 +100,13 @@ public class GuiEditWorld extends GuiScreen {
     public WButton centerMetaPlus;
     public WTextField centerMetaField;
     public int centerBlockCycle = 0;
+
+    public int currentPage = 0;
+    public Widget page1Container;
+    public Widget page2Container;
+    public WButton moreSettingsButton;
+    public WButton backToMainButton;
+    public WPreviewPanel previewPanel;
 
     public Widget presetEditor;
     public Widget rootWidget = new Widget();
@@ -528,9 +536,27 @@ public class GuiEditWorld extends GuiScreen {
         }
     }
 
+    private void switchPage(int page) {
+        this.currentPage = page;
+        if (page1Container != null) page1Container.visible = (page == 0);
+        if (page2Container != null) page2Container.visible = (page == 1);
+        if (save != null) save.visible = (page == 0);
+        if (cancel != null) cancel.visible = (page == 0);
+    }
+
     @Override
     public void initGui() {
         reloadBoundaryRules();
+
+        // Create page containers
+        Widget realRoot = new Widget();
+        this.page1Container = new Widget();
+        this.page1Container.position = new Rectangle(0, 0, 1, 1);
+        this.page2Container = new Widget();
+        this.page2Container.position = new Rectangle(0, 0, 1, 1);
+
+        // Build page 1 widgets
+        this.rootWidget = page1Container;
         this.ySize = 0;
         addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.skyColor"), false));
         this.skyRed = new WSlider(
@@ -697,6 +723,38 @@ public class GuiEditWorld extends GuiScreen {
             ++pi;
             px += 26;
         }
+        // "More Settings" button on page 1, to the right of presets
+        this.moreSettingsButton = new WButton(
+                new Rectangle(px + 4, this.ySize, 80, 18),
+                I18n.format("gui.personalWorld.moreSettings"),
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> switchPage(1));
+        moreSettingsButton.tooltip = I18n.format("gui.personalWorld.moreSettings.tooltip");
+        rootWidget.addChild(moreSettingsButton);
+        this.ySize += 20;
+
+        // Preset editor on page 1
+        this.presetEditor = new Widget();
+        this.presetEditor.position = new Rectangle(172, 0, 1, 1);
+        this.rootWidget.addChild(this.presetEditor);
+        regeneratePresetEditor();
+
+        // Switch to Page 2
+        this.rootWidget = page2Container;
+        this.ySize = 0;
+
+        // "Back to Main" button
+        this.backToMainButton = new WButton(
+                new Rectangle(0, this.ySize, 150, 18),
+                I18n.format("gui.personalWorld.backToMain"),
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> switchPage(0));
+        backToMainButton.tooltip = I18n.format("gui.personalWorld.backToMain.tooltip");
+        rootWidget.addChild(backToMainButton);
         this.ySize += 20;
 
         addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.boundary"), false));
@@ -753,7 +811,7 @@ public class GuiEditWorld extends GuiScreen {
         rootWidget.addChild(this.boundaryMetaAPlus);
 
         this.boundaryBlockBButton = new WButton(
-                new Rectangle(120, this.boundaryBlockAButton.position.y, 20, 20),
+                new Rectangle(0, this.ySize, 20, 20),
                 "?",
                 true,
                 WButton.DEFAULT_COLOR,
@@ -768,10 +826,10 @@ public class GuiEditWorld extends GuiScreen {
                     updateBoundaryButtons();
                 });
         this.boundaryBlockBButton.addChild(new WLabel(26, 6, I18n.format("gui.personalWorld.boundary.b.short"), false));
-        rootWidget.addChild(this.boundaryBlockBButton);
+        addWidget(this.boundaryBlockBButton);
 
         this.boundaryMetaBMinus = new WButton(
-                new Rectangle(160, this.boundaryBlockAButton.position.y + 1, 18, 18),
+                new Rectangle(40, this.boundaryBlockBButton.position.y + 1, 18, 18),
                 I18n.format("gui.personalWorld.button.minus"),
                 true,
                 WButton.DEFAULT_COLOR,
@@ -785,12 +843,12 @@ public class GuiEditWorld extends GuiScreen {
         rootWidget.addChild(this.boundaryMetaBMinus);
 
         this.boundaryMetaBField = new WTextField(
-                new Rectangle(180, this.boundaryBlockAButton.position.y + 1, 28, 18),
+                new Rectangle(60, this.boundaryBlockBButton.position.y + 1, 28, 18),
                 Integer.toString(desiredConfig.getBoundaryMetaB()));
         rootWidget.addChild(this.boundaryMetaBField);
 
         this.boundaryMetaBPlus = new WButton(
-                new Rectangle(210, this.boundaryBlockAButton.position.y + 1, 18, 18),
+                new Rectangle(90, this.boundaryBlockBButton.position.y + 1, 18, 18),
                 I18n.format("gui.personalWorld.button.plus"),
                 true,
                 WButton.DEFAULT_COLOR,
@@ -887,7 +945,7 @@ public class GuiEditWorld extends GuiScreen {
 
         updateBoundaryButtons();
 
-        // --- Gap section ---
+        // Gap section
         addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.gap"), false));
 
         this.gapWidthMinus = new WButton(
@@ -924,7 +982,7 @@ public class GuiEditWorld extends GuiScreen {
         rootWidget.addChild(this.gapWidthPlus);
 
         this.gapPresetButton = new WButton(
-                new Rectangle(120, this.ySize, 80, 18),
+                new Rectangle(76, this.ySize, 74, 18),
                 getGapPresetText(),
                 true,
                 WButton.DEFAULT_COLOR,
@@ -991,7 +1049,7 @@ public class GuiEditWorld extends GuiScreen {
         rootWidget.addChild(this.gapMetaAPlus);
 
         this.gapBlockBButton = new WButton(
-                new Rectangle(120, this.gapBlockAButton.position.y, 20, 20),
+                new Rectangle(0, this.ySize, 20, 20),
                 "?",
                 true,
                 WButton.DEFAULT_COLOR,
@@ -1006,10 +1064,10 @@ public class GuiEditWorld extends GuiScreen {
                     updateGapButtons();
                 });
         this.gapBlockBButton.addChild(new WLabel(26, 6, I18n.format("gui.personalWorld.gap.b.short"), false));
-        rootWidget.addChild(this.gapBlockBButton);
+        addWidget(this.gapBlockBButton);
 
         this.gapMetaBMinus = new WButton(
-                new Rectangle(160, this.gapBlockAButton.position.y + 1, 18, 18),
+                new Rectangle(40, this.gapBlockBButton.position.y + 1, 18, 18),
                 I18n.format("gui.personalWorld.button.minus"),
                 true,
                 WButton.DEFAULT_COLOR,
@@ -1023,12 +1081,12 @@ public class GuiEditWorld extends GuiScreen {
         rootWidget.addChild(this.gapMetaBMinus);
 
         this.gapMetaBField = new WTextField(
-                new Rectangle(180, this.gapBlockAButton.position.y + 1, 28, 18),
+                new Rectangle(60, this.gapBlockBButton.position.y + 1, 28, 18),
                 Integer.toString(desiredConfig.getGapMetaB()));
         rootWidget.addChild(this.gapMetaBField);
 
         this.gapMetaBPlus = new WButton(
-                new Rectangle(210, this.gapBlockAButton.position.y + 1, 18, 18),
+                new Rectangle(90, this.gapBlockBButton.position.y + 1, 18, 18),
                 I18n.format("gui.personalWorld.button.plus"),
                 true,
                 WButton.DEFAULT_COLOR,
@@ -1044,7 +1102,7 @@ public class GuiEditWorld extends GuiScreen {
         this.ySize += 2;
         updateGapButtons();
 
-        // --- Center marker section ---
+        // Center marker section
         this.centerEnabledToggle = new WToggleButton(
                 new Rectangle(0, this.ySize, 18, 18),
                 "",
@@ -1126,8 +1184,19 @@ public class GuiEditWorld extends GuiScreen {
         this.ySize += 2;
         updateCenterButtons();
 
+        // Preview panel on page 2
+        this.previewPanel = new WPreviewPanel(new Rectangle(166, 20, 130, 130), desiredConfig);
+        rootWidget.addChild(this.previewPanel);
+
+        // Restore real root
+        this.rootWidget = realRoot;
+        realRoot.addChild(page1Container);
+        realRoot.addChild(page2Container);
+
+        // Save/Cancel always visible at fixed position
+        int saveY = 240 - 16 - 22 + 5;
         this.save = new WButton(
-                new Rectangle(0, ySize, 128, 20),
+                new Rectangle(0, saveY, 128, 20),
                 I18n.format("gui.done"),
                 true,
                 WButton.DEFAULT_COLOR,
@@ -1136,24 +1205,20 @@ public class GuiEditWorld extends GuiScreen {
                     Packets.INSTANCE.sendChangeWorldSettings(this.tile, desiredConfig).sendToServer();
                     Minecraft.getMinecraft().displayGuiScreen(null);
                 });
-        rootWidget.addChild(
-                new WButton(
-                        new Rectangle(130, ySize, 128, 20),
-                        I18n.format("gui.cancel"),
-                        true,
-                        WButton.DEFAULT_COLOR,
-                        Icons.CROSS,
-                        () -> Minecraft.getMinecraft().displayGuiScreen(null)));
-        addWidget(save);
+        rootWidget.addChild(save);
+        this.cancel = new WButton(
+                new Rectangle(130, saveY, 128, 20),
+                I18n.format("gui.cancel"),
+                true,
+                WButton.DEFAULT_COLOR,
+                Icons.CROSS,
+                () -> Minecraft.getMinecraft().displayGuiScreen(null));
+        rootWidget.addChild(cancel);
 
-        this.presetEditor = new Widget();
-        this.presetEditor.position = new Rectangle(172, 0, 1, 1);
-        this.rootWidget.addChild(this.presetEditor);
-
-        regeneratePresetEditor();
+        switchPage(0);
 
         this.xSize = 320 - 16;
-        this.ySize = 400 - 16;
+        this.ySize = 240 - 16;
         this.guiLeft = (this.width - this.xSize) / 2;
         this.guiTop = (this.height - this.ySize) / 2;
     }
@@ -1559,20 +1624,22 @@ public class GuiEditWorld extends GuiScreen {
 
         rootWidget.draw(mouseX, mouseY, partialTicks);
 
-        GuiDraw.gui.setZLevel(0.f);
-        GuiDraw.drawRect(130, skyRed.position.y, 32, 3 * (skyRed.position.height + 1), 0xFF000000);
-        GuiDraw.drawRect(
-                131,
-                skyRed.position.y + 1,
-                30,
-                3 * (skyRed.position.height + 1) - 2,
-                0xFF000000 | desiredConfig.getSkyColor());
-        Icons.bindTexture();
-        GL11.glColor4f(1, 1, 1, desiredConfig.getStarBrightness());
-        Icons.STAR.drawAt(132, this.skyRed.position.y + 2);
-        Icons.STAR.drawAt(145, this.skyRed.position.y + 12);
-        Icons.STAR.drawAt(134, this.skyRed.position.y + 21);
-        GL11.glColor4f(1, 1, 1, 1);
+        if (currentPage == 0) {
+            GuiDraw.gui.setZLevel(0.f);
+            GuiDraw.drawRect(130, skyRed.position.y, 32, 3 * (skyRed.position.height + 1), 0xFF000000);
+            GuiDraw.drawRect(
+                    131,
+                    skyRed.position.y + 1,
+                    30,
+                    3 * (skyRed.position.height + 1) - 2,
+                    0xFF000000 | desiredConfig.getSkyColor());
+            Icons.bindTexture();
+            GL11.glColor4f(1, 1, 1, desiredConfig.getStarBrightness());
+            Icons.STAR.drawAt(132, this.skyRed.position.y + 2);
+            Icons.STAR.drawAt(145, this.skyRed.position.y + 12);
+            Icons.STAR.drawAt(134, this.skyRed.position.y + 21);
+            GL11.glColor4f(1, 1, 1, 1);
+        }
 
         rootWidget.drawForeground(mouseX, mouseY, partialTicks);
 
