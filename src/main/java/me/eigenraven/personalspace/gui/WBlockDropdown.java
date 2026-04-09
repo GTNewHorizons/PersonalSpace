@@ -149,7 +149,8 @@ public class WBlockDropdown extends Widget {
         Icons icon = enabled ? Icons.BUTTON_NORMAL : Icons.BUTTON_OFF;
         if (enabled && testPoint(mouseX, mouseY)) {
             icon = Icons.BUTTON_HIGHLIGHT;
-            if (openDropdown != this && enabled) {
+            // Only open on hover if no other dropdown is already open
+            if (openDropdown == null && enabled) {
                 open();
             }
         }
