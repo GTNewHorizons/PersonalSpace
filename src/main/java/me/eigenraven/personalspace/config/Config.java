@@ -52,7 +52,14 @@ public class Config {
     public static boolean debugLogging = Defaults.debugLogging;
     public static boolean useBlockEventChecks = true;
 
+    private static File savedConfigFile = null;
+
+    public static File getSavedConfigFile() {
+        return savedConfigFile;
+    }
+
     public static void synchronizeConfiguration(File configFile) {
+        savedConfigFile = configFile;
         Configuration configuration = new Configuration(configFile);
         configuration.load();
 

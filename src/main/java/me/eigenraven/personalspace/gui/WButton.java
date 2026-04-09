@@ -83,7 +83,9 @@ public class WButton extends Widget {
 
     @Override
     protected void drawForegroundImpl(int mouseX, int mouseY, float partialTicks) {
-        if (tooltip != null && !tooltip.isEmpty() && this.testPoint(mouseX, mouseY)) {
+        if (tooltip != null && !tooltip.isEmpty()
+                && this.testPoint(mouseX, mouseY)
+                && !WBlockDropdown.isAnyDropdownOpen()) {
             this.drawTooltip(mouseX - position.x, mouseY - position.y, tooltip);
         }
     }

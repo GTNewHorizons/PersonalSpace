@@ -79,8 +79,10 @@ gui.personalWorld.moreSettings.tooltip=更多设置
 gui.personalWorld.backToMain=返回
 gui.personalWorld.backToMain.tooltip=返回主页
 
-commands.pspace.usage=/pspace (give-portal <玩家> <维度> [X] [Y] [Z])|(tpx <玩家> <维度> [X Y Z])|(ls)|(where <玩家>)|(allow-worldgen-change <维度>)
+commands.pspace.usage=/pspace (give-portal <玩家> <维度> [X] [Y] [Z])|(tpx <玩家> <维度> [X Y Z])|(ls)|(where <玩家>)|(allow-worldgen-change <维度>)|(reload-config)
 commands.pspace.badDimension=指定维度不存在
 commands.pspace.where=玩家 %s 位于维度 %d
 commands.pspace.tpx=将玩家 %s 传送到 %d: %d, %d, %d
 commands.pspace.allow-worldgen-change=玩家 %s 已解锁维度 %d 的世界生成设置
+commands.pspace.reload-config.success=配置已重载并同步至所有客户端。
+commands.pspace.reload-config.fail=重载配置失败：未找到配置文件。

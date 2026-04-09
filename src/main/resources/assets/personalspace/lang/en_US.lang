@@ -81,8 +81,10 @@ gui.personalWorld.moreSettings.tooltip=More Settings
 gui.personalWorld.backToMain=Back
 gui.personalWorld.backToMain.tooltip=Back to Main
 
-commands.pspace.usage=/pspace (give-portal player DIM [X] [Y] [Z])|(tpx player DIM [X Y Z])|(ls)|(where player)|(allow-worldgen-change DIM)
+commands.pspace.usage=/pspace (give-portal player DIM [X] [Y] [Z])|(tpx player DIM [X Y Z])|(ls)|(where player)|(allow-worldgen-change DIM)|(reload-config)
 commands.pspace.badDimension=The specified dimension doesn't exist
 commands.pspace.where=Player %s is in dimension %d
 commands.pspace.tpx=Player %s was teleported to %d: %d, %d, %d
 commands.pspace.allow-worldgen-change=Player %s unlocked worldgen settings for dimension %d
+commands.pspace.reload-config.success=Configuration reloaded and synced to all clients.
+commands.pspace.reload-config.fail=Failed to reload configuration: config file not found.

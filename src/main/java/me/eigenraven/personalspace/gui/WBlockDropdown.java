@@ -192,8 +192,8 @@ public class WBlockDropdown extends Widget {
 
     @Override
     protected void drawForegroundImpl(int mouseX, int mouseY, float partialTicks) {
-        // Show tooltip for the trigger button
-        if (!isOpen() && testPoint(mouseX, mouseY)) {
+        // Show tooltip for the trigger button, but not when any dropdown is open
+        if (!isAnyDropdownOpen() && testPoint(mouseX, mouseY)) {
             BlockEntry selected = getSelectedEntry();
             if (selected != null && selected.tooltip != null && !selected.tooltip.isEmpty()) {
                 this.drawTooltip(mouseX - position.x, mouseY - position.y, selected.tooltip);
@@ -245,7 +245,7 @@ public class WBlockDropdown extends Widget {
 
         // Background
         Icons.bindTexture();
-        Icons.GUI_BG.draw9Patch(-2, -2, ddW + 4, ddH + 4);
+        Icons.GUI_BG.draw9Patch(-2, -2, ddW + 4, ddH + 8);
 
         // Draw grid items
         if (renderItem == null) {
