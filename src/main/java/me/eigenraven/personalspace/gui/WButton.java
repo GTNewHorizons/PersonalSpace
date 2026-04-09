@@ -2,8 +2,6 @@ package me.eigenraven.personalspace.gui;
 
 import java.awt.Rectangle;
 
-import javax.annotation.Nonnull;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.entity.RenderItem;
@@ -13,8 +11,7 @@ import org.lwjgl.opengl.GL11;
 
 public class WButton extends Widget {
 
-    @Nonnull
-    String text = "";
+    public String text = "";
 
     public boolean dropShadow = true;
     public static final int DEFAULT_COLOR = 0xFFFFFF;
@@ -39,7 +36,6 @@ public class WButton extends Widget {
         setText(text);
     }
 
-    @Nonnull
     public String getText() {
         return text;
     }

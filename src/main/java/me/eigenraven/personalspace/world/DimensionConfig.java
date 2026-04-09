@@ -27,6 +27,8 @@ import codechicken.lib.data.MCDataOutput;
 import cpw.mods.fml.common.registry.GameRegistry;
 import me.eigenraven.personalspace.CommonProxy;
 import me.eigenraven.personalspace.PersonalSpaceMod;
+import me.eigenraven.personalspace.config.AllowedBlock;
+import me.eigenraven.personalspace.config.AllowedBlockRules;
 import me.eigenraven.personalspace.config.Config;
 
 /**
@@ -179,7 +181,7 @@ public class DimensionConfig {
     public static final String PRESET_UW_GARDEN = "minecraft:bedrock;minecraft:dirt*3;minecraft:grass";
     public static final String PRESET_UW_MINING = "minecraft:bedrock*4;minecraft:stone*58;minecraft:dirt;minecraft:grass";
     public static final Pattern PRESET_VALIDATION_PATTERN = Pattern
-            .compile("^([^:\\*;]+:[^:\\*;]+(\\*\\d+)?;)*([^:\\*;]+:[^:\\*;]+(\\*\\d+)?)?$");
+            .compile("^([^:\\*;]+:[^:\\*;]+(:\\d+)?(\\*\\d+)?;)*([^:\\*;]+:[^:\\*;]+(:\\d+)?(\\*\\d+)?)?$");
 
     public DimensionConfig() {}
 
@@ -198,6 +200,7 @@ public class DimensionConfig {
         pkt.writeVarInt(layers.size());
         for (FlatLayerInfo info : layers) {
             pkt.writeVarInt(Block.getIdFromBlock(info.func_151536_b()));
+            pkt.writeVarInt(info.getFillBlockMeta());
             pkt.writeVarInt(info.getLayerCount());
         }
 
@@ -239,8 +242,9 @@ public class DimensionConfig {
         int y = 0;
         for (int layerI = 0; layerI < layerCount; ++layerI) {
             int blockId = pkt.readVarInt();
+            int meta = pkt.readVarInt();
             int count = pkt.readVarInt();
-            FlatLayerInfo info = new FlatLayerInfo(count, Block.getBlockById(blockId));
+            FlatLayerInfo info = new FlatLayerInfo(count, Block.getBlockById(blockId), meta);
             info.setMinY(y);
             layers.add(info);
             y += count;
@@ -765,11 +769,9 @@ public class DimensionConfig {
             if (layerStr.isEmpty()) {
                 continue;
             }
+            // Format: modid:block:meta*count or modid:block*count (meta defaults to 0)
             String[] components = layerStr.split("\\*", 2);
-            String[] blockName = components[0].split(":");
-            if (blockName.length != 2) {
-                return Lists.newArrayList();
-            }
+            String blockPart = components[0];
             int blockCount = 1;
             if (components.length > 1) {
                 try {
@@ -779,11 +781,30 @@ public class DimensionConfig {
                 }
             }
             blockCount = MathHelper.clamp_int(blockCount, 1, 255);
-            Block block = GameRegistry.findBlock(blockName[0], blockName[1]);
+
+            // Parse modid:block:meta or modid:block
+            int meta = 0;
+            String blockName;
+            String[] parts = blockPart.split(":");
+            if (parts.length == 3) {
+                blockName = parts[0] + ":" + parts[1];
+                try {
+                    meta = Integer.parseInt(parts[2]);
+                } catch (NumberFormatException nfe) {
+                    return Lists.newArrayList();
+                }
+            } else if (parts.length == 2) {
+                blockName = blockPart;
+            } else {
+                return Lists.newArrayList();
+            }
+
+            String[] blockNameParts = blockName.split(":");
+            Block block = GameRegistry.findBlock(blockNameParts[0], blockNameParts[1]);
             if (block == null) {
                 return Lists.newArrayList();
             }
-            FlatLayerInfo info = new FlatLayerInfo(blockCount, block, 0);
+            FlatLayerInfo info = new FlatLayerInfo(blockCount, block, meta);
             info.setMinY(currY);
             infos.add(info);
             currY += blockCount;
@@ -816,6 +837,11 @@ public class DimensionConfig {
             b.append(block.modId);
             b.append(':');
             b.append(block.name);
+            int meta = info.getFillBlockMeta();
+            if (meta != 0) {
+                b.append(':');
+                b.append(meta);
+            }
             if (count > 1) {
                 b.append('*');
                 b.append(count);
@@ -843,10 +869,13 @@ public class DimensionConfig {
         if (infos.isEmpty() && !preset.trim().isEmpty()) {
             return false;
         }
+        List<String> rawRules = onClient ? PersonalSpaceMod.clientAllowedBlocks : new ArrayList<>(Config.allowedBlocks);
+        List<AllowedBlock> rules = AllowedBlockRules.parseAll(rawRules);
         for (FlatLayerInfo info : infos) {
-            String block = GameRegistry.findUniqueIdentifierFor(info.func_151536_b()).toString();
-            if (!(onClient ? PersonalSpaceMod.clientAllowedBlocks.contains(block)
-                    : Config.allowedBlocks.contains(block))) {
+            String blockName = GameRegistry.findUniqueIdentifierFor(info.func_151536_b()).toString();
+            int meta = info.getFillBlockMeta();
+            AllowedBlock rule = AllowedBlockRules.findByBlockName(rules, blockName);
+            if (rule == null || !rule.isMetaAllowed(meta)) {
                 return false;
             }
         }

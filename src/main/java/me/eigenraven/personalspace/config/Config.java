@@ -68,7 +68,7 @@ public class Config {
                                 Categories.general,
                                 "allowedBlocks",
                                 Defaults.allowedBlocks,
-                                "List of blocks allowed in the user-specified presets, keep in mind these are used in world generation, so will be available in infinite quantities for the player.")));
+                                "Allowed layer blocks with meta ranges. Format: modid:block:damage  damage: 0, 0-12, !5, 0-15,!3. Blocks without meta spec default to meta 0. Example: minecraft:stone:0-6")));
 
         allowedBoundaryBlocks = new HashSet<>(
                 Arrays.asList(
@@ -126,32 +126,26 @@ public class Config {
     }
 
     public static void validateBlocks() {
-        filterInvalidBlocks(allowedBlocks, false);
-        filterInvalidBlocks(allowedBoundaryBlocks, true);
-        filterInvalidBlocks(allowedGapBlocks, true);
-        filterInvalidBlocks(allowedCenterBlocks, true);
+        filterInvalidBlocks(allowedBlocks);
+        filterInvalidBlocks(allowedBoundaryBlocks);
+        filterInvalidBlocks(allowedGapBlocks);
+        filterInvalidBlocks(allowedCenterBlocks);
     }
 
-    private static void filterInvalidBlocks(HashSet<String> blockSet, boolean hasMetaSpec) {
+    private static void filterInvalidBlocks(HashSet<String> blockSet) {
         Iterator<String> it = blockSet.iterator();
         while (it.hasNext()) {
             String entry = it.next();
-            String blockName;
-            if (hasMetaSpec) {
-                AllowedBoundaryBlock parsed = null;
-                try {
-                    parsed = AllowedBoundaryBlock.parse(entry);
-                } catch (Exception ignored) {}
-                if (parsed == null) {
-                    PersonalSpaceMod.LOG.warn("Removing invalid block config entry: {}", entry);
-                    it.remove();
-                    continue;
-                }
-                blockName = parsed.blockName();
-            } else {
-                blockName = entry;
+            AllowedBlock parsed = null;
+            try {
+                parsed = AllowedBlock.parse(entry);
+            } catch (Exception ignored) {}
+            if (parsed == null) {
+                PersonalSpaceMod.LOG.warn("Removing invalid block config entry: {}", entry);
+                it.remove();
+                continue;
             }
-            Block block = DimensionConfig.blockFromString(blockName);
+            Block block = DimensionConfig.blockFromString(parsed.blockName());
             if (block == null) {
                 PersonalSpaceMod.LOG.warn("Removing non-existent block from config: {}", entry);
                 it.remove();

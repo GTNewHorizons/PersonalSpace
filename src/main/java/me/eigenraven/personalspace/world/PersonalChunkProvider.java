@@ -66,6 +66,7 @@ public class PersonalChunkProvider implements IChunkProvider {
                 y += info.getLayerCount();
                 continue;
             }
+            int meta = info.getFillBlockMeta();
             for (; y < info.getMinY() + info.getLayerCount() && y < worldHeight; ++y) {
                 int yChunk = y >> 4;
                 ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[yChunk];
@@ -76,6 +77,9 @@ public class PersonalChunkProvider implements IChunkProvider {
                 for (int z = 0; z < 16; ++z) {
                     for (int x = 0; x < 16; ++x) {
                         ebs.func_150818_a(x, y & 15, z, block);
+                        if (meta != 0) {
+                            ebs.setExtBlockMetadata(x, y & 15, z, meta);
+                        }
                     }
                 }
             }

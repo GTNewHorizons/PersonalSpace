@@ -12,13 +12,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.I18n;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.gen.FlatLayerInfo;
 
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import codechicken.lib.gui.GuiDraw;
@@ -26,8 +26,8 @@ import cpw.mods.fml.common.registry.GameRegistry;
 import me.eigenraven.personalspace.CommonProxy;
 import me.eigenraven.personalspace.PersonalSpaceMod;
 import me.eigenraven.personalspace.block.PortalTileEntity;
-import me.eigenraven.personalspace.config.AllowedBoundaryBlock;
-import me.eigenraven.personalspace.config.BoundaryBlockRules;
+import me.eigenraven.personalspace.config.AllowedBlock;
+import me.eigenraven.personalspace.config.AllowedBlockRules;
 import me.eigenraven.personalspace.config.Config;
 import me.eigenraven.personalspace.net.Packets;
 import me.eigenraven.personalspace.world.DimensionConfig;
@@ -55,16 +55,8 @@ public class GuiEditWorld extends GuiScreen {
     public WTextField presetEntry;
     public List<WButton> presetButtons = new ArrayList<>();
 
-    public WButton boundaryBlockAButton;
-    public WButton boundaryBlockBButton;
-
-    public WButton boundaryMetaAMinus;
-    public WButton boundaryMetaAPlus;
-    public WButton boundaryMetaBMinus;
-    public WButton boundaryMetaBPlus;
-
-    public WTextField boundaryMetaAField;
-    public WTextField boundaryMetaBField;
+    public WBlockDropdown boundaryBlockADropdown;
+    public WBlockDropdown boundaryBlockBDropdown;
 
     public WButton boundaryChunkXMinus;
     public WButton boundaryChunkXPlus;
@@ -73,33 +65,18 @@ public class GuiEditWorld extends GuiScreen {
     public WTextField boundaryChunkXField;
     public WTextField boundaryChunkZField;
 
-    public int boundaryBlockACycle = 0;
-    public int boundaryBlockBCycle = 0;
-
     public WButton gapWidthMinus;
     public WButton gapWidthPlus;
+
     public WTextField gapWidthField;
     public WButton gapPresetButton;
 
-    public WButton gapBlockAButton;
-    public WButton gapBlockBButton;
-    public WButton gapMetaAMinus;
-    public WButton gapMetaAPlus;
-    public WButton gapMetaBMinus;
-    public WButton gapMetaBPlus;
-    public WTextField gapMetaAField;
-    public WTextField gapMetaBField;
-
-    public int gapBlockACycle = 0;
-    public int gapBlockBCycle = 0;
+    public WBlockDropdown gapBlockADropdown;
+    public WBlockDropdown gapBlockBDropdown;
 
     public WToggleButton centerEnabledToggle;
     public WButton centerDirectionButton;
-    public WButton centerBlockButton;
-    public WButton centerMetaMinus;
-    public WButton centerMetaPlus;
-    public WTextField centerMetaField;
-    public int centerBlockCycle = 0;
+    public WBlockDropdown centerBlockDropdown;
 
     public int currentPage = 0;
     public Widget page1Container;
@@ -112,14 +89,26 @@ public class GuiEditWorld extends GuiScreen {
     public Widget rootWidget = new Widget();
     public String voidPresetName = "gui.personalWorld.voidWorld";
 
-    public List<AllowedBoundaryBlock> allowedBoundaryRules = new ArrayList<>();
+    public WBlockDropdown layersBlockDropdown;
+    public int layerListScrollOffset = 0;
+    public boolean layerScrollbarDragging = false;
+    public static final int MAX_VISIBLE_LAYERS = 6;
+
+    public List<AllowedBlock> allowedBoundaryRules = new ArrayList<>();
     public List<String> allowedBoundaryBlockNames = new ArrayList<>();
 
-    public List<AllowedBoundaryBlock> allowedGapRules = new ArrayList<>();
+    public List<AllowedBlock> allowedGapRules = new ArrayList<>();
     public List<String> allowedGapBlockNames = new ArrayList<>();
 
-    public List<AllowedBoundaryBlock> allowedCenterRules = new ArrayList<>();
+    public List<AllowedBlock> allowedCenterRules = new ArrayList<>();
     public List<String> allowedCenterBlockNames = new ArrayList<>();
+
+    public List<AllowedBlock> allowedLayerRules = new ArrayList<>();
+
+    public List<WBlockDropdown.BlockEntry> boundaryBlockEntries = new ArrayList<>();
+    public List<WBlockDropdown.BlockEntry> gapBlockEntries = new ArrayList<>();
+    public List<WBlockDropdown.BlockEntry> centerBlockEntries = new ArrayList<>();
+    public List<WBlockDropdown.BlockEntry> layerBlockEntries = new ArrayList<>();
 
     public GuiEditWorld(PortalTileEntity tile) {
         super();
@@ -165,36 +154,34 @@ public class GuiEditWorld extends GuiScreen {
     }
 
     private void reloadBoundaryRules() {
-        this.allowedBoundaryRules = BoundaryBlockRules.parseAll(PersonalSpaceMod.clientAllowedBoundaryBlocks);
-        this.allowedBoundaryBlockNames = BoundaryBlockRules.extractBlockNames(this.allowedBoundaryRules);
+        this.allowedBoundaryRules = AllowedBlockRules.parseAll(PersonalSpaceMod.clientAllowedBoundaryBlocks);
+        this.allowedBoundaryBlockNames = AllowedBlockRules.extractBlockNames(this.allowedBoundaryRules);
         if (this.allowedBoundaryBlockNames.isEmpty()) {
             this.allowedBoundaryBlockNames = new ArrayList<>();
             this.allowedBoundaryBlockNames.add("");
         }
-        this.boundaryBlockACycle = findCycleIndex(desiredConfig.getBoundaryBlockA(), allowedBoundaryBlockNames);
-        this.boundaryBlockBCycle = findCycleIndex(desiredConfig.getBoundaryBlockB(), allowedBoundaryBlockNames);
 
-        this.allowedGapRules = BoundaryBlockRules.parseAll(PersonalSpaceMod.clientAllowedGapBlocks);
-        this.allowedGapBlockNames = BoundaryBlockRules.extractBlockNames(this.allowedGapRules);
+        this.allowedGapRules = AllowedBlockRules.parseAll(PersonalSpaceMod.clientAllowedGapBlocks);
+        this.allowedGapBlockNames = AllowedBlockRules.extractBlockNames(this.allowedGapRules);
         if (this.allowedGapBlockNames.isEmpty()) {
             this.allowedGapBlockNames = new ArrayList<>();
             this.allowedGapBlockNames.add("");
         }
-        this.gapBlockACycle = findCycleIndex(desiredConfig.getGapBlockA(), allowedGapBlockNames);
-        this.gapBlockBCycle = findCycleIndex(desiredConfig.getGapBlockB(), allowedGapBlockNames);
 
-        this.allowedCenterRules = BoundaryBlockRules.parseAll(PersonalSpaceMod.clientAllowedCenterBlocks);
-        this.allowedCenterBlockNames = BoundaryBlockRules.extractBlockNames(this.allowedCenterRules);
+        this.allowedCenterRules = AllowedBlockRules.parseAll(PersonalSpaceMod.clientAllowedCenterBlocks);
+        this.allowedCenterBlockNames = AllowedBlockRules.extractBlockNames(this.allowedCenterRules);
         if (this.allowedCenterBlockNames.isEmpty()) {
             this.allowedCenterBlockNames = new ArrayList<>();
             this.allowedCenterBlockNames.add("");
         }
-        this.centerBlockCycle = findCycleIndex(desiredConfig.getCenterBlock(), allowedCenterBlockNames);
-    }
 
-    private int findCycleIndex(String blockName, List<String> blockNames) {
-        int idx = blockNames.indexOf(blockName);
-        return Math.max(idx, 0);
+        this.allowedLayerRules = AllowedBlockRules.parseAll(PersonalSpaceMod.clientAllowedBlocks);
+
+        // Build dropdown entries
+        this.boundaryBlockEntries = WBlockDropdown.buildEntriesFromRules(this.allowedBoundaryRules, true);
+        this.gapBlockEntries = WBlockDropdown.buildEntriesFromRules(this.allowedGapRules, true);
+        this.centerBlockEntries = WBlockDropdown.buildEntriesFromRules(this.allowedCenterRules, true);
+        this.layerBlockEntries = WBlockDropdown.buildEntriesFromRules(this.allowedLayerRules, false);
     }
 
     @Override
@@ -222,114 +209,38 @@ public class GuiEditWorld extends GuiScreen {
         skyType.tooltip = currentType.getButtonTooltip();
     }
 
-    private AllowedBoundaryBlock getBoundaryRule(String blockName) {
-        return BoundaryBlockRules.findByBlockName(this.allowedBoundaryRules, blockName);
+    private AllowedBlock getBoundaryRule(String blockName) {
+        return AllowedBlockRules.findByBlockName(this.allowedBoundaryRules, blockName);
     }
 
-    private AllowedBoundaryBlock getGapRule(String blockName) {
-        return BoundaryBlockRules.findByBlockName(this.allowedGapRules, blockName);
-    }
-
-    private boolean isGapMetaAllowed(String blockName, int meta) {
-        if (blockName == null || blockName.isEmpty()) {
-            return meta == 0;
-        }
-        AllowedBoundaryBlock rule = getGapRule(blockName);
-        return rule != null && rule.isMetaAllowed(meta);
+    private AllowedBlock getGapRule(String blockName) {
+        return AllowedBlockRules.findByBlockName(this.allowedGapRules, blockName);
     }
 
     private int clampGapMeta(int meta, String blockName) {
         if (blockName == null || blockName.isEmpty()) {
             return 0;
         }
-        AllowedBoundaryBlock rule = getGapRule(blockName);
+        AllowedBlock rule = getGapRule(blockName);
         if (rule == null) {
             return 0;
         }
         return rule.clampMeta(meta);
     }
 
-    private String getGapButtonTooltip(String s, int meta, String labelKey) {
-        if (s == null || s.isEmpty()) {
-            return I18n.format(labelKey) + ": "
-                    + I18n.format("gui.personalWorld.boundary.none")
-                    + ", "
-                    + I18n.format("gui.personalWorld.boundary.metaValue", meta);
-        }
-        AllowedBoundaryBlock rule = getGapRule(s);
-        Block b = getBoundaryBlock(s);
-        ItemStack is = getBoundaryPreviewStack(s, meta);
-        String dn = (is != null && is.getItem() != null) ? is.getDisplayName() : s;
-        String rangeText = rule != null ? rule.getMetaDescription() : I18n.format("gui.personalWorld.boundary.none");
-        if (b == null) {
-            return I18n.format(labelKey) + ": "
-                    + s
-                    + ", "
-                    + I18n.format("gui.personalWorld.boundary.metaValue", meta)
-                    + ", "
-                    + I18n.format("gui.personalWorld.boundary.allowedValue", rangeText);
-        }
-        return I18n.format(labelKey) + ": "
-                + dn
-                + " ("
-                + s
-                + "), "
-                + I18n.format("gui.personalWorld.boundary.metaValue", meta)
-                + ", "
-                + I18n.format("gui.personalWorld.boundary.allowedValue", rangeText);
-    }
-
-    private AllowedBoundaryBlock getCenterRule(String blockName) {
-        return BoundaryBlockRules.findByBlockName(this.allowedCenterRules, blockName);
-    }
-
-    private boolean isCenterMetaAllowed(String blockName, int meta) {
-        if (blockName == null || blockName.isEmpty()) {
-            return meta == 0;
-        }
-        AllowedBoundaryBlock rule = getCenterRule(blockName);
-        return rule != null && rule.isMetaAllowed(meta);
+    private AllowedBlock getCenterRule(String blockName) {
+        return AllowedBlockRules.findByBlockName(this.allowedCenterRules, blockName);
     }
 
     private int clampCenterMeta(int meta, String blockName) {
         if (blockName == null || blockName.isEmpty()) {
             return 0;
         }
-        AllowedBoundaryBlock rule = getCenterRule(blockName);
+        AllowedBlock rule = getCenterRule(blockName);
         if (rule == null) {
             return 0;
         }
         return rule.clampMeta(meta);
-    }
-
-    private String getCenterButtonTooltip(String s, int meta, String labelKey) {
-        if (s == null || s.isEmpty()) {
-            return I18n.format(labelKey) + ": "
-                    + I18n.format("gui.personalWorld.boundary.none")
-                    + ", "
-                    + I18n.format("gui.personalWorld.boundary.metaValue", meta);
-        }
-        AllowedBoundaryBlock rule = getCenterRule(s);
-        Block b = getBoundaryBlock(s);
-        ItemStack is = getBoundaryPreviewStack(s, meta);
-        String dn = (is != null && is.getItem() != null) ? is.getDisplayName() : s;
-        String rangeText = rule != null ? rule.getMetaDescription() : I18n.format("gui.personalWorld.boundary.none");
-        if (b == null) {
-            return I18n.format(labelKey) + ": "
-                    + s
-                    + ", "
-                    + I18n.format("gui.personalWorld.boundary.metaValue", meta)
-                    + ", "
-                    + I18n.format("gui.personalWorld.boundary.allowedValue", rangeText);
-        }
-        return I18n.format(labelKey) + ": "
-                + dn
-                + " ("
-                + s
-                + "), "
-                + I18n.format("gui.personalWorld.boundary.metaValue", meta)
-                + ", "
-                + I18n.format("gui.personalWorld.boundary.allowedValue", rangeText);
     }
 
     private String getCenterDirectionText() {
@@ -348,77 +259,17 @@ public class GuiEditWorld extends GuiScreen {
             centerDirectionButton.visible = centerVisible;
             centerDirectionButton.text = getCenterDirectionText();
         }
-        if (centerBlockButton != null) {
-            centerBlockButton.visible = centerVisible;
-            centerBlockButton.text = getBoundaryButtonText(block);
-            centerBlockButton.tooltip = getCenterButtonTooltip(block, meta, "gui.personalWorld.center.block");
-            centerBlockButton.itemStack = getBoundaryPreviewStack(block, meta);
+        if (centerBlockDropdown != null) {
+            centerBlockDropdown.visible = centerVisible;
+            centerBlockDropdown.setSelectedIndex(WBlockDropdown.findEntryIndex(centerBlockEntries, block, meta));
         }
-        if (centerMetaMinus != null) centerMetaMinus.visible = centerVisible;
-        if (centerMetaPlus != null) centerMetaPlus.visible = centerVisible;
-        if (centerMetaField != null) {
-            centerMetaField.visible = centerVisible;
-            if (!centerMetaField.textField.isFocused()) {
-                centerMetaField.textField.setText(Integer.toString(meta));
-            }
-        }
-    }
-
-    private String getBoundaryButtonText(String s) {
-        if (s == null || s.isEmpty()) {
-            return I18n.format("gui.personalWorld.boundary.none.short");
-        }
-        String[] sp = s.split(":");
-        return sp.length == 2 ? sp[1].substring(0, Math.min(1, sp[1].length())).toUpperCase()
-                : I18n.format("gui.personalWorld.boundary.unknown.short");
-    }
-
-    private Block getBoundaryBlock(String s) {
-        if (s == null || s.isEmpty()) {
-            return null;
-        }
-        return DimensionConfig.blockFromString(s);
-    }
-
-    private ItemStack getBoundaryPreviewStack(String s, int meta) {
-        Block b = getBoundaryBlock(s);
-        if (b == null) {
-            return null;
-        }
-        try {
-            Item item = Item.getItemFromBlock(b);
-            if (item == null) {
-                return null;
-            }
-            return new ItemStack(item, 1, clampBoundaryMeta(meta, s));
-        } catch (Throwable t) {
-            return null;
-        }
-    }
-
-    private int getBoundaryMetaMin(String blockName) {
-        AllowedBoundaryBlock rule = getBoundaryRule(blockName);
-        return rule != null ? rule.getMinAllowedMeta() : 0;
-    }
-
-    private int getBoundaryMetaMax(String blockName) {
-        AllowedBoundaryBlock rule = getBoundaryRule(blockName);
-        return rule != null ? rule.getMaxAllowedMeta() : 0;
-    }
-
-    private boolean isBoundaryMetaAllowed(String blockName, int meta) {
-        if (blockName == null || blockName.isEmpty()) {
-            return meta == 0;
-        }
-        AllowedBoundaryBlock rule = getBoundaryRule(blockName);
-        return rule != null && rule.isMetaAllowed(meta);
     }
 
     private int clampBoundaryMeta(int meta, String blockName) {
         if (blockName == null || blockName.isEmpty()) {
             return 0;
         }
-        AllowedBoundaryBlock rule = getBoundaryRule(blockName);
+        AllowedBlock rule = getBoundaryRule(blockName);
         if (rule == null) {
             return 0;
         }
@@ -427,36 +278,6 @@ public class GuiEditWorld extends GuiScreen {
 
     private int clampBoundaryChunk(int v) {
         return MathHelper.clamp_int(v, 0, 20);
-    }
-
-    private String getBoundaryButtonTooltip(String s, int meta, String labelKey) {
-        if (s == null || s.isEmpty()) {
-            return I18n.format(labelKey) + ": "
-                    + I18n.format("gui.personalWorld.boundary.none")
-                    + ", "
-                    + I18n.format("gui.personalWorld.boundary.metaValue", meta);
-        }
-        AllowedBoundaryBlock rule = getBoundaryRule(s);
-        Block b = getBoundaryBlock(s);
-        ItemStack is = getBoundaryPreviewStack(s, meta);
-        String dn = (is != null && is.getItem() != null) ? is.getDisplayName() : s;
-        String rangeText = rule != null ? rule.getMetaDescription() : I18n.format("gui.personalWorld.boundary.none");
-        if (b == null) {
-            return I18n.format(labelKey) + ": "
-                    + s
-                    + ", "
-                    + I18n.format("gui.personalWorld.boundary.metaValue", meta)
-                    + ", "
-                    + I18n.format("gui.personalWorld.boundary.allowedValue", rangeText);
-        }
-        return I18n.format(labelKey) + ": "
-                + dn
-                + " ("
-                + s
-                + "), "
-                + I18n.format("gui.personalWorld.boundary.metaValue", meta)
-                + ", "
-                + I18n.format("gui.personalWorld.boundary.allowedValue", rangeText);
     }
 
     private void updateBoundaryButtons() {
@@ -468,19 +289,12 @@ public class GuiEditWorld extends GuiScreen {
         desiredConfig.setBoundaryMetaA(metaA);
         desiredConfig.setBoundaryMetaB(metaB);
 
-        boundaryBlockAButton.text = getBoundaryButtonText(a);
-        boundaryBlockAButton.tooltip = getBoundaryButtonTooltip(a, metaA, "gui.personalWorld.boundary.a");
-        boundaryBlockAButton.itemStack = getBoundaryPreviewStack(a, metaA);
-
-        boundaryBlockBButton.text = getBoundaryButtonText(b);
-        boundaryBlockBButton.tooltip = getBoundaryButtonTooltip(b, metaB, "gui.personalWorld.boundary.b");
-        boundaryBlockBButton.itemStack = getBoundaryPreviewStack(b, metaB);
-
-        if (boundaryMetaAField != null && !boundaryMetaAField.textField.isFocused()) {
-            boundaryMetaAField.textField.setText(Integer.toString(metaA));
+        if (boundaryBlockADropdown != null) {
+            boundaryBlockADropdown.setSelectedIndex(WBlockDropdown.findEntryIndex(boundaryBlockEntries, a, metaA));
         }
-        if (boundaryMetaBField != null && !boundaryMetaBField.textField.isFocused()) {
-            boundaryMetaBField.textField.setText(Integer.toString(metaB));
+
+        if (boundaryBlockBDropdown != null) {
+            boundaryBlockBDropdown.setSelectedIndex(WBlockDropdown.findEntryIndex(boundaryBlockEntries, b, metaB));
         }
     }
 
@@ -498,29 +312,15 @@ public class GuiEditWorld extends GuiScreen {
         desiredConfig.setGapMetaA(metaA);
         desiredConfig.setGapMetaB(metaB);
 
-        if (gapBlockAButton != null) {
-            gapBlockAButton.text = getBoundaryButtonText(a);
-            gapBlockAButton.tooltip = getGapButtonTooltip(a, metaA, "gui.personalWorld.gap.a");
-            gapBlockAButton.itemStack = getBoundaryPreviewStack(a, metaA);
+        if (gapBlockADropdown != null) {
+            gapBlockADropdown.setSelectedIndex(WBlockDropdown.findEntryIndex(gapBlockEntries, a, metaA));
         }
 
         boolean isSolid = desiredConfig.getGapPreset() == DimensionConfig.GapPreset.SOLID;
 
-        if (gapBlockBButton != null) {
-            gapBlockBButton.visible = !isSolid;
-            gapBlockBButton.text = getBoundaryButtonText(b);
-            gapBlockBButton.tooltip = getGapButtonTooltip(b, metaB, "gui.personalWorld.gap.b");
-            gapBlockBButton.itemStack = getBoundaryPreviewStack(b, metaB);
-        }
-        if (gapMetaBMinus != null) gapMetaBMinus.visible = !isSolid;
-        if (gapMetaBPlus != null) gapMetaBPlus.visible = !isSolid;
-        if (gapMetaBField != null) gapMetaBField.visible = !isSolid;
-
-        if (gapMetaAField != null && !gapMetaAField.textField.isFocused()) {
-            gapMetaAField.textField.setText(Integer.toString(metaA));
-        }
-        if (gapMetaBField != null && !gapMetaBField.textField.isFocused()) {
-            gapMetaBField.textField.setText(Integer.toString(metaB));
+        if (gapBlockBDropdown != null) {
+            gapBlockBDropdown.visible = !isSolid;
+            gapBlockBDropdown.setSelectedIndex(WBlockDropdown.findEntryIndex(gapBlockEntries, b, metaB));
         }
 
         if (gapPresetButton != null) {
@@ -737,8 +537,29 @@ public class GuiEditWorld extends GuiScreen {
 
         // Preset editor on page 1
         this.presetEditor = new Widget();
-        this.presetEditor.position = new Rectangle(172, 0, 1, 1);
+        this.presetEditor.position = new Rectangle(192, 0, 1, 1);
         this.rootWidget.addChild(this.presetEditor);
+
+        // Layer block dropdown (ADD mode)
+        this.layersBlockDropdown = new WBlockDropdown(
+                new Rectangle(-20, 0, 20, 20),
+                true,
+                layerBlockEntries,
+                0,
+                (entry) -> {
+                    String[] blName = entry.blockName().split(":");
+                    if (blName.length != 2) return;
+                    Block blk = GameRegistry.findBlock(blName[0], blName[1]);
+                    if (blk == null) return;
+                    FlatLayerInfo fli = new FlatLayerInfo(1, blk, entry.meta());
+                    this.desiredConfig.getMutableLayers().add(fli);
+                    this.desiredConfig.setLayers(this.desiredConfig.getLayersAsString());
+                    this.configToPreset();
+                });
+        this.layersBlockDropdown.setLabel(I18n.format("gui.personalWorld.button.plus"));
+        this.layersBlockDropdown.setGuiRelativePos(172, 0);
+        this.presetEditor.addChild(this.layersBlockDropdown);
+
         regeneratePresetEditor();
 
         // Switch to Page 2
@@ -756,112 +577,6 @@ public class GuiEditWorld extends GuiScreen {
         backToMainButton.tooltip = I18n.format("gui.personalWorld.backToMain.tooltip");
         rootWidget.addChild(backToMainButton);
         this.ySize += 20;
-
-        addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.boundary"), false));
-
-        this.boundaryBlockAButton = new WButton(
-                new Rectangle(0, this.ySize, 20, 20),
-                "?",
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    boundaryBlockACycle = (boundaryBlockAButton.lastButton == 0) ? (boundaryBlockACycle + 1)
-                            : (boundaryBlockACycle + allowedBoundaryBlockNames.size() - 1);
-                    boundaryBlockACycle %= allowedBoundaryBlockNames.size();
-                    String newBlock = allowedBoundaryBlockNames.get(boundaryBlockACycle);
-                    desiredConfig.setBoundaryBlockA(newBlock);
-                    desiredConfig.setBoundaryMetaA(clampBoundaryMeta(desiredConfig.getBoundaryMetaA(), newBlock));
-                    updateBoundaryButtons();
-                });
-        this.boundaryBlockAButton.addChild(new WLabel(26, 6, I18n.format("gui.personalWorld.boundary.a.short"), false));
-        addWidget(this.boundaryBlockAButton);
-
-        this.boundaryMetaAMinus = new WButton(
-                new Rectangle(40, this.boundaryBlockAButton.position.y + 1, 18, 18),
-                I18n.format("gui.personalWorld.button.minus"),
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    int v = desiredConfig.getBoundaryMetaA() - 1;
-                    v = clampBoundaryMeta(v, desiredConfig.getBoundaryBlockA());
-                    desiredConfig.setBoundaryMetaA(v);
-                    updateBoundaryButtons();
-                });
-        rootWidget.addChild(this.boundaryMetaAMinus);
-
-        this.boundaryMetaAField = new WTextField(
-                new Rectangle(60, this.boundaryBlockAButton.position.y + 1, 28, 18),
-                Integer.toString(desiredConfig.getBoundaryMetaA()));
-        rootWidget.addChild(this.boundaryMetaAField);
-
-        this.boundaryMetaAPlus = new WButton(
-                new Rectangle(90, this.boundaryBlockAButton.position.y + 1, 18, 18),
-                I18n.format("gui.personalWorld.button.plus"),
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    int v = desiredConfig.getBoundaryMetaA() + 1;
-                    v = clampBoundaryMeta(v, desiredConfig.getBoundaryBlockA());
-                    desiredConfig.setBoundaryMetaA(v);
-                    updateBoundaryButtons();
-                });
-        rootWidget.addChild(this.boundaryMetaAPlus);
-
-        this.boundaryBlockBButton = new WButton(
-                new Rectangle(0, this.ySize, 20, 20),
-                "?",
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    boundaryBlockBCycle = (boundaryBlockBButton.lastButton == 0) ? (boundaryBlockBCycle + 1)
-                            : (boundaryBlockBCycle + allowedBoundaryBlockNames.size() - 1);
-                    boundaryBlockBCycle %= allowedBoundaryBlockNames.size();
-                    String newBlock = allowedBoundaryBlockNames.get(boundaryBlockBCycle);
-                    desiredConfig.setBoundaryBlockB(newBlock);
-                    desiredConfig.setBoundaryMetaB(clampBoundaryMeta(desiredConfig.getBoundaryMetaB(), newBlock));
-                    updateBoundaryButtons();
-                });
-        this.boundaryBlockBButton.addChild(new WLabel(26, 6, I18n.format("gui.personalWorld.boundary.b.short"), false));
-        addWidget(this.boundaryBlockBButton);
-
-        this.boundaryMetaBMinus = new WButton(
-                new Rectangle(40, this.boundaryBlockBButton.position.y + 1, 18, 18),
-                I18n.format("gui.personalWorld.button.minus"),
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    int v = desiredConfig.getBoundaryMetaB() - 1;
-                    v = clampBoundaryMeta(v, desiredConfig.getBoundaryBlockB());
-                    desiredConfig.setBoundaryMetaB(v);
-                    updateBoundaryButtons();
-                });
-        rootWidget.addChild(this.boundaryMetaBMinus);
-
-        this.boundaryMetaBField = new WTextField(
-                new Rectangle(60, this.boundaryBlockBButton.position.y + 1, 28, 18),
-                Integer.toString(desiredConfig.getBoundaryMetaB()));
-        rootWidget.addChild(this.boundaryMetaBField);
-
-        this.boundaryMetaBPlus = new WButton(
-                new Rectangle(90, this.boundaryBlockBButton.position.y + 1, 18, 18),
-                I18n.format("gui.personalWorld.button.plus"),
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    int v = desiredConfig.getBoundaryMetaB() + 1;
-                    v = clampBoundaryMeta(v, desiredConfig.getBoundaryBlockB());
-                    desiredConfig.setBoundaryMetaB(v);
-                    updateBoundaryButtons();
-                });
-        rootWidget.addChild(this.boundaryMetaBPlus);
-
-        this.ySize += 1;
 
         addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.boundary.chunks"), false));
 
@@ -941,6 +656,45 @@ public class GuiEditWorld extends GuiScreen {
                 });
         rootWidget.addChild(this.boundaryChunkZPlus);
 
+        this.ySize += 21;
+
+        addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.boundary"), false));
+
+        int boundaryRowY = this.ySize;
+        this.boundaryBlockADropdown = new WBlockDropdown(
+                new Rectangle(0, boundaryRowY, 20, 20),
+                false,
+                boundaryBlockEntries,
+                WBlockDropdown.findEntryIndex(
+                        boundaryBlockEntries,
+                        desiredConfig.getBoundaryBlockA(),
+                        desiredConfig.getBoundaryMetaA()),
+                (entry) -> {
+                    desiredConfig.setBoundaryBlockA(entry.blockName());
+                    desiredConfig.setBoundaryMetaA(entry.meta());
+                    updateBoundaryButtons();
+                });
+        this.boundaryBlockADropdown.setLabel(I18n.format("gui.personalWorld.boundary.a.short"));
+        this.boundaryBlockADropdown.setGuiRelativePos(0, boundaryRowY);
+        rootWidget.addChild(this.boundaryBlockADropdown);
+
+        this.boundaryBlockBDropdown = new WBlockDropdown(
+                new Rectangle(42, boundaryRowY, 20, 20),
+                false,
+                boundaryBlockEntries,
+                WBlockDropdown.findEntryIndex(
+                        boundaryBlockEntries,
+                        desiredConfig.getBoundaryBlockB(),
+                        desiredConfig.getBoundaryMetaB()),
+                (entry) -> {
+                    desiredConfig.setBoundaryBlockB(entry.blockName());
+                    desiredConfig.setBoundaryMetaB(entry.meta());
+                    updateBoundaryButtons();
+                });
+        this.boundaryBlockBDropdown.setLabel(I18n.format("gui.personalWorld.boundary.b.short"));
+        this.boundaryBlockBDropdown.setGuiRelativePos(42, boundaryRowY);
+        rootWidget.addChild(this.boundaryBlockBDropdown);
+
         this.ySize += 24;
 
         updateBoundaryButtons();
@@ -995,111 +749,40 @@ public class GuiEditWorld extends GuiScreen {
                 });
         rootWidget.addChild(this.gapPresetButton);
 
-        this.ySize += 20;
+        this.ySize += 21;
 
-        this.gapBlockAButton = new WButton(
-                new Rectangle(0, this.ySize, 20, 20),
-                "?",
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    gapBlockACycle = (gapBlockAButton.lastButton == 0) ? (gapBlockACycle + 1)
-                            : (gapBlockACycle + allowedGapBlockNames.size() - 1);
-                    gapBlockACycle %= allowedGapBlockNames.size();
-                    String newBlock = allowedGapBlockNames.get(gapBlockACycle);
-                    desiredConfig.setGapBlockA(newBlock);
-                    desiredConfig.setGapMetaA(clampGapMeta(desiredConfig.getGapMetaA(), newBlock));
+        int gapRowY = this.ySize;
+        this.gapBlockADropdown = new WBlockDropdown(
+                new Rectangle(0, gapRowY, 20, 20),
+                false,
+                gapBlockEntries,
+                WBlockDropdown
+                        .findEntryIndex(gapBlockEntries, desiredConfig.getGapBlockA(), desiredConfig.getGapMetaA()),
+                (entry) -> {
+                    desiredConfig.setGapBlockA(entry.blockName());
+                    desiredConfig.setGapMetaA(entry.meta());
                     updateGapButtons();
                 });
-        this.gapBlockAButton.addChild(new WLabel(26, 6, I18n.format("gui.personalWorld.gap.a.short"), false));
-        addWidget(this.gapBlockAButton);
+        this.gapBlockADropdown.setLabel(I18n.format("gui.personalWorld.gap.a.short"));
+        this.gapBlockADropdown.setGuiRelativePos(0, gapRowY);
+        rootWidget.addChild(this.gapBlockADropdown);
 
-        this.gapMetaAMinus = new WButton(
-                new Rectangle(40, this.gapBlockAButton.position.y + 1, 18, 18),
-                I18n.format("gui.personalWorld.button.minus"),
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    int v = desiredConfig.getGapMetaA() - 1;
-                    v = clampGapMeta(v, desiredConfig.getGapBlockA());
-                    desiredConfig.setGapMetaA(v);
+        this.gapBlockBDropdown = new WBlockDropdown(
+                new Rectangle(42, gapRowY, 20, 20),
+                false,
+                gapBlockEntries,
+                WBlockDropdown
+                        .findEntryIndex(gapBlockEntries, desiredConfig.getGapBlockB(), desiredConfig.getGapMetaB()),
+                (entry) -> {
+                    desiredConfig.setGapBlockB(entry.blockName());
+                    desiredConfig.setGapMetaB(entry.meta());
                     updateGapButtons();
                 });
-        rootWidget.addChild(this.gapMetaAMinus);
+        this.gapBlockBDropdown.setLabel(I18n.format("gui.personalWorld.gap.b.short"));
+        this.gapBlockBDropdown.setGuiRelativePos(42, gapRowY);
+        rootWidget.addChild(this.gapBlockBDropdown);
 
-        this.gapMetaAField = new WTextField(
-                new Rectangle(60, this.gapBlockAButton.position.y + 1, 28, 18),
-                Integer.toString(desiredConfig.getGapMetaA()));
-        rootWidget.addChild(this.gapMetaAField);
-
-        this.gapMetaAPlus = new WButton(
-                new Rectangle(90, this.gapBlockAButton.position.y + 1, 18, 18),
-                I18n.format("gui.personalWorld.button.plus"),
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    int v = desiredConfig.getGapMetaA() + 1;
-                    v = clampGapMeta(v, desiredConfig.getGapBlockA());
-                    desiredConfig.setGapMetaA(v);
-                    updateGapButtons();
-                });
-        rootWidget.addChild(this.gapMetaAPlus);
-
-        this.gapBlockBButton = new WButton(
-                new Rectangle(0, this.ySize, 20, 20),
-                "?",
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    gapBlockBCycle = (gapBlockBButton.lastButton == 0) ? (gapBlockBCycle + 1)
-                            : (gapBlockBCycle + allowedGapBlockNames.size() - 1);
-                    gapBlockBCycle %= allowedGapBlockNames.size();
-                    String newBlock = allowedGapBlockNames.get(gapBlockBCycle);
-                    desiredConfig.setGapBlockB(newBlock);
-                    desiredConfig.setGapMetaB(clampGapMeta(desiredConfig.getGapMetaB(), newBlock));
-                    updateGapButtons();
-                });
-        this.gapBlockBButton.addChild(new WLabel(26, 6, I18n.format("gui.personalWorld.gap.b.short"), false));
-        addWidget(this.gapBlockBButton);
-
-        this.gapMetaBMinus = new WButton(
-                new Rectangle(40, this.gapBlockBButton.position.y + 1, 18, 18),
-                I18n.format("gui.personalWorld.button.minus"),
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    int v = desiredConfig.getGapMetaB() - 1;
-                    v = clampGapMeta(v, desiredConfig.getGapBlockB());
-                    desiredConfig.setGapMetaB(v);
-                    updateGapButtons();
-                });
-        rootWidget.addChild(this.gapMetaBMinus);
-
-        this.gapMetaBField = new WTextField(
-                new Rectangle(60, this.gapBlockBButton.position.y + 1, 28, 18),
-                Integer.toString(desiredConfig.getGapMetaB()));
-        rootWidget.addChild(this.gapMetaBField);
-
-        this.gapMetaBPlus = new WButton(
-                new Rectangle(90, this.gapBlockBButton.position.y + 1, 18, 18),
-                I18n.format("gui.personalWorld.button.plus"),
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    int v = desiredConfig.getGapMetaB() + 1;
-                    v = clampGapMeta(v, desiredConfig.getGapBlockB());
-                    desiredConfig.setGapMetaB(v);
-                    updateGapButtons();
-                });
-        rootWidget.addChild(this.gapMetaBPlus);
-
-        this.ySize += 2;
+        this.ySize += 24;
         updateGapButtons();
 
         // Center marker section
@@ -1116,8 +799,25 @@ public class GuiEditWorld extends GuiScreen {
         this.centerEnabledToggle.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.center.enable"), false));
         addWidget(this.centerEnabledToggle);
 
+        this.centerBlockDropdown = new WBlockDropdown(
+                new Rectangle(0, this.ySize, 20, 20),
+                false,
+                centerBlockEntries,
+                WBlockDropdown.findEntryIndex(
+                        centerBlockEntries,
+                        desiredConfig.getCenterBlock(),
+                        desiredConfig.getCenterMeta()),
+                (entry) -> {
+                    desiredConfig.setCenterBlock(entry.blockName());
+                    desiredConfig.setCenterMeta(entry.meta());
+                    updateCenterButtons();
+                });
+        this.centerBlockDropdown.setLabel(I18n.format("gui.personalWorld.center.block.short"));
+        this.centerBlockDropdown.setGuiRelativePos(0, this.ySize);
+        addWidget(this.centerBlockDropdown);
+
         this.centerDirectionButton = new WButton(
-                new Rectangle(120, this.centerEnabledToggle.position.y, 80, 18),
+                new Rectangle(42, this.centerBlockDropdown.position.y, 80, 18),
                 getCenterDirectionText(),
                 true,
                 WButton.DEFAULT_COLOR,
@@ -1129,57 +829,6 @@ public class GuiEditWorld extends GuiScreen {
                     updateCenterButtons();
                 });
         rootWidget.addChild(this.centerDirectionButton);
-
-        this.centerBlockButton = new WButton(
-                new Rectangle(0, this.ySize, 20, 20),
-                "?",
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    centerBlockCycle = (centerBlockButton.lastButton == 0) ? (centerBlockCycle + 1)
-                            : (centerBlockCycle + allowedCenterBlockNames.size() - 1);
-                    centerBlockCycle %= allowedCenterBlockNames.size();
-                    String newBlock = allowedCenterBlockNames.get(centerBlockCycle);
-                    desiredConfig.setCenterBlock(newBlock);
-                    desiredConfig.setCenterMeta(clampCenterMeta(desiredConfig.getCenterMeta(), newBlock));
-                    updateCenterButtons();
-                });
-        this.centerBlockButton.addChild(new WLabel(26, 6, I18n.format("gui.personalWorld.center.block.short"), false));
-        addWidget(this.centerBlockButton);
-
-        this.centerMetaMinus = new WButton(
-                new Rectangle(40, this.centerBlockButton.position.y + 1, 18, 18),
-                I18n.format("gui.personalWorld.button.minus"),
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    int v = desiredConfig.getCenterMeta() - 1;
-                    v = clampCenterMeta(v, desiredConfig.getCenterBlock());
-                    desiredConfig.setCenterMeta(v);
-                    updateCenterButtons();
-                });
-        rootWidget.addChild(this.centerMetaMinus);
-
-        this.centerMetaField = new WTextField(
-                new Rectangle(60, this.centerBlockButton.position.y + 1, 28, 18),
-                Integer.toString(desiredConfig.getCenterMeta()));
-        rootWidget.addChild(this.centerMetaField);
-
-        this.centerMetaPlus = new WButton(
-                new Rectangle(90, this.centerBlockButton.position.y + 1, 18, 18),
-                I18n.format("gui.personalWorld.button.plus"),
-                true,
-                WButton.DEFAULT_COLOR,
-                null,
-                () -> {
-                    int v = desiredConfig.getCenterMeta() + 1;
-                    v = clampCenterMeta(v, desiredConfig.getCenterBlock());
-                    desiredConfig.setCenterMeta(v);
-                    updateCenterButtons();
-                });
-        rootWidget.addChild(this.centerMetaPlus);
 
         this.ySize += 2;
         updateCenterButtons();
@@ -1225,47 +874,51 @@ public class GuiEditWorld extends GuiScreen {
 
     private void regeneratePresetEditor() {
         final boolean generationEnabled = desiredConfig.getAllowGenerationChanges();
-        this.presetEditor.children.clear();
-        int curX = 0;
-        int curY = 0;
-        for (String bl : PersonalSpaceMod.clientAllowedBlocks) {
-            String[] blName = bl.split(":");
-            if (blName.length != 2) continue;
-            Block block = GameRegistry.findBlock(blName[0], blName[1]);
-            if (block == null) continue;
-            ItemStack is = new ItemStack(block);
-            WButton addBtn = new WButton(new Rectangle(curX, curY, 20, 20), "", false, 0, null, () -> {
-                FlatLayerInfo fli = new FlatLayerInfo(1, block);
-                this.desiredConfig.getMutableLayers().add(fli);
-                this.desiredConfig.setLayers(this.desiredConfig.getLayersAsString());
-                this.configToPreset();
-            });
-            addBtn.itemStack = is;
-            addBtn.itemStackText = I18n.format("gui.personalWorld.button.plus");
-            addBtn.tooltip = (is.getItem() != null) ? is.getDisplayName() : block.getLocalizedName();
-            addBtn.enabled = generationEnabled;
-            this.presetEditor.addChild(addBtn);
-            curY += 21;
-            if (curY > 188) {
-                curY = 0;
-                curX += 21;
+        // Remove all children except the layers dropdown
+        List<Widget> toKeep = new ArrayList<>();
+        for (Widget child : this.presetEditor.children) {
+            if (child == this.layersBlockDropdown) {
+                toKeep.add(child);
             }
         }
+        this.presetEditor.children.clear();
+        this.presetEditor.children.addAll(toKeep);
 
-        curY = 0;
-        curX += 22;
+        if (this.layersBlockDropdown != null) {
+            this.layersBlockDropdown.enabled = generationEnabled;
+        }
+
+        int curX = 24;
+        int curY = 0;
         this.presetEditor.addChild(new WLabel(curX, curY, I18n.format("gui.personalWorld.layers"), false));
         curY += 10;
+
         List<FlatLayerInfo> fli = this.desiredConfig.getLayers();
-        for (int i = fli.size() - 1; i >= 0; i--) {
+        int startIdx = layerListScrollOffset;
+        int endIdx = Math.min(fli.size(), startIdx + MAX_VISIBLE_LAYERS);
+
+        for (int vi = startIdx; vi < endIdx; vi++) {
+            // Display layers top-to-bottom (highest to lowest in the stack)
+            int i = fli.size() - 1 - vi;
+            if (i < 0) break;
             FlatLayerInfo info = fli.get(i);
             final int finalI = i;
             WButton block = new WButton(new Rectangle(curX + 12, curY, 20, 28), "", false, 0, null, null);
             Block gameBlock = info.func_151536_b();
+            int blockMeta = info.getFillBlockMeta();
             block.enabled = false;
-            block.itemStack = new ItemStack(gameBlock);
+            block.itemStack = new ItemStack(gameBlock, 1, blockMeta);
             block.itemStackText = Integer.toString(info.getLayerCount());
-            block.tooltip = gameBlock.getLocalizedName();
+            try {
+                String displayName = block.itemStack.getDisplayName();
+                if (displayName != null && !displayName.isEmpty()) {
+                    block.tooltip = displayName;
+                } else {
+                    block.tooltip = gameBlock.getLocalizedName();
+                }
+            } catch (Throwable ignored) {
+                block.tooltip = gameBlock.getLocalizedName();
+            }
             this.presetEditor.addChild(block);
 
             if (i < fli.size() - 1) {
@@ -1291,7 +944,8 @@ public class GuiEditWorld extends GuiScreen {
                 int newCnt = ctrlHeld ? 64 : (shiftHeld ? 10 : 1);
                 newCnt *= mul;
                 newCnt = MathHelper.clamp_int(orig.getLayerCount() + newCnt, 1, 255);
-                this.desiredConfig.getMutableLayers().set(finalI, new FlatLayerInfo(newCnt, orig.func_151536_b()));
+                this.desiredConfig.getMutableLayers()
+                        .set(finalI, new FlatLayerInfo(newCnt, orig.func_151536_b(), orig.getFillBlockMeta()));
                 this.desiredConfig.setLayers(this.desiredConfig.getLayersAsString());
                 this.configToPreset();
             };
@@ -1317,10 +971,13 @@ public class GuiEditWorld extends GuiScreen {
             }
 
             curY += 30;
-            if (curY > 188) {
-                curY = 10;
-                curX += 21;
-            }
+        }
+
+        // Clamp scroll offset
+        if (fli.size() <= MAX_VISIBLE_LAYERS) {
+            layerListScrollOffset = 0;
+        } else {
+            layerListScrollOffset = MathHelper.clamp_int(layerListScrollOffset, 0, fli.size() - MAX_VISIBLE_LAYERS);
         }
     }
 
@@ -1331,6 +988,20 @@ public class GuiEditWorld extends GuiScreen {
         }
         this.presetEntry.textField.setText(preset);
         this.presetEntry.textField.setCursorPositionZero();
+    }
+
+    private void updateLayerScrollFromMouse(int mouseY) {
+        List<FlatLayerInfo> layers = desiredConfig.getLayers();
+        if (layers.size() <= MAX_VISIBLE_LAYERS) return;
+        int trackY = 10;
+        int trackH = MAX_VISIBLE_LAYERS * 30;
+        int maxScroll = layers.size() - MAX_VISIBLE_LAYERS;
+        int thumbH = Math.max(20, trackH * MAX_VISIBLE_LAYERS / layers.size());
+        int scrollableRange = trackH - thumbH;
+        if (scrollableRange <= 0) return;
+        int relY = mouseY - trackY - thumbH / 2;
+        float ratio = MathHelper.clamp_float((float) relY / scrollableRange, 0, 1);
+        layerListScrollOffset = Math.round(ratio * maxScroll);
     }
 
     @Override
@@ -1362,14 +1033,8 @@ public class GuiEditWorld extends GuiScreen {
         this.biomeEditButton.buttonIcon = generationEnabled ? Icons.PENCIL : Icons.LOCK;
         this.presetEntry.enabled = generationEnabled;
 
-        this.boundaryBlockAButton.enabled = generationEnabled;
-        this.boundaryBlockBButton.enabled = generationEnabled;
-        this.boundaryMetaAMinus.enabled = generationEnabled;
-        this.boundaryMetaAPlus.enabled = generationEnabled;
-        this.boundaryMetaBMinus.enabled = generationEnabled;
-        this.boundaryMetaBPlus.enabled = generationEnabled;
-        this.boundaryMetaAField.enabled = generationEnabled;
-        this.boundaryMetaBField.enabled = generationEnabled;
+        this.boundaryBlockADropdown.enabled = generationEnabled;
+        this.boundaryBlockBDropdown.enabled = generationEnabled;
 
         this.boundaryChunkXMinus.enabled = generationEnabled;
         this.boundaryChunkXPlus.enabled = generationEnabled;
@@ -1390,23 +1055,14 @@ public class GuiEditWorld extends GuiScreen {
         this.gapWidthPlus.enabled = gapEnabled;
         this.gapWidthField.enabled = gapEnabled;
         this.gapPresetButton.enabled = gapEnabled;
-        this.gapBlockAButton.enabled = gapEnabled;
-        this.gapBlockBButton.enabled = gapEnabled && !gapIsSolid;
-        this.gapMetaAMinus.enabled = gapEnabled;
-        this.gapMetaAPlus.enabled = gapEnabled;
-        this.gapMetaBMinus.enabled = gapEnabled && !gapIsSolid;
-        this.gapMetaBPlus.enabled = gapEnabled && !gapIsSolid;
-        this.gapMetaAField.enabled = gapEnabled;
-        this.gapMetaBField.enabled = gapEnabled && !gapIsSolid;
+        this.gapBlockADropdown.enabled = gapEnabled;
+        this.gapBlockBDropdown.enabled = gapEnabled && !gapIsSolid;
 
         boolean centerCanEnable = generationEnabled && !boundaryIsZero;
         this.centerEnabledToggle.enabled = centerCanEnable;
         boolean centerActive = centerCanEnable && desiredConfig.isCenterEnabled();
         this.centerDirectionButton.enabled = centerActive;
-        this.centerBlockButton.enabled = centerActive;
-        this.centerMetaMinus.enabled = centerActive;
-        this.centerMetaPlus.enabled = centerActive;
-        this.centerMetaField.enabled = centerActive;
+        this.centerBlockDropdown.enabled = centerActive;
 
         String actualText = this.presetEntry.textField.getText();
         if (voidPresetName.equals(actualText)) {
@@ -1448,34 +1104,6 @@ public class GuiEditWorld extends GuiScreen {
             }
 
         if (generationEnabled) {
-            int rawMetaA = parseIntOrDefault(boundaryMetaAField.textField.getText(), desiredConfig.getBoundaryMetaA());
-            if (!isBoundaryMetaAllowed(desiredConfig.getBoundaryBlockA(), rawMetaA)) {
-                this.boundaryMetaAField.textField.setTextColor(0xFF0000);
-                AllowedBoundaryBlock rule = getBoundaryRule(desiredConfig.getBoundaryBlockA());
-                this.boundaryMetaAField.tooltip = rule != null
-                        ? I18n.format("gui.personalWorld.boundary.allowed", rule.getMetaDescription())
-                        : I18n.format("gui.personalWorld.boundary.invalidMeta");
-                inputsValid = false;
-            } else {
-                this.boundaryMetaAField.textField.setTextColor(0xA0FFA0);
-                this.boundaryMetaAField.tooltip = null;
-                desiredConfig.setBoundaryMetaA(rawMetaA);
-            }
-
-            int rawMetaB = parseIntOrDefault(boundaryMetaBField.textField.getText(), desiredConfig.getBoundaryMetaB());
-            if (!isBoundaryMetaAllowed(desiredConfig.getBoundaryBlockB(), rawMetaB)) {
-                this.boundaryMetaBField.textField.setTextColor(0xFF0000);
-                AllowedBoundaryBlock rule = getBoundaryRule(desiredConfig.getBoundaryBlockB());
-                this.boundaryMetaBField.tooltip = rule != null
-                        ? I18n.format("gui.personalWorld.boundary.allowed", rule.getMetaDescription())
-                        : I18n.format("gui.personalWorld.boundary.invalidMeta");
-                inputsValid = false;
-            } else {
-                this.boundaryMetaBField.textField.setTextColor(0xA0FFA0);
-                this.boundaryMetaBField.tooltip = null;
-                desiredConfig.setBoundaryMetaB(rawMetaB);
-            }
-
             int bx = parseIntOrDefault(this.boundaryChunkXField.textField.getText(), 0);
             boolean bxOk = bx >= 0 && bx <= 20;
             if (!bxOk) {
@@ -1503,13 +1131,11 @@ public class GuiEditWorld extends GuiScreen {
             if (!desiredConfig.getBoundaryBlockA().isEmpty()
                     && getBoundaryRule(desiredConfig.getBoundaryBlockA()) == null) {
                 inputsValid = false;
-                this.boundaryBlockAButton.tooltip = I18n.format("gui.personalWorld.boundary.blockNotAllowed.a");
             }
 
             if (!desiredConfig.getBoundaryBlockB().isEmpty()
                     && getBoundaryRule(desiredConfig.getBoundaryBlockB()) == null) {
                 inputsValid = false;
-                this.boundaryBlockBButton.tooltip = I18n.format("gui.personalWorld.boundary.blockNotAllowed.b");
             }
 
             updateBoundaryButtons();
@@ -1530,94 +1156,37 @@ public class GuiEditWorld extends GuiScreen {
                     this.desiredConfig.setGapWidth(gw);
                 }
 
-                int gapRawMetaA = parseIntOrDefault(gapMetaAField.textField.getText(), desiredConfig.getGapMetaA());
-                if (!isGapMetaAllowed(desiredConfig.getGapBlockA(), gapRawMetaA)) {
-                    this.gapMetaAField.textField.setTextColor(0xFF0000);
-                    AllowedBoundaryBlock gapRule = getGapRule(desiredConfig.getGapBlockA());
-                    this.gapMetaAField.tooltip = gapRule != null
-                            ? I18n.format("gui.personalWorld.boundary.allowed", gapRule.getMetaDescription())
-                            : I18n.format("gui.personalWorld.boundary.invalidMeta");
-                    inputsValid = false;
-                } else {
-                    this.gapMetaAField.textField.setTextColor(0xA0FFA0);
-                    this.gapMetaAField.tooltip = null;
-                    desiredConfig.setGapMetaA(gapRawMetaA);
-                }
-
-                if (!gapIsSolid) {
-                    int gapRawMetaB = parseIntOrDefault(gapMetaBField.textField.getText(), desiredConfig.getGapMetaB());
-                    if (!isGapMetaAllowed(desiredConfig.getGapBlockB(), gapRawMetaB)) {
-                        this.gapMetaBField.textField.setTextColor(0xFF0000);
-                        AllowedBoundaryBlock gapRule = getGapRule(desiredConfig.getGapBlockB());
-                        this.gapMetaBField.tooltip = gapRule != null
-                                ? I18n.format("gui.personalWorld.boundary.allowed", gapRule.getMetaDescription())
-                                : I18n.format("gui.personalWorld.boundary.invalidMeta");
-                        inputsValid = false;
-                    } else {
-                        this.gapMetaBField.textField.setTextColor(0xA0FFA0);
-                        this.gapMetaBField.tooltip = null;
-                        desiredConfig.setGapMetaB(gapRawMetaB);
-                    }
-                }
-
                 if (!desiredConfig.getGapBlockA().isEmpty() && getGapRule(desiredConfig.getGapBlockA()) == null) {
                     inputsValid = false;
-                    this.gapBlockAButton.tooltip = I18n.format("gui.personalWorld.gap.blockNotAllowed.a");
                 }
 
                 if (!gapIsSolid && !desiredConfig.getGapBlockB().isEmpty()
                         && getGapRule(desiredConfig.getGapBlockB()) == null) {
                     inputsValid = false;
-                    this.gapBlockBButton.tooltip = I18n.format("gui.personalWorld.gap.blockNotAllowed.b");
                 }
 
                 updateGapButtons();
             } else {
                 // Boundary is 0x0, gray out gap fields
                 this.gapWidthField.textField.setTextColor(0x909090);
-                this.gapMetaAField.textField.setTextColor(0x909090);
-                this.gapMetaBField.textField.setTextColor(0x909090);
                 updateGapButtons();
             }
 
             // Center validation
             if (!boundaryIsZero && desiredConfig.isCenterEnabled()) {
-                int centerRawMeta = parseIntOrDefault(
-                        centerMetaField.textField.getText(),
-                        desiredConfig.getCenterMeta());
-                if (!isCenterMetaAllowed(desiredConfig.getCenterBlock(), centerRawMeta)) {
-                    this.centerMetaField.textField.setTextColor(0xFF0000);
-                    AllowedBoundaryBlock cRule = getCenterRule(desiredConfig.getCenterBlock());
-                    this.centerMetaField.tooltip = cRule != null
-                            ? I18n.format("gui.personalWorld.boundary.allowed", cRule.getMetaDescription())
-                            : I18n.format("gui.personalWorld.boundary.invalidMeta");
-                    inputsValid = false;
-                } else {
-                    this.centerMetaField.textField.setTextColor(0xA0FFA0);
-                    this.centerMetaField.tooltip = null;
-                    desiredConfig.setCenterMeta(centerRawMeta);
-                }
-
                 if (!desiredConfig.getCenterBlock().isEmpty()
                         && getCenterRule(desiredConfig.getCenterBlock()) == null) {
                     inputsValid = false;
-                    this.centerBlockButton.tooltip = I18n.format("gui.personalWorld.center.blockNotAllowed");
                 }
 
                 updateCenterButtons();
             } else {
-                this.centerMetaField.textField.setTextColor(0x909090);
                 updateCenterButtons();
             }
         } else {
-            this.boundaryMetaAField.textField.setTextColor(0x909090);
-            this.boundaryMetaBField.textField.setTextColor(0x909090);
             this.boundaryChunkXField.textField.setTextColor(0x909090);
             this.boundaryChunkZField.textField.setTextColor(0x909090);
             this.gapWidthField.textField.setTextColor(0x909090);
-            this.gapMetaAField.textField.setTextColor(0x909090);
-            this.gapMetaBField.textField.setTextColor(0x909090);
-            this.centerMetaField.textField.setTextColor(0x909090);
         }
 
         this.save.enabled = inputsValid;
@@ -1626,6 +1195,19 @@ public class GuiEditWorld extends GuiScreen {
 
         if (currentPage == 0) {
             GuiDraw.gui.setZLevel(0.f);
+            // Draw layer scrollbar
+            List<FlatLayerInfo> layers = desiredConfig.getLayers();
+            if (layers.size() > MAX_VISIBLE_LAYERS) {
+                int trackX = 288;
+                int trackY = 10;
+                int trackW = 6;
+                int trackH = MAX_VISIBLE_LAYERS * 30;
+                int maxScroll = layers.size() - MAX_VISIBLE_LAYERS;
+                int thumbH = Math.max(20, trackH * MAX_VISIBLE_LAYERS / layers.size());
+                int thumbY = trackY + (int) ((float) (trackH - thumbH) * layerListScrollOffset / maxScroll);
+                GuiDraw.drawRect(trackX, trackY, trackW, trackH, 0xFF404040);
+                GuiDraw.drawRect(trackX, thumbY, trackW, thumbH, 0xFFA0A0A0);
+            }
             GuiDraw.drawRect(130, skyRed.position.y, 32, 3 * (skyRed.position.height + 1), 0xFF000000);
             GuiDraw.drawRect(
                     131,
@@ -1640,6 +1222,9 @@ public class GuiEditWorld extends GuiScreen {
             Icons.STAR.drawAt(134, this.skyRed.position.y + 21);
             GL11.glColor4f(1, 1, 1, 1);
         }
+
+        // Draw open dropdown overlay on top
+        WBlockDropdown.drawOpenDropdown(mouseX, mouseY, partialTicks);
 
         rootWidget.drawForeground(mouseX, mouseY, partialTicks);
 
@@ -1656,6 +1241,22 @@ public class GuiEditWorld extends GuiScreen {
     protected void mouseClicked(int x, int y, int button) {
         x -= guiLeft;
         y -= guiTop;
+        // Handle dropdown click first (overlay is on top)
+        if (WBlockDropdown.handleOpenDropdownClick(x, y, button)) {
+            return;
+        }
+        // Handle layer scrollbar click
+        if (currentPage == 0 && button == 0) {
+            List<FlatLayerInfo> layers = desiredConfig.getLayers();
+            if (layers.size() > MAX_VISIBLE_LAYERS) {
+                int trackX = 288, trackY = 10, trackW = 6, trackH = MAX_VISIBLE_LAYERS * 30;
+                if (x >= trackX && x < trackX + trackW && y >= trackY && y < trackY + trackH) {
+                    layerScrollbarDragging = true;
+                    updateLayerScrollFromMouse(y);
+                    return;
+                }
+            }
+        }
         super.mouseClicked(x, y, button);
         rootWidget.mouseClicked(x, y, button);
     }
@@ -1664,6 +1265,9 @@ public class GuiEditWorld extends GuiScreen {
     protected void mouseMovedOrUp(int x, int y, int button) {
         x -= guiLeft;
         y -= guiTop;
+        if (button >= 0) {
+            layerScrollbarDragging = false;
+        }
         super.mouseMovedOrUp(x, y, button);
         rootWidget.mouseMovedOrUp(x, y, button);
     }
@@ -1672,8 +1276,38 @@ public class GuiEditWorld extends GuiScreen {
     protected void mouseClickMove(int x, int y, int lastBtn, long timeDragged) {
         x -= guiLeft;
         y -= guiTop;
+        if (layerScrollbarDragging) {
+            updateLayerScrollFromMouse(y);
+            return;
+        }
         super.mouseClickMove(x, y, lastBtn, timeDragged);
         rootWidget.mouseClickMove(x, y, lastBtn, timeDragged);
+    }
+
+    @Override
+    public void handleMouseInput() {
+        super.handleMouseInput();
+        int delta = Mouse.getEventDWheel();
+        if (delta != 0) {
+            int mx = Mouse.getEventX() * this.width / this.mc.displayWidth - guiLeft;
+            int my = this.height - Mouse.getEventY() * this.height / this.mc.displayHeight - 1 - guiTop;
+            // Try dropdown scroll first
+            if (!WBlockDropdown.handleOpenDropdownScroll(mx, my, delta)) {
+                // Handle layer list scroll on page 1 (preset editor area)
+                if (currentPage == 0 && presetEditor != null) {
+                    int peX = presetEditor.position.x;
+                    int peY = presetEditor.position.y;
+                    if (mx >= peX && mx < peX + 200 && my >= peY && my < peY + 220) {
+                        int maxScroll = Math.max(0, desiredConfig.getLayers().size() - MAX_VISIBLE_LAYERS);
+                        if (delta > 0) {
+                            layerListScrollOffset = Math.max(0, layerListScrollOffset - 1);
+                        } else {
+                            layerListScrollOffset = Math.min(maxScroll, layerListScrollOffset + 1);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Override

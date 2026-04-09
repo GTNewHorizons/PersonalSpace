@@ -109,8 +109,9 @@ public class WPreviewPanel extends Widget {
         int boundaryBColor = getBlockColor(config.getBoundaryBlockB(), config.getBoundaryMetaB());
         int gapAColor = getBlockColor(config.getGapBlockA(), config.getGapMetaA());
         int gapBColor = getBlockColor(config.getGapBlockB(), config.getGapMetaB());
-        int centerColor = config.isCenterEnabled() ? getBlockColor(config.getCenterBlock(), config.getCenterMeta())
-                : mainColor;
+        int centerColorRaw = config.isCenterEnabled() ? getBlockColor(config.getCenterBlock(), config.getCenterMeta())
+                : 0;
+        int centerColor = centerColorRaw != 0 ? centerColorRaw : mainColor;
 
         // Calculate uniform scale: show ~2 periods of the larger axis, keep chunks square
         int maxPeriodBlocks = Math.max(periodXBlocks > 0 ? periodXBlocks : 16, periodZBlocks > 0 ? periodZBlocks : 16);

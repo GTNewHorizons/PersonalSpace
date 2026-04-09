@@ -9,7 +9,7 @@ import javax.annotation.Nonnull;
 import com.github.bsideup.jabel.Desugar;
 
 @Desugar
-public record AllowedBoundaryBlock(String blockName, List<MetaRange> ranges, String original) {
+public record AllowedBlock(String blockName, List<MetaRange> ranges, String original) {
 
     @Desugar
     public record MetaRange(int min, int max, boolean negated) {
@@ -32,7 +32,7 @@ public record AllowedBoundaryBlock(String blockName, List<MetaRange> ranges, Str
         }
     }
 
-    public AllowedBoundaryBlock(String blockName, List<MetaRange> ranges, String original) {
+    public AllowedBlock(String blockName, List<MetaRange> ranges, String original) {
         this.blockName = blockName;
         this.ranges = Collections.unmodifiableList(new ArrayList<>(ranges));
         this.original = original;
@@ -128,7 +128,7 @@ public record AllowedBoundaryBlock(String blockName, List<MetaRange> ranges, Str
         return sb.toString();
     }
 
-    public static AllowedBoundaryBlock parse(String s) {
+    public static AllowedBlock parse(String s) {
         if (s == null) {
             return null;
         }
@@ -138,20 +138,43 @@ public record AllowedBoundaryBlock(String blockName, List<MetaRange> ranges, Str
         }
 
         int lastColon = str.lastIndexOf(':');
-        if (lastColon <= 0 || lastColon >= str.length() - 1) {
+        if (lastColon <= 0) {
             return null;
         }
 
         String blockName = str.substring(0, lastColon).trim();
         String metaSpec = str.substring(lastColon + 1).trim();
 
-        if (blockName.isEmpty() || metaSpec.isEmpty()) {
+        if (blockName.isEmpty()) {
             return null;
         }
 
+        // Check if the part after the last colon is a valid meta spec or part of the block name
+        // If blockName has no colon (e.g. "minecraft" from "minecraft:wool"), then the split is wrong
+        // blockName must be "modid:name" format
         String[] blockSplit = blockName.split(":");
+        if (blockSplit.length == 1) {
+            // Only one colon total: "modid:block" with no meta spec
+            // Treat the whole string as blockName, default meta to 0
+            blockName = str;
+            blockSplit = blockName.split(":");
+            if (blockSplit.length != 2) {
+                return null;
+            }
+            List<MetaRange> ranges = new ArrayList<>();
+            ranges.add(new MetaRange(0, 0, false));
+            return new AllowedBlock(blockName, ranges, str);
+        }
+
         if (blockSplit.length != 2) {
             return null;
+        }
+
+        if (metaSpec.isEmpty()) {
+            // Trailing colon with no meta: default to 0
+            List<MetaRange> ranges = new ArrayList<>();
+            ranges.add(new MetaRange(0, 0, false));
+            return new AllowedBlock(blockName, ranges, str);
         }
 
         List<MetaRange> ranges = new ArrayList<>();
@@ -189,9 +212,10 @@ public record AllowedBoundaryBlock(String blockName, List<MetaRange> ranges, Str
         }
 
         if (ranges.isEmpty()) {
-            return null;
+            // Meta spec was present but had no valid entries: default to 0
+            ranges.add(new MetaRange(0, 0, false));
         }
 
-        return new AllowedBoundaryBlock(blockName, ranges, str);
+        return new AllowedBlock(blockName, ranges, str);
     }
 }
