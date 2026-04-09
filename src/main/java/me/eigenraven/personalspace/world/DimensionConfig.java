@@ -169,6 +169,8 @@ public class DimensionConfig {
     private int gapMetaA = 15;
     private String gapBlockB = "minecraft:wool";
     private int gapMetaB = 0;
+    private String gapBlockC = "minecraft:wool";
+    private int gapMetaC = 0;
 
     private boolean centerEnabled = false;
     private CenterDirection centerDirection = CenterDirection.SE;
@@ -217,6 +219,8 @@ public class DimensionConfig {
         pkt.writeVarInt(gapMetaA);
         pkt.writeString(gapBlockB == null ? "" : gapBlockB);
         pkt.writeVarInt(gapMetaB);
+        pkt.writeString(gapBlockC == null ? "" : gapBlockC);
+        pkt.writeVarInt(gapMetaC);
 
         pkt.writeBoolean(centerEnabled);
         pkt.writeVarInt(centerDirection.ordinal());
@@ -264,6 +268,8 @@ public class DimensionConfig {
         this.setGapMetaA(pkt.readVarInt());
         this.setGapBlockB(pkt.readString());
         this.setGapMetaB(pkt.readVarInt());
+        this.setGapBlockC(pkt.readString());
+        this.setGapMetaC(pkt.readVarInt());
 
         this.setCenterEnabled(pkt.readBoolean());
         this.setCenterDirection(CenterDirection.fromOrdinal(pkt.readVarInt()));
@@ -459,6 +465,20 @@ public class DimensionConfig {
             setGapMetaB(cur.getInt());
         }
 
+        cur = cfg.get(GAP, "blockC", getGapBlockC());
+        if (write) {
+            cur.set(getGapBlockC());
+        } else {
+            setGapBlockC(cur.getString());
+        }
+
+        cur = cfg.get(GAP, "metaC", getGapMetaC(), "", 0, 15);
+        if (write) {
+            cur.set(getGapMetaC());
+        } else {
+            setGapMetaC(cur.getInt());
+        }
+
         final String CENTER = "center";
 
         cur = cfg.get(CENTER, "enabled", isCenterEnabled(), "");
@@ -543,6 +563,8 @@ public class DimensionConfig {
             this.setGapMetaA(source.getGapMetaA());
             this.setGapBlockB(source.getGapBlockB());
             this.setGapMetaB(source.getGapMetaB());
+            this.setGapBlockC(source.getGapBlockC());
+            this.setGapMetaC(source.getGapMetaC());
 
             this.setCenterEnabled(source.isCenterEnabled());
             this.setCenterDirection(source.getCenterDirection());
@@ -858,6 +880,135 @@ public class DimensionConfig {
         return layersToString(this.layers);
     }
 
+    /**
+     * Encodes a block name and meta into modid:name:meta format (meta omitted if 0).
+     */
+    private static String encodeBlock(String blockName, int meta) {
+        return meta != 0 ? blockName + ":" + meta : blockName;
+    }
+
+    /**
+     * Parses a block string in modid:name or modid:name:meta format. Returns a 2-element array: [blockName, meta].
+     */
+    private static Object[] parseBlock(String blockStr) {
+        // blockStr is like "minecraft:stone" or "minecraft:stone:3"
+        int lastColon = blockStr.lastIndexOf(':');
+        int firstColon = blockStr.indexOf(':');
+        if (lastColon > firstColon && lastColon >= 0) {
+            // Has meta part
+            String name = blockStr.substring(0, lastColon);
+            try {
+                int meta = Integer.parseInt(blockStr.substring(lastColon + 1));
+                return new Object[] { name, meta };
+            } catch (NumberFormatException e) {
+                // Not a valid meta, treat whole string as block name
+                return new Object[] { blockStr, 0 };
+            }
+        }
+        return new Object[] { blockStr, 0 };
+    }
+
+    /**
+     * Encodes all generation settings (layers + boundary + gap + center) into a single string for copy/paste
+     * convenience. Format:
+     * layers_part|B,blockA,blockB,intervalX,intervalZ|G,width,preset,blockA,blockB,blockC|C,enabled,dir,block where
+     * each block is modid:name or modid:name:meta (meta omitted if 0).
+     */
+    public String getFullPresetString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getLayersAsString());
+        // Boundary section
+        sb.append("|B,");
+        sb.append(encodeBlock(getBoundaryBlockA(), getBoundaryMetaA())).append(',');
+        sb.append(encodeBlock(getBoundaryBlockB(), getBoundaryMetaB())).append(',');
+        sb.append(getBoundaryChunkIntervalX()).append(',').append(getBoundaryChunkIntervalZ());
+        // Gap section
+        sb.append("|G,");
+        sb.append(getGapWidth()).append(',').append(getGapPreset().ordinal()).append(',');
+        sb.append(encodeBlock(getGapBlockA(), getGapMetaA())).append(',');
+        sb.append(encodeBlock(getGapBlockB(), getGapMetaB())).append(',');
+        sb.append(encodeBlock(getGapBlockC(), getGapMetaC()));
+        // Center section
+        sb.append("|C,");
+        sb.append(isCenterEnabled() ? 1 : 0).append(',').append(getCenterDirection().ordinal()).append(',');
+        sb.append(encodeBlock(getCenterBlock(), getCenterMeta()));
+        return sb.toString();
+    }
+
+    /**
+     * Extracts the layers-only part from a full preset string (before the first '|').
+     */
+    public static String extractLayersPart(String fullPreset) {
+        if (fullPreset == null) return "";
+        int pipe = fullPreset.indexOf('|');
+        return pipe >= 0 ? fullPreset.substring(0, pipe) : fullPreset;
+    }
+
+    /**
+     * Returns true if the string contains extended settings (boundary/gap/center sections).
+     */
+    public static boolean hasExtendedSettings(String fullPreset) {
+        return fullPreset != null && fullPreset.contains("|");
+    }
+
+    /**
+     * Applies extended settings (boundary/gap/center) from a full preset string. Only modifies settings for sections
+     * that are present and valid.
+     */
+    public void applyExtendedSettings(String fullPreset) {
+        if (fullPreset == null || !fullPreset.contains("|")) return;
+        String[] sections = fullPreset.split("\\|");
+        for (int i = 1; i < sections.length; i++) {
+            String section = sections[i];
+            if (section.isEmpty()) continue;
+            String[] parts = section.split(",");
+            if (parts.length < 1) continue;
+            String type = parts[0];
+            try {
+                switch (type) {
+                    case "B":
+                        if (parts.length >= 5) {
+                            Object[] bA = parseBlock(parts[1]);
+                            setBoundaryBlockA((String) bA[0]);
+                            setBoundaryMetaA((int) bA[1]);
+                            Object[] bB = parseBlock(parts[2]);
+                            setBoundaryBlockB((String) bB[0]);
+                            setBoundaryMetaB((int) bB[1]);
+                            setBoundaryChunkIntervalX(Integer.parseInt(parts[3]));
+                            setBoundaryChunkIntervalZ(Integer.parseInt(parts[4]));
+                        }
+                        break;
+                    case "G":
+                        if (parts.length >= 6) {
+                            setGapWidth(Integer.parseInt(parts[1]));
+                            setGapPreset(GapPreset.fromOrdinal(Integer.parseInt(parts[2])));
+                            Object[] gA = parseBlock(parts[3]);
+                            setGapBlockA((String) gA[0]);
+                            setGapMetaA((int) gA[1]);
+                            Object[] gB = parseBlock(parts[4]);
+                            setGapBlockB((String) gB[0]);
+                            setGapMetaB((int) gB[1]);
+                            Object[] gC = parseBlock(parts[5]);
+                            setGapBlockC((String) gC[0]);
+                            setGapMetaC((int) gC[1]);
+                        }
+                        break;
+                    case "C":
+                        if (parts.length >= 4) {
+                            setCenterEnabled(Integer.parseInt(parts[1]) != 0);
+                            setCenterDirection(CenterDirection.fromOrdinal(Integer.parseInt(parts[2])));
+                            Object[] cB = parseBlock(parts[3]);
+                            setCenterBlock((String) cB[0]);
+                            setCenterMeta((int) cB[1]);
+                        }
+                        break;
+                }
+            } catch (NumberFormatException ignored) {
+                // Skip malformed sections
+            }
+        }
+    }
+
     public static boolean canUseLayers(String preset, boolean onClient) {
         if (preset == null) {
             preset = "";
@@ -1130,6 +1281,36 @@ public class DimensionConfig {
 
     public Block getGapBlockBResolved() {
         return blockFromString(gapBlockB);
+    }
+
+    public String getGapBlockC() {
+        return gapBlockC == null ? "" : gapBlockC;
+    }
+
+    public void setGapBlockC(String gapBlockC) {
+        if (gapBlockC == null) {
+            gapBlockC = "";
+        }
+        if (!this.getGapBlockC().equals(gapBlockC)) {
+            this.needsSaving = true;
+            this.gapBlockC = gapBlockC;
+        }
+    }
+
+    public int getGapMetaC() {
+        return gapMetaC;
+    }
+
+    public void setGapMetaC(int gapMetaC) {
+        int v = Math.max(gapMetaC, 0);
+        if (this.gapMetaC != v) {
+            this.needsSaving = true;
+            this.gapMetaC = v;
+        }
+    }
+
+    public Block getGapBlockCResolved() {
+        return blockFromString(gapBlockC);
     }
 
     public boolean isCenterEnabled() {

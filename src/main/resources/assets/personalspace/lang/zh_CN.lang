@@ -53,13 +53,16 @@ gui.personalWorld.boundary.range=0-20
 gui.personalWorld.gap=隔段区块 (0-5)
 gui.personalWorld.gap.a=隔段 A
 gui.personalWorld.gap.b=隔段 B
+gui.personalWorld.gap.c=隔段 C
 gui.personalWorld.gap.a.short=A
 gui.personalWorld.gap.b.short=B
+gui.personalWorld.gap.c.short=C
 gui.personalWorld.gap.widthRange=0-5
 gui.personalWorld.gap.preset.ROAD=马路
 gui.personalWorld.gap.preset.SOLID=纯方块
 gui.personalWorld.gap.blockNotAllowed.a=隔段 A 方块不被允许
 gui.personalWorld.gap.blockNotAllowed.b=隔段 B 方块不被允许
+gui.personalWorld.gap.blockNotAllowed.c=隔段 C 方块不被允许
 
 gui.personalWorld.center.enable=中心标记
 gui.personalWorld.center.block=中心方块

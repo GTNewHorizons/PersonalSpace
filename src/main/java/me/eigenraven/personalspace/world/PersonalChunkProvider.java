@@ -344,6 +344,8 @@ public class PersonalChunkProvider implements IChunkProvider {
         int gapMetaA = cfg.getGapMetaA();
         Block gapBlockB = cfg.getGapBlockBResolved();
         int gapMetaB = cfg.getGapMetaB();
+        Block gapBlockC = cfg.getGapBlockCResolved();
+        int gapMetaC = cfg.getGapMetaC();
 
         if (gapBlockA == null || gapBlockA == Blocks.air) return;
 
@@ -386,7 +388,9 @@ public class PersonalChunkProvider implements IChunkProvider {
                                     gapBlockA,
                                     gapMetaA,
                                     gapBlockB,
-                                    gapMetaB);
+                                    gapMetaB,
+                                    gapBlockC,
+                                    gapMetaC);
                             block = road.block;
                             meta = road.meta;
                         } else if (isGapZ && periodZ > 0) {
@@ -399,7 +403,9 @@ public class PersonalChunkProvider implements IChunkProvider {
                                     gapBlockA,
                                     gapMetaA,
                                     gapBlockB,
-                                    gapMetaB);
+                                    gapMetaB,
+                                    gapBlockC,
+                                    gapMetaC);
                             block = road.block;
                             meta = road.meta;
                         }
@@ -419,19 +425,20 @@ public class PersonalChunkProvider implements IChunkProvider {
     }
 
     private StripeBlock getRoadBlock(int offsetInGap, int alongRoad, int gapWidthBlocks, Block blockA, int metaA,
-            Block blockB, int metaB) {
+            Block blockB, int metaB, Block blockC, int metaC) {
         boolean hasStripe = blockB != null && blockB != Blocks.air;
+        boolean hasDash = blockC != null && blockC != Blocks.air;
 
-        // Edge lines
+        // Edge lines (B block)
         if (hasStripe && (offsetInGap == 0 || offsetInGap == gapWidthBlocks - 1)) {
             return new StripeBlock(blockB, metaB);
         }
 
-        // Center dashed line
-        if (hasStripe && gapWidthBlocks >= 4) {
+        // Center dashed line (C block)
+        if (hasDash && gapWidthBlocks >= 4) {
             int center = gapWidthBlocks / 2;
             if ((offsetInGap == center || offsetInGap == center - 1) && mod(alongRoad, 8) < 4) {
-                return new StripeBlock(blockB, metaB);
+                return new StripeBlock(blockC, metaC);
             }
         }
 

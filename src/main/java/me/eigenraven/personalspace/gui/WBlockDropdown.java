@@ -245,7 +245,7 @@ public class WBlockDropdown extends Widget {
 
         // Background
         Icons.bindTexture();
-        Icons.GUI_BG.draw9Patch(-2, -2, ddW + 4, ddH + 8);
+        Icons.GUI_BG.draw9Patch(-6, -4, ddW + 12, ddH + 8);
 
         // Draw grid items
         if (renderItem == null) {

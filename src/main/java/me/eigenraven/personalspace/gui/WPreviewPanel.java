@@ -80,6 +80,8 @@ public class WPreviewPanel extends Widget {
                 config.getGapMetaA(),
                 config.getGapBlockB(),
                 config.getGapMetaB(),
+                config.getGapBlockC(),
+                config.getGapMetaC(),
                 config.isCenterEnabled(),
                 config.getCenterDirection(),
                 config.getCenterBlock(),
@@ -109,6 +111,7 @@ public class WPreviewPanel extends Widget {
         int boundaryBColor = getBlockColor(config.getBoundaryBlockB(), config.getBoundaryMetaB());
         int gapAColor = getBlockColor(config.getGapBlockA(), config.getGapMetaA());
         int gapBColor = getBlockColor(config.getGapBlockB(), config.getGapMetaB());
+        int gapCColor = getBlockColor(config.getGapBlockC(), config.getGapMetaC());
         int centerColorRaw = config.isCenterEnabled() ? getBlockColor(config.getCenterBlock(), config.getCenterMeta())
                 : 0;
         int centerColor = centerColorRaw != 0 ? centerColorRaw : mainColor;
@@ -137,6 +140,7 @@ public class WPreviewPanel extends Widget {
                         boundaryBColor,
                         gapAColor,
                         gapBColor,
+                        gapCColor,
                         centerColor);
                 pixelData[pz * TEX_SIZE + px] = color;
             }
@@ -147,7 +151,7 @@ public class WPreviewPanel extends Widget {
 
     private int computeBlockColor(int worldX, int worldZ, int intervalX, int intervalZ, int gapWidth, int periodX,
             int periodZ, int periodXBlocks, int periodZBlocks, int mainColor, int bAColor, int bBColor, int gapAColor,
-            int gapBColor, int centerColor) {
+            int gapBColor, int gapCColor, int centerColor) {
         int chunkX = worldX >> 4;
         int chunkZ = worldZ >> 4;
         int localX = worldX & 15;
@@ -173,7 +177,8 @@ public class WPreviewPanel extends Widget {
                     intervalX,
                     intervalZ,
                     gapAColor,
-                    gapBColor);
+                    gapBColor,
+                    gapCColor);
         }
 
         // Boundary
@@ -231,7 +236,7 @@ public class WPreviewPanel extends Widget {
 
     private int computeGapColor(int chunkX, int chunkZ, int localX, int localZ, int worldX, int worldZ, boolean isGapX,
             boolean isGapZ, int periodX, int periodZ, int gapWidth, int intervalX, int intervalZ, int gapAColor,
-            int gapBColor) {
+            int gapBColor, int gapCColor) {
         DimensionConfig.GapPreset preset = config.getGapPreset();
         int gapWidthBlocks = gapWidth * 16;
 
@@ -255,11 +260,11 @@ public class WPreviewPanel extends Widget {
                 if (isGapX && periodX > 0) {
                     int gapChunkOffset = mod(chunkX, periodX) - intervalX;
                     int offsetInGap = gapChunkOffset * 16 + localX;
-                    return computeRoadColor(offsetInGap, worldZ, gapWidthBlocks, gapAColor, gapBColor);
+                    return computeRoadColor(offsetInGap, worldZ, gapWidthBlocks, gapAColor, gapBColor, gapCColor);
                 } else if (isGapZ && periodZ > 0) {
                     int gapChunkOffset = mod(chunkZ, periodZ) - intervalZ;
                     int offsetInGap = gapChunkOffset * 16 + localZ;
-                    return computeRoadColor(offsetInGap, worldX, gapWidthBlocks, gapAColor, gapBColor);
+                    return computeRoadColor(offsetInGap, worldX, gapWidthBlocks, gapAColor, gapBColor, gapCColor);
                 }
             }
         }
@@ -267,16 +272,20 @@ public class WPreviewPanel extends Widget {
         return gapAColor;
     }
 
-    private int computeRoadColor(int offsetInGap, int alongRoad, int gapWidthBlocks, int gapAColor, int gapBColor) {
+    private int computeRoadColor(int offsetInGap, int alongRoad, int gapWidthBlocks, int gapAColor, int gapBColor,
+            int gapCColor) {
         boolean hasStripe = gapBColor != 0;
+        boolean hasDash = gapCColor != 0;
 
+        // Edge lines (B block)
         if (hasStripe && (offsetInGap == 0 || offsetInGap == gapWidthBlocks - 1)) {
             return gapBColor;
         }
-        if (hasStripe && gapWidthBlocks >= 4) {
+        // Center dashed line (C block)
+        if (hasDash && gapWidthBlocks >= 4) {
             int center = gapWidthBlocks / 2;
             if ((offsetInGap == center || offsetInGap == center - 1) && mod(alongRoad, 8) < 4) {
-                return gapBColor;
+                return gapCColor;
             }
         }
         return gapAColor;

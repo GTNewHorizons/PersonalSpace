@@ -55,13 +55,16 @@ gui.personalWorld.boundary.range=0-20
 gui.personalWorld.gap=Gap Chunks (0-5)
 gui.personalWorld.gap.a=Gap A
 gui.personalWorld.gap.b=Gap B
+gui.personalWorld.gap.c=Gap C
 gui.personalWorld.gap.a.short=A
 gui.personalWorld.gap.b.short=B
+gui.personalWorld.gap.c.short=C
 gui.personalWorld.gap.widthRange=0-5
 gui.personalWorld.gap.preset.ROAD=Road
 gui.personalWorld.gap.preset.SOLID=Solid
 gui.personalWorld.gap.blockNotAllowed.a=Gap A block not allowed
 gui.personalWorld.gap.blockNotAllowed.b=Gap B block not allowed
+gui.personalWorld.gap.blockNotAllowed.c=Gap C block not allowed
 
 gui.personalWorld.center.enable=Center Marker
 gui.personalWorld.center.block=Center Block

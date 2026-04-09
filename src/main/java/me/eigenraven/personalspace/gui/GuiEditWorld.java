@@ -73,6 +73,7 @@ public class GuiEditWorld extends GuiScreen {
 
     public WBlockDropdown gapBlockADropdown;
     public WBlockDropdown gapBlockBDropdown;
+    public WBlockDropdown gapBlockCDropdown;
 
     public WToggleButton centerEnabledToggle;
     public WButton centerDirectionButton;
@@ -82,6 +83,10 @@ public class GuiEditWorld extends GuiScreen {
     public Widget page1Container;
     public Widget page2Container;
     public WButton moreSettingsButton;
+    public WButton presetScrollLeft;
+    public WButton presetScrollRight;
+    public int presetScrollOffset = 0;
+    public static final int MAX_VISIBLE_PRESETS = 5;
     public WButton backToMainButton;
     public WPreviewPanel previewPanel;
 
@@ -145,6 +150,8 @@ public class GuiEditWorld extends GuiScreen {
                 .setGapMetaA(clampGapMeta(this.desiredConfig.getGapMetaA(), this.desiredConfig.getGapBlockA()));
         this.desiredConfig
                 .setGapMetaB(clampGapMeta(this.desiredConfig.getGapMetaB(), this.desiredConfig.getGapBlockB()));
+        this.desiredConfig
+                .setGapMetaC(clampGapMeta(this.desiredConfig.getGapMetaC(), this.desiredConfig.getGapBlockC()));
         this.desiredConfig.setCenterMeta(
                 clampCenterMeta(this.desiredConfig.getCenterMeta(), this.desiredConfig.getCenterBlock()));
     }
@@ -306,11 +313,14 @@ public class GuiEditWorld extends GuiScreen {
     private void updateGapButtons() {
         String a = desiredConfig.getGapBlockA();
         String b = desiredConfig.getGapBlockB();
+        String c = desiredConfig.getGapBlockC();
 
         int metaA = clampGapMeta(desiredConfig.getGapMetaA(), a);
         int metaB = clampGapMeta(desiredConfig.getGapMetaB(), b);
+        int metaC = clampGapMeta(desiredConfig.getGapMetaC(), c);
         desiredConfig.setGapMetaA(metaA);
         desiredConfig.setGapMetaB(metaB);
+        desiredConfig.setGapMetaC(metaC);
 
         if (gapBlockADropdown != null) {
             gapBlockADropdown.setSelectedIndex(WBlockDropdown.findEntryIndex(gapBlockEntries, a, metaA));
@@ -321,6 +331,11 @@ public class GuiEditWorld extends GuiScreen {
         if (gapBlockBDropdown != null) {
             gapBlockBDropdown.visible = !isSolid;
             gapBlockBDropdown.setSelectedIndex(WBlockDropdown.findEntryIndex(gapBlockEntries, b, metaB));
+        }
+
+        if (gapBlockCDropdown != null) {
+            gapBlockCDropdown.visible = !isSolid;
+            gapBlockCDropdown.setSelectedIndex(WBlockDropdown.findEntryIndex(gapBlockEntries, c, metaC));
         }
 
         if (gapPresetButton != null) {
@@ -334,6 +349,44 @@ public class GuiEditWorld extends GuiScreen {
         } catch (Exception e) {
             return def;
         }
+    }
+
+    private void updatePresetButtonPositions() {
+        int total = presetButtons.size();
+        int maxOffset = Math.max(0, total - MAX_VISIBLE_PRESETS);
+        presetScrollOffset = MathHelper.clamp_int(presetScrollOffset, 0, maxOffset);
+        boolean needsScroll = total > MAX_VISIBLE_PRESETS;
+
+        int px = 0;
+        for (int i = 0; i < total; i++) {
+            WButton btn = presetButtons.get(i);
+            boolean vis = i >= presetScrollOffset && i < presetScrollOffset + MAX_VISIBLE_PRESETS;
+            btn.visible = vis;
+            if (vis) {
+                btn.position = new Rectangle(px, btn.position.y, 24, 18);
+                px += 26;
+            }
+        }
+
+        // Position scroll buttons
+        if (needsScroll) {
+            presetScrollLeft.visible = true;
+            presetScrollLeft.position = new Rectangle(px, presetScrollLeft.position.y, 12, 18);
+            presetScrollLeft.enabled = presetScrollOffset > 0;
+            px += 14;
+            presetScrollRight.visible = true;
+            presetScrollRight.position = new Rectangle(px, presetScrollRight.position.y, 12, 18);
+            presetScrollRight.enabled = presetScrollOffset < maxOffset;
+            px += 14;
+        } else {
+            presetScrollLeft.visible = false;
+            presetScrollRight.visible = false;
+        }
+
+        // "More Settings" right edge aligned with Cancel button (130+128=258)
+        int moreW = 80;
+        int moreX = 258 - moreW;
+        moreSettingsButton.position = new Rectangle(moreX, moreSettingsButton.position.y, moreW, 18);
     }
 
     private void switchPage(int page) {
@@ -495,8 +548,8 @@ public class GuiEditWorld extends GuiScreen {
 
         voidPresetName = I18n.format("gui.personalWorld.voidWorld");
 
-        this.ySize += 2;
-        this.presetEntry = new WTextField(new Rectangle(0, this.ySize, 160, 20), desiredConfig.getLayersAsString());
+        this.ySize += 6;
+        this.presetEntry = new WTextField(new Rectangle(0, this.ySize, 160, 20), desiredConfig.getFullPresetString());
         if (this.presetEntry.textField.getText().isEmpty()) {
             this.presetEntry.textField.setText(voidPresetName);
         }
@@ -505,27 +558,54 @@ public class GuiEditWorld extends GuiScreen {
 
         addWidget(new WLabel(0, this.ySize, I18n.format("gui.personalWorld.presets"), false));
 
-        int px = 0, pi = 1;
+        // Build all preset buttons but only show MAX_VISIBLE_PRESETS at a time
+        int pi = 1;
         for (String preset : Config.defaultPresets) {
             if (preset.isEmpty()) {
                 preset = voidPresetName;
             }
             String finalPreset = preset;
-            presetButtons.add(
-                    new WButton(
-                            new Rectangle(px, this.ySize, 24, 18),
-                            Integer.toString(pi),
-                            true,
-                            WButton.DEFAULT_COLOR,
-                            null,
-                            () -> this.presetEntry.textField.setText(finalPreset)));
-            rootWidget.addChild(presetButtons.get(presetButtons.size() - 1));
+            WButton btn = new WButton(
+                    new Rectangle(0, this.ySize, 24, 18),
+                    Integer.toString(pi),
+                    true,
+                    WButton.DEFAULT_COLOR,
+                    null,
+                    () -> this.presetEntry.textField.setText(finalPreset));
+            presetButtons.add(btn);
+            rootWidget.addChild(btn);
             ++pi;
-            px += 26;
         }
-        // "More Settings" button on page 1, to the right of presets
+
+        // Scroll left/right buttons for presets
+        this.presetScrollLeft = new WButton(
+                new Rectangle(0, this.ySize, 12, 18),
+                "<",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    if (presetScrollOffset > 0) presetScrollOffset--;
+                    updatePresetButtonPositions();
+                });
+        rootWidget.addChild(this.presetScrollLeft);
+
+        this.presetScrollRight = new WButton(
+                new Rectangle(0, this.ySize, 12, 18),
+                ">",
+                true,
+                WButton.DEFAULT_COLOR,
+                null,
+                () -> {
+                    int maxOffset = Math.max(0, presetButtons.size() - MAX_VISIBLE_PRESETS);
+                    if (presetScrollOffset < maxOffset) presetScrollOffset++;
+                    updatePresetButtonPositions();
+                });
+        rootWidget.addChild(this.presetScrollRight);
+
+        // "More Settings" button - right edge aligned with skyType button (right edge = 168)
         this.moreSettingsButton = new WButton(
-                new Rectangle(px + 4, this.ySize, 80, 18),
+                new Rectangle(0, this.ySize, 80, 18),
                 I18n.format("gui.personalWorld.moreSettings"),
                 true,
                 WButton.DEFAULT_COLOR,
@@ -533,6 +613,8 @@ public class GuiEditWorld extends GuiScreen {
                 () -> switchPage(1));
         moreSettingsButton.tooltip = I18n.format("gui.personalWorld.moreSettings.tooltip");
         rootWidget.addChild(moreSettingsButton);
+
+        updatePresetButtonPositions();
         this.ySize += 20;
 
         // Preset editor on page 1
@@ -593,6 +675,7 @@ public class GuiEditWorld extends GuiScreen {
                                     desiredConfig.getBoundaryChunkIntervalX()) - 1);
                     desiredConfig.setBoundaryChunkIntervalX(v);
                     boundaryChunkXField.textField.setText(Integer.toString(v));
+                    configToPreset();
                 });
         rootWidget.addChild(this.boundaryChunkXMinus);
 
@@ -614,6 +697,7 @@ public class GuiEditWorld extends GuiScreen {
                                     desiredConfig.getBoundaryChunkIntervalX()) + 1);
                     desiredConfig.setBoundaryChunkIntervalX(v);
                     boundaryChunkXField.textField.setText(Integer.toString(v));
+                    configToPreset();
                 });
         rootWidget.addChild(this.boundaryChunkXPlus);
 
@@ -632,6 +716,7 @@ public class GuiEditWorld extends GuiScreen {
                                     desiredConfig.getBoundaryChunkIntervalZ()) - 1);
                     desiredConfig.setBoundaryChunkIntervalZ(v);
                     boundaryChunkZField.textField.setText(Integer.toString(v));
+                    configToPreset();
                 });
         rootWidget.addChild(this.boundaryChunkZMinus);
 
@@ -653,6 +738,7 @@ public class GuiEditWorld extends GuiScreen {
                                     desiredConfig.getBoundaryChunkIntervalZ()) + 1);
                     desiredConfig.setBoundaryChunkIntervalZ(v);
                     boundaryChunkZField.textField.setText(Integer.toString(v));
+                    configToPreset();
                 });
         rootWidget.addChild(this.boundaryChunkZPlus);
 
@@ -673,6 +759,7 @@ public class GuiEditWorld extends GuiScreen {
                     desiredConfig.setBoundaryBlockA(entry.blockName());
                     desiredConfig.setBoundaryMetaA(entry.meta());
                     updateBoundaryButtons();
+                    configToPreset();
                 });
         this.boundaryBlockADropdown.setLabel(I18n.format("gui.personalWorld.boundary.a.short"));
         this.boundaryBlockADropdown.setGuiRelativePos(0, boundaryRowY);
@@ -690,6 +777,7 @@ public class GuiEditWorld extends GuiScreen {
                     desiredConfig.setBoundaryBlockB(entry.blockName());
                     desiredConfig.setBoundaryMetaB(entry.meta());
                     updateBoundaryButtons();
+                    configToPreset();
                 });
         this.boundaryBlockBDropdown.setLabel(I18n.format("gui.personalWorld.boundary.b.short"));
         this.boundaryBlockBDropdown.setGuiRelativePos(42, boundaryRowY);
@@ -713,6 +801,7 @@ public class GuiEditWorld extends GuiScreen {
                             parseIntOrDefault(gapWidthField.textField.getText(), desiredConfig.getGapWidth()) - 1);
                     desiredConfig.setGapWidth(v);
                     gapWidthField.textField.setText(Integer.toString(v));
+                    configToPreset();
                 });
         rootWidget.addChild(this.gapWidthMinus);
 
@@ -732,6 +821,7 @@ public class GuiEditWorld extends GuiScreen {
                             parseIntOrDefault(gapWidthField.textField.getText(), desiredConfig.getGapWidth()) + 1);
                     desiredConfig.setGapWidth(v);
                     gapWidthField.textField.setText(Integer.toString(v));
+                    configToPreset();
                 });
         rootWidget.addChild(this.gapWidthPlus);
 
@@ -746,6 +836,7 @@ public class GuiEditWorld extends GuiScreen {
                     desiredConfig.setGapPreset(DimensionConfig.GapPreset.fromOrdinal(next));
                     gapPresetButton.text = getGapPresetText();
                     updateGapButtons();
+                    configToPreset();
                 });
         rootWidget.addChild(this.gapPresetButton);
 
@@ -762,6 +853,7 @@ public class GuiEditWorld extends GuiScreen {
                     desiredConfig.setGapBlockA(entry.blockName());
                     desiredConfig.setGapMetaA(entry.meta());
                     updateGapButtons();
+                    configToPreset();
                 });
         this.gapBlockADropdown.setLabel(I18n.format("gui.personalWorld.gap.a.short"));
         this.gapBlockADropdown.setGuiRelativePos(0, gapRowY);
@@ -777,10 +869,27 @@ public class GuiEditWorld extends GuiScreen {
                     desiredConfig.setGapBlockB(entry.blockName());
                     desiredConfig.setGapMetaB(entry.meta());
                     updateGapButtons();
+                    configToPreset();
                 });
         this.gapBlockBDropdown.setLabel(I18n.format("gui.personalWorld.gap.b.short"));
         this.gapBlockBDropdown.setGuiRelativePos(42, gapRowY);
         rootWidget.addChild(this.gapBlockBDropdown);
+
+        this.gapBlockCDropdown = new WBlockDropdown(
+                new Rectangle(84, gapRowY, 20, 20),
+                false,
+                gapBlockEntries,
+                WBlockDropdown
+                        .findEntryIndex(gapBlockEntries, desiredConfig.getGapBlockC(), desiredConfig.getGapMetaC()),
+                (entry) -> {
+                    desiredConfig.setGapBlockC(entry.blockName());
+                    desiredConfig.setGapMetaC(entry.meta());
+                    updateGapButtons();
+                    configToPreset();
+                });
+        this.gapBlockCDropdown.setLabel(I18n.format("gui.personalWorld.gap.c.short"));
+        this.gapBlockCDropdown.setGuiRelativePos(84, gapRowY);
+        rootWidget.addChild(this.gapBlockCDropdown);
 
         this.ySize += 24;
         updateGapButtons();
@@ -795,6 +904,7 @@ public class GuiEditWorld extends GuiScreen {
                 () -> {
                     desiredConfig.setCenterEnabled(centerEnabledToggle.getValue());
                     updateCenterButtons();
+                    configToPreset();
                 });
         this.centerEnabledToggle.addChild(new WLabel(24, 4, I18n.format("gui.personalWorld.center.enable"), false));
         addWidget(this.centerEnabledToggle);
@@ -811,6 +921,7 @@ public class GuiEditWorld extends GuiScreen {
                     desiredConfig.setCenterBlock(entry.blockName());
                     desiredConfig.setCenterMeta(entry.meta());
                     updateCenterButtons();
+                    configToPreset();
                 });
         this.centerBlockDropdown.setLabel(I18n.format("gui.personalWorld.center.block.short"));
         this.centerBlockDropdown.setGuiRelativePos(0, this.ySize);
@@ -827,6 +938,7 @@ public class GuiEditWorld extends GuiScreen {
                             % DimensionConfig.CenterDirection.values().length;
                     desiredConfig.setCenterDirection(DimensionConfig.CenterDirection.fromOrdinal(next));
                     updateCenterButtons();
+                    configToPreset();
                 });
         rootWidget.addChild(this.centerDirectionButton);
 
@@ -843,7 +955,7 @@ public class GuiEditWorld extends GuiScreen {
         realRoot.addChild(page2Container);
 
         // Save/Cancel always visible at fixed position
-        int saveY = 240 - 16 - 22 + 5;
+        int saveY = 244 - 16 - 22 + 5;
         this.save = new WButton(
                 new Rectangle(0, saveY, 128, 20),
                 I18n.format("gui.done"),
@@ -867,7 +979,7 @@ public class GuiEditWorld extends GuiScreen {
         switchPage(0);
 
         this.xSize = 320 - 16;
-        this.ySize = 240 - 16;
+        this.ySize = 244 - 16;
         this.guiLeft = (this.width - this.xSize) / 2;
         this.guiTop = (this.height - this.ySize) / 2;
     }
@@ -982,7 +1094,7 @@ public class GuiEditWorld extends GuiScreen {
     }
 
     private void configToPreset() {
-        String preset = this.desiredConfig.getLayersAsString();
+        String preset = this.desiredConfig.getFullPresetString();
         if (preset == null || preset.isEmpty()) {
             preset = voidPresetName;
         }
@@ -1027,6 +1139,13 @@ public class GuiEditWorld extends GuiScreen {
         for (WButton presetBtn : presetButtons) {
             presetBtn.enabled = generationEnabled;
         }
+        if (presetScrollLeft != null) {
+            presetScrollLeft.enabled = generationEnabled && presetScrollOffset > 0;
+        }
+        if (presetScrollRight != null) {
+            int maxOffset = Math.max(0, presetButtons.size() - MAX_VISIBLE_PRESETS);
+            presetScrollRight.enabled = generationEnabled && presetScrollOffset < maxOffset;
+        }
         super.drawScreen(mouseX, mouseY, partialTicks);
         this.biome.enabled = generationEnabled;
         this.biomeEditButton.enabled = generationEnabled;
@@ -1055,8 +1174,9 @@ public class GuiEditWorld extends GuiScreen {
         this.gapWidthPlus.enabled = gapEnabled;
         this.gapWidthField.enabled = gapEnabled;
         this.gapPresetButton.enabled = gapEnabled;
-        this.gapBlockADropdown.enabled = gapEnabled;
+        this.gapBlockADropdown.enabled = gapEnabled && !gapIsSolid;
         this.gapBlockBDropdown.enabled = gapEnabled && !gapIsSolid;
+        this.gapBlockCDropdown.enabled = gapEnabled && !gapIsSolid;
 
         boolean centerCanEnable = generationEnabled && !boundaryIsZero;
         this.centerEnabledToggle.enabled = centerCanEnable;
@@ -1068,20 +1188,33 @@ public class GuiEditWorld extends GuiScreen {
         if (voidPresetName.equals(actualText)) {
             actualText = "";
         }
+        String layersPart = DimensionConfig.extractLayersPart(actualText);
         if (!generationEnabled) {
             this.presetEntry.textField.setTextColor(0x909090);
-        } else if (!DimensionConfig.PRESET_VALIDATION_PATTERN.matcher(actualText).matches()) {
+        } else if (!DimensionConfig.PRESET_VALIDATION_PATTERN.matcher(layersPart).matches()) {
             this.presetEntry.textField.setTextColor(0xFF0000);
             this.presetEntry.tooltip = I18n.format("gui.personalWorld.invalidSyntax");
             inputsValid = false;
-        } else if (!DimensionConfig.canUseLayers(actualText, true)) {
+        } else if (!DimensionConfig.canUseLayers(layersPart, true)) {
             this.presetEntry.textField.setTextColor(0xFFFF00);
             this.presetEntry.tooltip = I18n.format("gui.personalWorld.notAllowed");
             inputsValid = false;
         } else {
             this.presetEntry.textField.setTextColor(0xA0FFA0);
             this.presetEntry.tooltip = null;
-            this.desiredConfig.setLayers(actualText);
+            this.desiredConfig.setLayers(layersPart);
+            if (DimensionConfig.hasExtendedSettings(actualText)) {
+                this.desiredConfig.applyExtendedSettings(actualText);
+                // Sync UI fields with parsed extended settings
+                this.boundaryChunkXField.textField
+                        .setText(Integer.toString(this.desiredConfig.getBoundaryChunkIntervalX()));
+                this.boundaryChunkZField.textField
+                        .setText(Integer.toString(this.desiredConfig.getBoundaryChunkIntervalZ()));
+                this.gapWidthField.textField.setText(Integer.toString(this.desiredConfig.getGapWidth()));
+                updateBoundaryButtons();
+                updateGapButtons();
+                updateCenterButtons();
+            }
             this.regeneratePresetEditor();
         }
 
@@ -1293,6 +1426,19 @@ public class GuiEditWorld extends GuiScreen {
             int my = this.height - Mouse.getEventY() * this.height / this.mc.displayHeight - 1 - guiTop;
             // Try dropdown scroll first
             if (!WBlockDropdown.handleOpenDropdownScroll(mx, my, delta)) {
+                // Handle preset scroll on page 0
+                if (currentPage == 0 && !presetButtons.isEmpty() && presetButtons.size() > MAX_VISIBLE_PRESETS) {
+                    int presetY = presetButtons.get(0).position.y;
+                    if (my >= presetY && my < presetY + 18 && mx >= 0 && mx < 168) {
+                        int maxOffset = Math.max(0, presetButtons.size() - MAX_VISIBLE_PRESETS);
+                        if (delta > 0) {
+                            presetScrollOffset = Math.max(0, presetScrollOffset - 1);
+                        } else {
+                            presetScrollOffset = Math.min(maxOffset, presetScrollOffset + 1);
+                        }
+                        updatePresetButtonPositions();
+                    }
+                }
                 // Handle layer list scroll on page 1 (preset editor area)
                 if (currentPage == 0 && presetEditor != null) {
                     int peX = presetEditor.position.x;
