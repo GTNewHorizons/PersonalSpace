@@ -5,13 +5,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
+import java.util.function.Supplier;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.biome.BiomeGenBase;
@@ -188,7 +192,68 @@ public class GuiEditWorld extends GuiScreen {
         this.boundaryBlockEntries = WBlockDropdown.buildEntriesFromRules(this.allowedBoundaryRules, true);
         this.gapBlockEntries = WBlockDropdown.buildEntriesFromRules(this.allowedGapRules, true);
         this.centerBlockEntries = WBlockDropdown.buildEntriesFromRules(this.allowedCenterRules, true);
-        this.layerBlockEntries = WBlockDropdown.buildEntriesFromRules(this.allowedLayerRules, false);
+        this.layerBlockEntries = WBlockDropdown.buildEntriesFromRules(this.allowedLayerRules, true);
+
+        sanitizeExtendedBlockSelections();
+    }
+
+    private void sanitizeExtendedBlockSelections() {
+        if (!this.desiredConfig.getAllowGenerationChanges()) {
+            return;
+        }
+        sanitizeSelection(
+                this.allowedBoundaryRules,
+                this.desiredConfig::getBoundaryBlockA,
+                this.desiredConfig::getBoundaryMetaA,
+                this.desiredConfig::setBoundaryBlockA,
+                this.desiredConfig::setBoundaryMetaA);
+        sanitizeSelection(
+                this.allowedBoundaryRules,
+                this.desiredConfig::getBoundaryBlockB,
+                this.desiredConfig::getBoundaryMetaB,
+                this.desiredConfig::setBoundaryBlockB,
+                this.desiredConfig::setBoundaryMetaB);
+        sanitizeSelection(
+                this.allowedGapRules,
+                this.desiredConfig::getGapBlockA,
+                this.desiredConfig::getGapMetaA,
+                this.desiredConfig::setGapBlockA,
+                this.desiredConfig::setGapMetaA);
+        sanitizeSelection(
+                this.allowedGapRules,
+                this.desiredConfig::getGapBlockB,
+                this.desiredConfig::getGapMetaB,
+                this.desiredConfig::setGapBlockB,
+                this.desiredConfig::setGapMetaB);
+        sanitizeSelection(
+                this.allowedGapRules,
+                this.desiredConfig::getGapBlockC,
+                this.desiredConfig::getGapMetaC,
+                this.desiredConfig::setGapBlockC,
+                this.desiredConfig::setGapMetaC);
+        sanitizeSelection(
+                this.allowedCenterRules,
+                this.desiredConfig::getCenterBlock,
+                this.desiredConfig::getCenterMeta,
+                this.desiredConfig::setCenterBlock,
+                this.desiredConfig::setCenterMeta);
+    }
+
+    private void sanitizeSelection(List<AllowedBlock> rules, Supplier<String> getBlock, IntSupplier getMeta,
+            Consumer<String> setBlock, IntConsumer setMeta) {
+        String blockName = getBlock.get();
+        if (blockName == null || blockName.isEmpty()) {
+            setBlock.accept("");
+            setMeta.accept(0);
+            return;
+        }
+        AllowedBlock rule = AllowedBlockRules.findByBlockName(rules, blockName);
+        if (rule == null) {
+            setBlock.accept("");
+            setMeta.accept(0);
+            return;
+        }
+        setMeta.accept(rule.clampMeta(getMeta.getAsInt()));
     }
 
     @Override
@@ -659,11 +724,18 @@ public class GuiEditWorld extends GuiScreen {
                 layerBlockEntries,
                 0,
                 (entry) -> {
-                    String[] blName = entry.blockName().split(":");
-                    if (blName.length != 2) return;
-                    Block blk = GameRegistry.findBlock(blName[0], blName[1]);
+                    Block blk;
+                    int meta = entry.meta();
+                    if (entry.blockName() == null || entry.blockName().isEmpty()) {
+                        blk = Blocks.air;
+                        meta = 0;
+                    } else {
+                        String[] blName = entry.blockName().split(":");
+                        if (blName.length != 2) return;
+                        blk = GameRegistry.findBlock(blName[0], blName[1]);
+                    }
                     if (blk == null) return;
-                    FlatLayerInfo fli = new FlatLayerInfo(1, blk, entry.meta());
+                    FlatLayerInfo fli = new FlatLayerInfo(1, blk, meta);
                     this.desiredConfig.getMutableLayers().add(fli);
                     this.desiredConfig.setLayers(this.desiredConfig.getLayersAsString());
                     this.configToPreset();
@@ -1049,17 +1121,26 @@ public class GuiEditWorld extends GuiScreen {
             Block gameBlock = info.func_151536_b();
             int blockMeta = info.getFillBlockMeta();
             block.enabled = false;
-            block.itemStack = new ItemStack(gameBlock, 1, blockMeta);
-            block.itemStackText = Integer.toString(info.getLayerCount());
-            try {
-                String displayName = block.itemStack.getDisplayName();
-                if (displayName != null && !displayName.isEmpty()) {
-                    block.tooltip = displayName;
-                } else {
+            if (gameBlock == null || gameBlock == Blocks.air) {
+                block.setText("-");
+                WLabel airCount = new WLabel(0, 18, Integer.toString(info.getLayerCount()), false);
+                airCount.color = 0xFFFFFF;
+                airCount.position.x = Math.max(0, block.position.width - airCount.position.width - 1);
+                block.addChild(airCount);
+                block.tooltip = Blocks.air.getLocalizedName();
+            } else {
+                block.itemStack = new ItemStack(gameBlock, 1, blockMeta);
+                block.itemStackText = Integer.toString(info.getLayerCount());
+                try {
+                    String displayName = block.itemStack.getDisplayName();
+                    if (displayName != null && !displayName.isEmpty()) {
+                        block.tooltip = displayName;
+                    } else {
+                        block.tooltip = gameBlock.getLocalizedName();
+                    }
+                } catch (Throwable ignored) {
                     block.tooltip = gameBlock.getLocalizedName();
                 }
-            } catch (Throwable ignored) {
-                block.tooltip = gameBlock.getLocalizedName();
             }
             this.presetEditor.addChild(block);
 
