@@ -284,7 +284,7 @@ public class WPreviewPanel extends Widget {
         // Center dashed line (C block)
         if (hasDash && gapWidthBlocks >= 4) {
             int center = gapWidthBlocks / 2;
-            if ((offsetInGap == center || offsetInGap == center - 1) && mod(alongRoad, 8) < 4) {
+            if ((offsetInGap == center || offsetInGap == center - 1) && mod(alongRoad + 2, 8) < 4) {
                 return gapCColor;
             }
         }
