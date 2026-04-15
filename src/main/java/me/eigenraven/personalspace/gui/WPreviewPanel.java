@@ -1,19 +1,30 @@
 package me.eigenraven.personalspace.gui;
 
 import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+
+import javax.imageio.ImageIO;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureMap;
+import net.minecraft.client.resources.IResource;
 import net.minecraft.init.Blocks;
+import net.minecraft.util.IIcon;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.gen.FlatLayerInfo;
 
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
 
 import codechicken.lib.gui.GuiDraw;
 import me.eigenraven.personalspace.world.DimensionConfig;
@@ -21,6 +32,7 @@ import me.eigenraven.personalspace.world.DimensionConfig;
 public class WPreviewPanel extends Widget {
 
     private static final int TEX_SIZE = 128;
+    private static final Map<String, Integer> textureColorCache = new HashMap<>();
     private DimensionConfig config;
     private DynamicTexture texture;
     private ResourceLocation textureLocation;
@@ -301,8 +313,10 @@ public class WPreviewPanel extends Widget {
         if (block == null || block == Blocks.air) {
             return 0xFF202020;
         }
+        int texColor = getColorFromTexture(block, topLayer.getFillBlockMeta());
+        if (texColor != 0) return texColor;
         try {
-            return 0xFF000000 | block.getMapColor(0).colorValue;
+            return 0xFF000000 | block.getMapColor(topLayer.getFillBlockMeta()).colorValue;
         } catch (Exception e) {
             return 0xFF808080;
         }
@@ -316,11 +330,129 @@ public class WPreviewPanel extends Widget {
         if (block == null || block == Blocks.air) {
             return 0;
         }
+        int texColor = getColorFromTexture(block, meta);
+        if (texColor != 0) return texColor;
         try {
             return 0xFF000000 | block.getMapColor(meta).colorValue;
         } catch (Exception e) {
             return 0xFF808080;
         }
+    }
+
+    private static int getColorFromTexture(Block block, int meta) {
+        IIcon icon;
+        try {
+            icon = block.getIcon(1, meta);
+        } catch (Exception e) {
+            return 0;
+        }
+        if (icon == null) return 0;
+
+        String iconName = icon.getIconName();
+        if (iconName == null || iconName.isEmpty()) return 0;
+
+        Integer cached = textureColorCache.get(iconName);
+        if (cached != null) return cached;
+
+        int color = computeColorFromIcon(icon);
+        textureColorCache.put(iconName, color);
+        return color;
+    }
+
+    private static int computeColorFromIcon(IIcon icon) {
+        try {
+            String iconName = icon.getIconName();
+            ResourceLocation loc = new ResourceLocation(iconName);
+            ResourceLocation texPath = new ResourceLocation(
+                    loc.getResourceDomain(),
+                    "textures/blocks/" + loc.getResourcePath() + ".png");
+            IResource resource = Minecraft.getMinecraft().getResourceManager().getResource(texPath);
+            BufferedImage image = ImageIO.read(resource.getInputStream());
+            if (image != null && image.getWidth() > 0 && image.getHeight() > 0) {
+                int w = image.getWidth();
+                int h = Math.min(image.getHeight(), w);
+                int[] pixels = new int[w * h];
+                image.getRGB(0, 0, w, h, pixels, 0, w);
+                return computeWeightedAverageColor(pixels);
+            }
+        } catch (Exception ignored) {}
+
+        try {
+            if (icon instanceof TextureAtlasSprite sprite) {
+                if (sprite.getFrameCount() > 0) {
+                    int[][] frameData = sprite.getFrameTextureData(0);
+                    if (frameData != null && frameData.length > 0 && frameData[0] != null) {
+                        return computeWeightedAverageColor(frameData[0]);
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        try {
+            if (icon instanceof TextureAtlasSprite sprite) {
+                int[] pixels = readSpritePixelsFromAtlas(sprite);
+                if (pixels != null && pixels.length > 0) {
+                    return computeWeightedAverageColor(pixels);
+                }
+            }
+        } catch (Exception ignored) {}
+
+        return 0;
+    }
+
+    private static int[] readSpritePixelsFromAtlas(TextureAtlasSprite sprite) {
+        int spriteW = sprite.getIconWidth();
+        int spriteH = sprite.getIconHeight();
+        int ox = sprite.getOriginX();
+        int oy = sprite.getOriginY();
+        if (spriteW <= 0 || spriteH <= 0) return null;
+
+        Minecraft.getMinecraft().getTextureManager().bindTexture(TextureMap.locationBlocksTexture);
+        int atlasW = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
+        int atlasH = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
+        if (atlasW <= 0 || atlasH <= 0) return null;
+        if (ox + spriteW > atlasW || oy + spriteH > atlasH) return null;
+
+        java.nio.IntBuffer buf = BufferUtils.createIntBuffer(atlasW * atlasH);
+        GL11.glGetTexImage(GL11.GL_TEXTURE_2D, 0, GL12.GL_BGRA, GL12.GL_UNSIGNED_INT_8_8_8_8_REV, buf);
+
+        int[] spritePixels = new int[spriteW * spriteH];
+        for (int y = 0; y < spriteH; y++) {
+            for (int x = 0; x < spriteW; x++) {
+                spritePixels[y * spriteW + x] = buf.get((oy + y) * atlasW + (ox + x));
+            }
+        }
+        return spritePixels;
+    }
+
+    private static int computeWeightedAverageColor(int[] pixels) {
+        double totalR = 0, totalG = 0, totalB = 0;
+        double totalWeight = 0;
+
+        for (int pixel : pixels) {
+            int a = (pixel >> 24) & 0xFF;
+            if (a < 128) continue;
+
+            int r = (pixel >> 16) & 0xFF;
+            int g = (pixel >> 8) & 0xFF;
+            int b = pixel & 0xFF;
+
+            double brightness = (r + g + b) / (3.0 * 255.0);
+            double weight = 0.1 + 0.9 * brightness;
+
+            totalR += r * weight;
+            totalG += g * weight;
+            totalB += b * weight;
+            totalWeight += weight;
+        }
+
+        if (totalWeight <= 0) return 0;
+
+        int avgR = Math.min(255, (int) (totalR / totalWeight));
+        int avgG = Math.min(255, (int) (totalG / totalWeight));
+        int avgB = Math.min(255, (int) (totalB / totalWeight));
+
+        return 0xFF000000 | (avgR << 16) | (avgG << 8) | avgB;
     }
 
     private static int mod(int a, int b) {
