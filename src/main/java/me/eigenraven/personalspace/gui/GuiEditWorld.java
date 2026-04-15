@@ -195,6 +195,7 @@ public class GuiEditWorld extends GuiScreen {
     public void updateScreen() {
         super.updateScreen();
         rootWidget.update();
+        WBlockDropdown.updateOpenDropdown();
         if (!this.mc.thePlayer.isEntityAlive() || this.mc.thePlayer.isDead) {
             this.mc.thePlayer.closeScreen();
         }
@@ -348,6 +349,35 @@ public class GuiEditWorld extends GuiScreen {
             return Integer.parseInt(s.trim());
         } catch (Exception e) {
             return def;
+        }
+    }
+
+    private boolean isTextFieldFocused(WTextField field) {
+        return field != null && field.textField != null && field.textField.isFocused();
+    }
+
+    private void syncExtendedInputsFromDesiredConfig() {
+        if (!isTextFieldFocused(this.boundaryChunkXField)) {
+            this.boundaryChunkXField.textField
+                    .setText(Integer.toString(this.desiredConfig.getBoundaryChunkIntervalX()));
+        }
+        if (!isTextFieldFocused(this.boundaryChunkZField)) {
+            this.boundaryChunkZField.textField
+                    .setText(Integer.toString(this.desiredConfig.getBoundaryChunkIntervalZ()));
+        }
+        if (!isTextFieldFocused(this.gapWidthField)) {
+            this.gapWidthField.textField.setText(Integer.toString(this.desiredConfig.getGapWidth()));
+        }
+    }
+
+    private void syncPresetFromExtendedInputsIfChanged(int prevBoundaryX, int prevBoundaryZ, int prevGapWidth) {
+        if (isTextFieldFocused(this.presetEntry)) {
+            return;
+        }
+        if (prevBoundaryX != this.desiredConfig.getBoundaryChunkIntervalX()
+                || prevBoundaryZ != this.desiredConfig.getBoundaryChunkIntervalZ()
+                || prevGapWidth != this.desiredConfig.getGapWidth()) {
+            this.configToPreset();
         }
     }
 
@@ -549,7 +579,7 @@ public class GuiEditWorld extends GuiScreen {
         voidPresetName = I18n.format("gui.personalWorld.voidWorld");
 
         this.ySize += 6;
-        this.presetEntry = new WTextField(new Rectangle(0, this.ySize, 160, 20), desiredConfig.getFullPresetString());
+        this.presetEntry = new WTextField(new Rectangle(0, this.ySize, 168, 20), desiredConfig.getFullPresetString());
         if (this.presetEntry.textField.getText().isEmpty()) {
             this.presetEntry.textField.setText(voidPresetName);
         }
@@ -1098,8 +1128,10 @@ public class GuiEditWorld extends GuiScreen {
         if (preset == null || preset.isEmpty()) {
             preset = voidPresetName;
         }
-        this.presetEntry.textField.setText(preset);
-        this.presetEntry.textField.setCursorPositionZero();
+        if (!preset.equals(this.presetEntry.textField.getText())) {
+            this.presetEntry.textField.setText(preset);
+            this.presetEntry.textField.setCursorPositionZero();
+        }
     }
 
     private void updateLayerScrollFromMouse(int mouseY) {
@@ -1205,18 +1237,18 @@ public class GuiEditWorld extends GuiScreen {
             this.desiredConfig.setLayers(layersPart);
             if (DimensionConfig.hasExtendedSettings(actualText)) {
                 this.desiredConfig.applyExtendedSettings(actualText);
-                // Sync UI fields with parsed extended settings
-                this.boundaryChunkXField.textField
-                        .setText(Integer.toString(this.desiredConfig.getBoundaryChunkIntervalX()));
-                this.boundaryChunkZField.textField
-                        .setText(Integer.toString(this.desiredConfig.getBoundaryChunkIntervalZ()));
-                this.gapWidthField.textField.setText(Integer.toString(this.desiredConfig.getGapWidth()));
+                // Only overwrite UI fields that the user is not actively editing.
+                this.syncExtendedInputsFromDesiredConfig();
                 updateBoundaryButtons();
                 updateGapButtons();
                 updateCenterButtons();
             }
             this.regeneratePresetEditor();
         }
+
+        int prevBoundaryChunkX = this.desiredConfig.getBoundaryChunkIntervalX();
+        int prevBoundaryChunkZ = this.desiredConfig.getBoundaryChunkIntervalZ();
+        int prevGapWidth = this.desiredConfig.getGapWidth();
 
         this.desiredConfig.setBiomeId(this.biome.textField.getText());
         if (!generationEnabled) {
@@ -1316,6 +1348,8 @@ public class GuiEditWorld extends GuiScreen {
             } else {
                 updateCenterButtons();
             }
+
+            this.syncPresetFromExtendedInputsIfChanged(prevBoundaryChunkX, prevBoundaryChunkZ, prevGapWidth);
         } else {
             this.boundaryChunkXField.textField.setTextColor(0x909090);
             this.boundaryChunkZField.textField.setTextColor(0x909090);
@@ -1357,6 +1391,7 @@ public class GuiEditWorld extends GuiScreen {
         }
 
         // Draw open dropdown overlay on top
+        WBlockDropdown.setScreenDimensions(this.width, this.height, this.guiLeft, this.guiTop);
         WBlockDropdown.drawOpenDropdown(mouseX, mouseY, partialTicks);
 
         rootWidget.drawForeground(mouseX, mouseY, partialTicks);
@@ -1366,6 +1401,15 @@ public class GuiEditWorld extends GuiScreen {
 
     @Override
     protected void keyTyped(char character, int key) {
+        // If dropdown is open, forward key events to its search box
+        if (WBlockDropdown.isAnyDropdownOpen()) {
+            if (key == Keyboard.KEY_ESCAPE) {
+                WBlockDropdown.closeDropdown();
+                return;
+            }
+            WBlockDropdown.handleOpenDropdownKeyTyped(character, key);
+            return;
+        }
         super.keyTyped(character, key);
         rootWidget.keyTyped(character, key);
     }
@@ -1398,6 +1442,7 @@ public class GuiEditWorld extends GuiScreen {
     protected void mouseMovedOrUp(int x, int y, int button) {
         x -= guiLeft;
         y -= guiTop;
+        WBlockDropdown.handleOpenDropdownMouseUp();
         if (button >= 0) {
             layerScrollbarDragging = false;
         }
@@ -1409,6 +1454,9 @@ public class GuiEditWorld extends GuiScreen {
     protected void mouseClickMove(int x, int y, int lastBtn, long timeDragged) {
         x -= guiLeft;
         y -= guiTop;
+        if (WBlockDropdown.handleOpenDropdownDrag(x, y)) {
+            return;
+        }
         if (layerScrollbarDragging) {
             updateLayerScrollFromMouse(y);
             return;

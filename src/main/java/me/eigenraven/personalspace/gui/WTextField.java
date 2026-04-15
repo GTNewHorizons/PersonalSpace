@@ -49,12 +49,18 @@ public class WTextField extends Widget {
 
     @Override
     protected boolean mouseClickedImpl(int x, int y, int button) {
+        if (button == 1) {
+            textField.setText("");
+            textField.setFocused(true);
+            textField.setCursorPositionZero();
+            return true;
+        }
         textField.mouseClicked(x - position.x, y - position.y, button);
         return true;
     }
 
     @Override
     protected void mouseClickedOutsideImpl(int x, int y, int button) {
-        mouseClickedImpl(x, y, button);
+        textField.mouseClicked(x - position.x, y - position.y, button);
     }
 }

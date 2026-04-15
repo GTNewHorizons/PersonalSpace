@@ -35,6 +35,8 @@ public class Config {
         public static final int firstDimensionId = 180;
         public static final boolean debugLogging = false;
         public static final boolean useBlockEventChecks = true;
+        public static final int dropdownMaxVisibleRows = 6;
+        public static final int dropdownMaxVisibleColumns = 12;
     }
 
     private static class Categories {
@@ -51,6 +53,8 @@ public class Config {
     public static int firstDimensionId = Defaults.firstDimensionId;
     public static boolean debugLogging = Defaults.debugLogging;
     public static boolean useBlockEventChecks = true;
+    public static int dropdownMaxVisibleRows = Defaults.dropdownMaxVisibleRows;
+    public static int dropdownMaxVisibleColumns = Defaults.dropdownMaxVisibleColumns;
 
     private static File savedConfigFile = null;
 
@@ -126,6 +130,22 @@ public class Config {
                 Categories.general,
                 Defaults.useBlockEventChecks,
                 "Use fake Block break events to check for permissions, disable in case of broken event handlers");
+
+        dropdownMaxVisibleRows = configuration.getInt(
+                "dropdownMaxVisibleRows",
+                Categories.general,
+                Defaults.dropdownMaxVisibleRows,
+                1,
+                20,
+                "Maximum number of visible rows in block dropdown menus");
+
+        dropdownMaxVisibleColumns = configuration.getInt(
+                "dropdownMaxVisibleColumns",
+                Categories.general,
+                Defaults.dropdownMaxVisibleColumns,
+                1,
+                24,
+                "Maximum number of visible columns in block dropdown menus");
 
         if (configuration.hasChanged()) {
             configuration.save();
