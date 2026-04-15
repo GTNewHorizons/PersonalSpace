@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.biome.BiomeGenBase;
@@ -1023,7 +1024,18 @@ public class DimensionConfig {
         List<String> rawRules = onClient ? PersonalSpaceMod.clientAllowedBlocks : new ArrayList<>(Config.allowedBlocks);
         List<AllowedBlock> rules = AllowedBlockRules.parseAll(rawRules);
         for (FlatLayerInfo info : infos) {
-            String blockName = GameRegistry.findUniqueIdentifierFor(info.func_151536_b()).toString();
+            Block block = info.func_151536_b();
+            if (block == null) {
+                return false;
+            }
+            if (block == Blocks.air) {
+                continue;
+            }
+            GameRegistry.UniqueIdentifier blockId = GameRegistry.findUniqueIdentifierFor(block);
+            if (blockId == null) {
+                return false;
+            }
+            String blockName = blockId.toString();
             int meta = info.getFillBlockMeta();
             AllowedBlock rule = AllowedBlockRules.findByBlockName(rules, blockName);
             if (rule == null || !rule.isMetaAllowed(meta)) {
