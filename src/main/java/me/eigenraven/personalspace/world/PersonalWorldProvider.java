@@ -202,8 +202,6 @@ public class PersonalWorldProvider extends WorldProvider {
             this.worldObj.thunderingStrength = 0.0F;
             this.worldObj.prevRainingStrength = 0.0F;
             this.worldObj.prevThunderingStrength = 0.0F;
-            this.worldObj.getWorldInfo().setRaining(false);
-            this.worldObj.getWorldInfo().setThundering(false);
         }
     }
 
