@@ -37,6 +37,25 @@ import me.eigenraven.personalspace.config.Config;
  */
 public class DimensionConfig {
 
+    public static class ParsedBlock {
+
+        private final String blockName;
+        private final int meta;
+
+        private ParsedBlock(String blockName, int meta) {
+            this.blockName = blockName;
+            this.meta = meta;
+        }
+
+        public String blockName() {
+            return blockName;
+        }
+
+        public int meta() {
+            return meta;
+        }
+    }
+
     public enum SkyType {
 
         VANILLA(null, null),
@@ -189,93 +208,11 @@ public class DimensionConfig {
     public DimensionConfig() {}
 
     public void writeToPacket(MCDataOutput pkt) {
-        pkt.writeString(saveDirOverride);
-        pkt.writeInt(skyColor);
-        pkt.writeFloat(starBrightness);
-        pkt.writeVarInt(getRawBiomeId());
-        pkt.writeVarInt(daylightCycle.ordinal());
-        pkt.writeBoolean(cloudsEnabled);
-        pkt.writeVarInt(skyType.ordinal());
-        pkt.writeBoolean(weatherEnabled);
-        pkt.writeBoolean(generatingVegetation);
-        pkt.writeBoolean(generatingTrees);
-        pkt.writeBoolean(allowGenerationChanges);
-        pkt.writeVarInt(layers.size());
-        for (FlatLayerInfo info : layers) {
-            pkt.writeVarInt(Block.getIdFromBlock(info.func_151536_b()));
-            pkt.writeVarInt(info.getFillBlockMeta());
-            pkt.writeVarInt(info.getLayerCount());
-        }
-
-        pkt.writeString(boundaryBlockA == null ? "" : boundaryBlockA);
-        pkt.writeVarInt(boundaryMetaA);
-        pkt.writeString(boundaryBlockB == null ? "" : boundaryBlockB);
-        pkt.writeVarInt(boundaryMetaB);
-        pkt.writeVarInt(boundaryChunkIntervalX);
-        pkt.writeVarInt(boundaryChunkIntervalZ);
-
-        pkt.writeVarInt(gapWidth);
-        pkt.writeVarInt(gapPreset.ordinal());
-        pkt.writeString(gapBlockA == null ? "" : gapBlockA);
-        pkt.writeVarInt(gapMetaA);
-        pkt.writeString(gapBlockB == null ? "" : gapBlockB);
-        pkt.writeVarInt(gapMetaB);
-        pkt.writeString(gapBlockC == null ? "" : gapBlockC);
-        pkt.writeVarInt(gapMetaC);
-
-        pkt.writeBoolean(centerEnabled);
-        pkt.writeVarInt(centerDirection.ordinal());
-        pkt.writeString(centerBlock == null ? "" : centerBlock);
-        pkt.writeVarInt(centerMeta);
+        DimensionConfigPackets.write(this, pkt);
     }
 
     public void readFromPacket(MCDataInput pkt) {
-        this.saveDirOverride = pkt.readString();
-        this.needsSaving = true;
-        this.setSkyColor(pkt.readInt());
-        this.setStarBrightness(pkt.readFloat());
-        this.setBiomeId(BiomeGenBase.getBiomeGenArray()[pkt.readVarInt()].biomeName);
-        this.setDaylightCycle(DaylightCycle.fromOrdinal(pkt.readVarInt()));
-        this.setCloudsEnabled(pkt.readBoolean());
-        this.setSkyType(SkyType.fromOrdinal(pkt.readVarInt()));
-        this.setWeatherEnabled(pkt.readBoolean());
-        this.setGeneratingVegetation(pkt.readBoolean());
-        this.setGeneratingTrees(pkt.readBoolean());
-        this.setAllowGenerationChanges(pkt.readBoolean());
-        int layerCount = pkt.readVarInt();
-        ArrayList<FlatLayerInfo> layers = new ArrayList<>(layerCount);
-        int y = 0;
-        for (int layerI = 0; layerI < layerCount; ++layerI) {
-            int blockId = pkt.readVarInt();
-            int meta = pkt.readVarInt();
-            int count = pkt.readVarInt();
-            FlatLayerInfo info = new FlatLayerInfo(count, Block.getBlockById(blockId), meta);
-            info.setMinY(y);
-            layers.add(info);
-            y += count;
-        }
-        this.layers = layers;
-
-        this.setBoundaryBlockA(pkt.readString());
-        this.setBoundaryMetaA(pkt.readVarInt());
-        this.setBoundaryBlockB(pkt.readString());
-        this.setBoundaryMetaB(pkt.readVarInt());
-        this.setBoundaryChunkIntervalX(pkt.readVarInt());
-        this.setBoundaryChunkIntervalZ(pkt.readVarInt());
-
-        this.setGapWidth(pkt.readVarInt());
-        this.setGapPreset(GapPreset.fromOrdinal(pkt.readVarInt()));
-        this.setGapBlockA(pkt.readString());
-        this.setGapMetaA(pkt.readVarInt());
-        this.setGapBlockB(pkt.readString());
-        this.setGapMetaB(pkt.readVarInt());
-        this.setGapBlockC(pkt.readString());
-        this.setGapMetaC(pkt.readVarInt());
-
-        this.setCenterEnabled(pkt.readBoolean());
-        this.setCenterDirection(CenterDirection.fromOrdinal(pkt.readVarInt()));
-        this.setCenterBlock(pkt.readString());
-        this.setCenterMeta(pkt.readVarInt());
+        DimensionConfigPackets.readInto(this, pkt);
     }
 
     /**
@@ -525,9 +462,19 @@ public class DimensionConfig {
     }
 
     public static DimensionConfig fromPacket(MCDataInput pkt) {
-        DimensionConfig cfg = new DimensionConfig();
-        cfg.readFromPacket(pkt);
-        return cfg;
+        return DimensionConfigPackets.fromPacket(pkt);
+    }
+
+    String getSaveDirOverrideForPacket() {
+        return saveDirOverride == null ? "" : saveDirOverride;
+    }
+
+    void setLayersFromPacket(ArrayList<FlatLayerInfo> layers) {
+        this.layers = layers;
+    }
+
+    void setNeedsSavingForPacket(boolean needsSaving) {
+        this.needsSaving = needsSaving;
     }
 
     public boolean copyFrom(DimensionConfig source, boolean copySaveInfo, boolean copyVisualInfo,
@@ -805,29 +752,12 @@ public class DimensionConfig {
             }
             blockCount = MathHelper.clamp_int(blockCount, 1, 255);
 
-            // Parse modid:block:meta or modid:block
-            int meta = 0;
-            String blockName;
-            String[] parts = blockPart.split(":");
-            if (parts.length == 3) {
-                blockName = parts[0] + ":" + parts[1];
-                try {
-                    meta = Integer.parseInt(parts[2]);
-                } catch (NumberFormatException nfe) {
-                    return Lists.newArrayList();
-                }
-            } else if (parts.length == 2) {
-                blockName = blockPart;
-            } else {
-                return Lists.newArrayList();
-            }
-
-            String[] blockNameParts = blockName.split(":");
-            Block block = GameRegistry.findBlock(blockNameParts[0], blockNameParts[1]);
+            ParsedBlock parsedBlock = parseBlock(blockPart);
+            Block block = blockFromParsedBlock(parsedBlock);
             if (block == null) {
                 return Lists.newArrayList();
             }
-            FlatLayerInfo info = new FlatLayerInfo(blockCount, block, meta);
+            FlatLayerInfo info = new FlatLayerInfo(blockCount, block, parsedBlock.meta());
             info.setMinY(currY);
             infos.add(info);
             currY += blockCount;
@@ -889,9 +819,9 @@ public class DimensionConfig {
     }
 
     /**
-     * Parses a block string in modid:name or modid:name:meta format. Returns a 2-element array: [blockName, meta].
+     * Parses a block string in modid:name or modid:name:meta format.
      */
-    private static Object[] parseBlock(String blockStr) {
+    private static ParsedBlock parseBlock(String blockStr) {
         // blockStr is like "minecraft:stone" or "minecraft:stone:3"
         int lastColon = blockStr.lastIndexOf(':');
         int firstColon = blockStr.indexOf(':');
@@ -900,13 +830,22 @@ public class DimensionConfig {
             String name = blockStr.substring(0, lastColon);
             try {
                 int meta = Integer.parseInt(blockStr.substring(lastColon + 1));
-                return new Object[] { name, meta };
+                return new ParsedBlock(name, meta);
             } catch (NumberFormatException e) {
                 // Not a valid meta, treat whole string as block name
-                return new Object[] { blockStr, 0 };
+                return new ParsedBlock(blockStr, 0);
             }
         }
-        return new Object[] { blockStr, 0 };
+        return new ParsedBlock(blockStr, 0);
+    }
+
+    private static Block blockFromParsedBlock(ParsedBlock parsedBlock) {
+        String blockName = parsedBlock.blockName();
+        int separator = blockName.indexOf(':');
+        if (separator <= 0 || separator != blockName.lastIndexOf(':') || separator >= blockName.length() - 1) {
+            return null;
+        }
+        return GameRegistry.findBlock(blockName.substring(0, separator), blockName.substring(separator + 1));
     }
 
     /**
@@ -953,61 +892,76 @@ public class DimensionConfig {
     }
 
     /**
-     * Applies extended settings (boundary/gap/center) from a full preset string. Only modifies settings for sections
-     * that are present and valid.
+     * Applies extended settings (boundary/gap/center) from a full preset string. Either all present sections are
+     * applied or none of them are.
      */
     public void applyExtendedSettings(String fullPreset) {
         if (fullPreset == null || !fullPreset.contains("|")) return;
-        String[] sections = fullPreset.split("\\|");
+
+        DimensionConfig parsedConfig = new DimensionConfig();
+        parsedConfig.copyFrom(this, false, false, true);
+        if (!applyExtendedSettingsSections(fullPreset.split("\\|"), parsedConfig)) {
+            return;
+        }
+
+        copyFrom(parsedConfig, false, false, true);
+    }
+
+    private static boolean applyExtendedSettingsSections(String[] sections, DimensionConfig target) {
         for (int i = 1; i < sections.length; i++) {
             String section = sections[i];
             if (section.isEmpty()) continue;
             String[] parts = section.split(",");
-            if (parts.length < 1) continue;
             String type = parts[0];
             try {
                 switch (type) {
                     case "B":
-                        if (parts.length >= 5) {
-                            Object[] bA = parseBlock(parts[1]);
-                            setBoundaryBlockA((String) bA[0]);
-                            setBoundaryMetaA((int) bA[1]);
-                            Object[] bB = parseBlock(parts[2]);
-                            setBoundaryBlockB((String) bB[0]);
-                            setBoundaryMetaB((int) bB[1]);
-                            setBoundaryChunkIntervalX(Integer.parseInt(parts[3]));
-                            setBoundaryChunkIntervalZ(Integer.parseInt(parts[4]));
+                        if (parts.length < 5) {
+                            return false;
                         }
+                        ParsedBlock bA = parseBlock(parts[1]);
+                        target.setBoundaryBlockA(bA.blockName());
+                        target.setBoundaryMetaA(bA.meta());
+                        ParsedBlock bB = parseBlock(parts[2]);
+                        target.setBoundaryBlockB(bB.blockName());
+                        target.setBoundaryMetaB(bB.meta());
+                        target.setBoundaryChunkIntervalX(Integer.parseInt(parts[3]));
+                        target.setBoundaryChunkIntervalZ(Integer.parseInt(parts[4]));
                         break;
                     case "G":
-                        if (parts.length >= 6) {
-                            setGapWidth(Integer.parseInt(parts[1]));
-                            setGapPreset(GapPreset.fromOrdinal(Integer.parseInt(parts[2])));
-                            Object[] gA = parseBlock(parts[3]);
-                            setGapBlockA((String) gA[0]);
-                            setGapMetaA((int) gA[1]);
-                            Object[] gB = parseBlock(parts[4]);
-                            setGapBlockB((String) gB[0]);
-                            setGapMetaB((int) gB[1]);
-                            Object[] gC = parseBlock(parts[5]);
-                            setGapBlockC((String) gC[0]);
-                            setGapMetaC((int) gC[1]);
+                        if (parts.length < 6) {
+                            return false;
                         }
+                        target.setGapWidth(Integer.parseInt(parts[1]));
+                        target.setGapPreset(GapPreset.fromOrdinal(Integer.parseInt(parts[2])));
+                        ParsedBlock gA = parseBlock(parts[3]);
+                        target.setGapBlockA(gA.blockName());
+                        target.setGapMetaA(gA.meta());
+                        ParsedBlock gB = parseBlock(parts[4]);
+                        target.setGapBlockB(gB.blockName());
+                        target.setGapMetaB(gB.meta());
+                        ParsedBlock gC = parseBlock(parts[5]);
+                        target.setGapBlockC(gC.blockName());
+                        target.setGapMetaC(gC.meta());
                         break;
                     case "C":
-                        if (parts.length >= 4) {
-                            setCenterEnabled(Integer.parseInt(parts[1]) != 0);
-                            setCenterDirection(CenterDirection.fromOrdinal(Integer.parseInt(parts[2])));
-                            Object[] cB = parseBlock(parts[3]);
-                            setCenterBlock((String) cB[0]);
-                            setCenterMeta((int) cB[1]);
+                        if (parts.length < 4) {
+                            return false;
                         }
+                        target.setCenterEnabled(Integer.parseInt(parts[1]) != 0);
+                        target.setCenterDirection(CenterDirection.fromOrdinal(Integer.parseInt(parts[2])));
+                        ParsedBlock cB = parseBlock(parts[3]);
+                        target.setCenterBlock(cB.blockName());
+                        target.setCenterMeta(cB.meta());
                         break;
+                    default:
+                        return false;
                 }
             } catch (NumberFormatException ignored) {
-                // Skip malformed sections
+                return false;
             }
         }
+        return true;
     }
 
     public static boolean canUseLayers(String preset, boolean onClient) {
@@ -1121,11 +1075,7 @@ public class DimensionConfig {
         if (name == null || name.trim().isEmpty()) {
             return null;
         }
-        String[] sp = name.split(":");
-        if (sp.length != 2) {
-            return null;
-        }
-        return GameRegistry.findBlock(sp[0], sp[1]);
+        return blockFromParsedBlock(parseBlock(name.trim()));
     }
 
     public String getBoundaryBlockA() {

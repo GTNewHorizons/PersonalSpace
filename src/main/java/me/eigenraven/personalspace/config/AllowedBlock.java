@@ -93,11 +93,10 @@ public record AllowedBlock(String blockName, List<MetaRange> ranges, String orig
         if (min == Integer.MAX_VALUE) {
             return 0;
         }
-        for (int i = min;; i++) {
-            if (isMetaAllowed(i)) {
-                return i;
+        for (long candidate = min; candidate <= (long) min + 1000L; candidate++) {
+            if (isMetaAllowed((int) candidate)) {
+                return (int) candidate;
             }
-            if (i > min + 1000) break;
         }
         return min;
     }
@@ -195,9 +194,6 @@ public record AllowedBlock(String blockName, List<MetaRange> ranges, String orig
             }
 
             int sep = part.indexOf('-');
-            if (sep < 0) {
-                sep = part.indexOf('~');
-            }
             if (sep >= 0) {
                 int a = Integer.parseInt(part.substring(0, sep).trim());
                 int b = Integer.parseInt(part.substring(sep + 1).trim());

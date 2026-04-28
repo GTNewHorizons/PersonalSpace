@@ -166,7 +166,7 @@ public class Config {
             AllowedBlock parsed = null;
             try {
                 parsed = AllowedBlock.parse(entry);
-            } catch (Exception ignored) {}
+            } catch (NumberFormatException ignored) {}
             if (parsed == null) {
                 PersonalSpaceMod.LOG.warn("Removing invalid block config entry: {}", entry);
                 it.remove();

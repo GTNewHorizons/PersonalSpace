@@ -17,7 +17,7 @@ public class AllowedBlockRules {
             AllowedBlock parsed = null;
             try {
                 parsed = AllowedBlock.parse(s);
-            } catch (Exception ignored) {}
+            } catch (NumberFormatException ignored) {}
             if (parsed != null) {
                 out.add(parsed);
             }

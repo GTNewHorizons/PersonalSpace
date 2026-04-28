@@ -2,6 +2,8 @@ package me.eigenraven.personalspace.gui;
 
 import java.awt.Rectangle;
 
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.entity.RenderItem;
@@ -11,6 +13,7 @@ import org.lwjgl.opengl.GL11;
 
 public class WButton extends Widget {
 
+    @Nonnull
     public String text = "";
 
     public boolean dropShadow = true;

@@ -26,7 +26,6 @@ import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import codechicken.lib.gui.GuiDraw;
-import cpw.mods.fml.common.registry.GameRegistry;
 import me.eigenraven.personalspace.CommonProxy;
 import me.eigenraven.personalspace.PersonalSpaceMod;
 import me.eigenraven.personalspace.block.PortalTileEntity;
@@ -730,9 +729,7 @@ public class GuiEditWorld extends GuiScreen {
                         blk = Blocks.air;
                         meta = 0;
                     } else {
-                        String[] blName = entry.blockName().split(":");
-                        if (blName.length != 2) return;
-                        blk = GameRegistry.findBlock(blName[0], blName[1]);
+                        blk = DimensionConfig.blockFromString(entry.blockName());
                     }
                     if (blk == null) return;
                     FlatLayerInfo fli = new FlatLayerInfo(1, blk, meta);
