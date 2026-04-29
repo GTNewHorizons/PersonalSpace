@@ -32,8 +32,60 @@ gui.personalWorld.skyType.VANILLA=原版天空
 gui.personalWorld.skyType.BARNADA_C=巴纳德C天空
 gui.personalWorld.skyType.GARDEN_OF_GLASS=水晶花园天空
 
-commands.pspace.usage=/pspace (give-portal <玩家> <维度> [X] [Y] [Z])|(tpx <玩家> <维度> [X Y Z])|(ls)|(where <玩家>)|(allow-worldgen-change <维度>)
+gui.personalWorld.boundary=边界
+gui.personalWorld.boundary.a=边界 A
+gui.personalWorld.boundary.b=边界 B
+gui.personalWorld.boundary.a.short=A
+gui.personalWorld.boundary.b.short=B
+gui.personalWorld.boundary.chunks=边界区块 X x Z (0-20)
+
+gui.personalWorld.boundary.none=无
+gui.personalWorld.boundary.none.short=-
+gui.personalWorld.boundary.unknown.short=?
+gui.personalWorld.boundary.metaValue=元数据=%d
+gui.personalWorld.boundary.allowedValue=允许=%s
+gui.personalWorld.boundary.allowed=允许: %s
+gui.personalWorld.boundary.invalidMeta=无效的元数据
+gui.personalWorld.boundary.blockNotAllowed.a=边界 A 方块不被允许
+gui.personalWorld.boundary.blockNotAllowed.b=边界 B 方块不被允许
+gui.personalWorld.boundary.range=0-20
+
+gui.personalWorld.gap=隔段区块 (0-5)
+gui.personalWorld.gap.a=隔段 A
+gui.personalWorld.gap.b=隔段 B
+gui.personalWorld.gap.c=隔段 C
+gui.personalWorld.gap.a.short=A
+gui.personalWorld.gap.b.short=B
+gui.personalWorld.gap.c.short=C
+gui.personalWorld.gap.widthRange=0-5
+gui.personalWorld.gap.preset.ROAD=马路
+gui.personalWorld.gap.preset.SOLID=纯方块
+gui.personalWorld.gap.blockNotAllowed.a=隔段 A 方块不被允许
+gui.personalWorld.gap.blockNotAllowed.b=隔段 B 方块不被允许
+gui.personalWorld.gap.blockNotAllowed.c=隔段 C 方块不被允许
+
+gui.personalWorld.center.enable=中心标记
+gui.personalWorld.center.block=中心方块
+gui.personalWorld.center.block.short=C
+gui.personalWorld.center.blockNotAllowed=中心方块不被允许
+gui.personalWorld.center.dir.SE=东南 (X+ Z+)
+gui.personalWorld.center.dir.SW=西南 (X- Z+)
+gui.personalWorld.center.dir.NE=东北 (X+ Z-)
+gui.personalWorld.center.dir.NW=西北 (X- Z-)
+
+gui.personalWorld.button.plus=+
+gui.personalWorld.button.minus=-
+gui.personalWorld.multiply=x
+
+gui.personalWorld.moreSettings=更多设置
+gui.personalWorld.moreSettings.tooltip=更多设置
+gui.personalWorld.backToMain=返回
+gui.personalWorld.backToMain.tooltip=返回主页
+
+commands.pspace.usage=/pspace (give-portal <玩家> <维度> [X] [Y] [Z])|(tpx <玩家> <维度> [X Y Z])|(ls)|(where <玩家>)|(allow-worldgen-change <维度>)|(reload-config)
 commands.pspace.badDimension=指定维度不存在
 commands.pspace.where=玩家 %s 位于维度 %d
 commands.pspace.tpx=将玩家 %s 传送到 %d: %d, %d, %d
 commands.pspace.allow-worldgen-change=玩家 %s 已解锁维度 %d 的世界生成设置
+commands.pspace.reload-config.success=配置已重载并同步至所有客户端。
+commands.pspace.reload-config.fail=重载配置失败：未找到配置文件。

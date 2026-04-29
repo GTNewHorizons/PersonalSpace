@@ -69,6 +69,7 @@ public class Widget {
     protected void drawForegroundImpl(int mouseX, int mouseY, float partialTicks) {}
 
     public final boolean keyTyped(char character, int key) {
+        if (!visible) return false;
         if (this.keyTypedImpl(character, key)) {
             return true;
         }
@@ -85,6 +86,7 @@ public class Widget {
     }
 
     public final boolean mouseClicked(int x, int y, int button) {
+        if (!visible) return false;
         if (enabled && this.testPoint(x, y) && this.mouseClickedImpl(x, y, button)) {
             dragged = true;
             return true;
@@ -106,6 +108,7 @@ public class Widget {
     protected void mouseClickedOutsideImpl(int x, int y, int button) {}
 
     public final boolean mouseMovedOrUp(int x, int y, int button) {
+        if (!visible) return false;
         dragged = false;
         if (enabled && this.testPoint(x, y) && this.mouseMovedOrUpImpl(x, y, button)) {
             return true;
@@ -123,6 +126,7 @@ public class Widget {
     }
 
     public final boolean mouseClickMove(int x, int y, int lastBtn, long timeDragged) {
+        if (!visible) return false;
         if (((enabled && this.testPoint(x, y)) || dragged) && this.mouseClickMoveImpl(x, y, lastBtn, timeDragged)) {
             return true;
         }

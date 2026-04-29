@@ -10,11 +10,13 @@ import net.minecraft.block.Block;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.IProgressUpdate;
+import net.minecraft.util.MathHelper;
 import net.minecraft.world.ChunkPosition;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraft.world.gen.FlatLayerInfo;
 import net.minecraft.world.gen.feature.WorldGenAbstractTree;
@@ -22,8 +24,10 @@ import net.minecraft.world.gen.feature.WorldGenTrees;
 import net.minecraftforge.event.terraingen.DecorateBiomeEvent;
 import net.minecraftforge.event.terraingen.TerrainGen;
 
-import me.eigenraven.personalspace.Config;
+import com.github.bsideup.jabel.Desugar;
+
 import me.eigenraven.personalspace.PersonalSpaceMod;
+import me.eigenraven.personalspace.config.Config;
 
 public class PersonalChunkProvider implements IChunkProvider {
 
@@ -62,6 +66,7 @@ public class PersonalChunkProvider implements IChunkProvider {
                 y += info.getLayerCount();
                 continue;
             }
+            int meta = info.getFillBlockMeta();
             for (; y < info.getMinY() + info.getLayerCount() && y < worldHeight; ++y) {
                 int yChunk = y >> 4;
                 ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[yChunk];
@@ -72,11 +77,200 @@ public class PersonalChunkProvider implements IChunkProvider {
                 for (int z = 0; z < 16; ++z) {
                     for (int x = 0; x < 16; ++x) {
                         ebs.func_150818_a(x, y & 15, z, block);
+                        if (meta != 0) {
+                            ebs.setExtBlockMetadata(x, y & 15, z, meta);
+                        }
                     }
                 }
             }
             if (y >= worldHeight) {
                 break;
+            }
+        }
+
+        DimensionConfig cfg = world.getConfig();
+
+        int groundLevel = cfg.getGroundLevel() - 1;
+        if (groundLevel >= 0 && groundLevel < worldHeight) {
+            int bYChunk = groundLevel >> 4;
+
+            int intervalX = MathHelper.clamp_int(cfg.getBoundaryChunkIntervalX(), 0, 20);
+            int intervalZ = MathHelper.clamp_int(cfg.getBoundaryChunkIntervalZ(), 0, 20);
+
+            int gapWidth = MathHelper.clamp_int(cfg.getGapWidth(), 0, 5);
+            int periodX = intervalX + gapWidth;
+            int periodZ = intervalZ + gapWidth;
+            boolean isGapChunkX = gapWidth > 0 && intervalX > 0 && mod(chunkX, periodX) >= intervalX;
+            boolean isGapChunkZ = gapWidth > 0 && intervalZ > 0 && mod(chunkZ, periodZ) >= intervalZ;
+
+            if (isGapChunkX || isGapChunkZ) {
+                generateGapInChunk(
+                        chunk,
+                        chunkX,
+                        chunkZ,
+                        groundLevel,
+                        bYChunk,
+                        cfg,
+                        isGapChunkX,
+                        isGapChunkZ,
+                        periodX,
+                        periodZ,
+                        gapWidth,
+                        intervalX,
+                        intervalZ);
+            }
+
+            boolean isBoundaryX, prevBoundaryX, isBoundaryZ, prevBoundaryZ;
+            if (gapWidth > 0) {
+                // isBoundaryX: draw at localX=0 → first area chunk after gap (mod == 0)
+                isBoundaryX = intervalX > 0 && mod(chunkX, periodX) == 0;
+                // prevBoundaryX: draw at localX=15 → last area chunk before gap (mod == interval-1)
+                prevBoundaryX = intervalX > 0 && mod(chunkX, periodX) == intervalX - 1;
+                isBoundaryZ = intervalZ > 0 && mod(chunkZ, periodZ) == 0;
+                prevBoundaryZ = intervalZ > 0 && mod(chunkZ, periodZ) == intervalZ - 1;
+            } else {
+                isBoundaryX = intervalX > 0 && mod(chunkX, intervalX) == 0;
+                isBoundaryZ = intervalZ > 0 && mod(chunkZ, intervalZ) == 0;
+                prevBoundaryX = intervalX > 0 && mod(chunkX + 1, intervalX) == 0;
+                prevBoundaryZ = intervalZ > 0 && mod(chunkZ + 1, intervalZ) == 0;
+            }
+
+            Block boundaryBlockA = cfg.getBoundaryBlockAResolved();
+            int boundaryMetaA = cfg.getBoundaryMetaA();
+            Block boundaryBlockB = cfg.getBoundaryBlockBResolved();
+            int boundaryMetaB = cfg.getBoundaryMetaB();
+
+            boolean hasA = boundaryBlockA != null && boundaryBlockA != Blocks.air;
+            boolean hasB = boundaryBlockB != null && boundaryBlockB != Blocks.air;
+
+            boolean canDrawBoundary = hasA || hasB;
+
+            if (canDrawBoundary && !isGapChunkX
+                    && !isGapChunkZ
+                    && (isBoundaryX || prevBoundaryX || isBoundaryZ || prevBoundaryZ)) {
+                ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[bYChunk];
+                if (ebs == null) {
+                    ebs = new ExtendedBlockStorage(groundLevel & ~15, true);
+                    chunk.getBlockStorageArray()[bYChunk] = ebs;
+                }
+
+                NibbleArray metaArray = ebs.getMetadataArray();
+                if (metaArray == null) {
+                    metaArray = new NibbleArray(4096, 4);
+                    ebs.setBlockMetadataArray(metaArray);
+                }
+
+                for (int localZ = 0; localZ < 16; localZ++) {
+                    if (isBoundaryX) {
+                        int localX = 0;
+                        int worldX = (chunkX << 4) + localX;
+                        int worldZ = (chunkZ << 4) + localZ;
+
+                        StripeBlock stripe = getStripeBlock(
+                                worldX,
+                                worldZ,
+                                boundaryBlockA,
+                                boundaryMetaA,
+                                boundaryBlockB,
+                                boundaryMetaB);
+                        if (stripe.block != null && stripe.block != Blocks.air) {
+                            ebs.func_150818_a(localX, groundLevel & 15, localZ, stripe.block);
+                            ebs.setExtBlockMetadata(localX, groundLevel & 15, localZ, stripe.meta);
+                        }
+                    }
+
+                    if (prevBoundaryX) {
+                        int localX = 15;
+                        int worldX = (chunkX << 4) + localX;
+                        int worldZ = (chunkZ << 4) + localZ;
+
+                        StripeBlock stripe = getStripeBlock(
+                                worldX,
+                                worldZ,
+                                boundaryBlockA,
+                                boundaryMetaA,
+                                boundaryBlockB,
+                                boundaryMetaB);
+                        if (stripe.block != null && stripe.block != Blocks.air) {
+                            ebs.func_150818_a(localX, groundLevel & 15, localZ, stripe.block);
+                            ebs.setExtBlockMetadata(localX, groundLevel & 15, localZ, stripe.meta);
+                        }
+                    }
+                }
+
+                for (int localX = 0; localX < 16; localX++) {
+                    if (isBoundaryZ) {
+                        int localZ = 0;
+                        int worldX = (chunkX << 4) + localX;
+                        int worldZ = (chunkZ << 4) + localZ;
+
+                        StripeBlock stripe = getStripeBlock(
+                                worldX,
+                                worldZ,
+                                boundaryBlockA,
+                                boundaryMetaA,
+                                boundaryBlockB,
+                                boundaryMetaB);
+                        if (stripe.block != null && stripe.block != Blocks.air) {
+                            ebs.func_150818_a(localX, groundLevel & 15, localZ, stripe.block);
+                            ebs.setExtBlockMetadata(localX, groundLevel & 15, localZ, stripe.meta);
+                        }
+                    }
+
+                    if (prevBoundaryZ) {
+                        int localZ = 15;
+                        int worldX = (chunkX << 4) + localX;
+                        int worldZ = (chunkZ << 4) + localZ;
+
+                        StripeBlock stripe = getStripeBlock(
+                                worldX,
+                                worldZ,
+                                boundaryBlockA,
+                                boundaryMetaA,
+                                boundaryBlockB,
+                                boundaryMetaB);
+                        if (stripe.block != null && stripe.block != Blocks.air) {
+                            ebs.func_150818_a(localX, groundLevel & 15, localZ, stripe.block);
+                            ebs.setExtBlockMetadata(localX, groundLevel & 15, localZ, stripe.meta);
+                        }
+                    }
+                }
+            }
+
+            // --- Center block generation ---
+            if (cfg.isCenterEnabled() && intervalX > 0 && intervalZ > 0) {
+                Block centerBlock = cfg.getCenterBlockResolved();
+                int centerMeta = cfg.getCenterMeta();
+                if (centerBlock != null && centerBlock != Blocks.air) {
+                    DimensionConfig.CenterDirection dir = cfg.getCenterDirection();
+                    int dirOffX = (dir == DimensionConfig.CenterDirection.SW
+                            || dir == DimensionConfig.CenterDirection.NW) ? -1 : 0;
+                    int dirOffZ = (dir == DimensionConfig.CenterDirection.NE
+                            || dir == DimensionConfig.CenterDirection.NW) ? -1 : 0;
+                    int centerLocalX = intervalX * 8 + dirOffX;
+                    int centerLocalZ = intervalZ * 8 + dirOffZ;
+
+                    int modCX = mod(chunkX, periodX);
+                    int modCZ = mod(chunkZ, periodZ);
+
+                    if (modCX < intervalX && modCZ < intervalZ) {
+                        int blockStartX = modCX * 16;
+                        int blockStartZ = modCZ * 16;
+                        if (centerLocalX >= blockStartX && centerLocalX < blockStartX + 16
+                                && centerLocalZ >= blockStartZ
+                                && centerLocalZ < blockStartZ + 16) {
+                            int lx = centerLocalX - blockStartX;
+                            int lz = centerLocalZ - blockStartZ;
+                            ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[bYChunk];
+                            if (ebs == null) {
+                                ebs = new ExtendedBlockStorage(groundLevel & ~15, true);
+                                chunk.getBlockStorageArray()[bYChunk] = ebs;
+                            }
+                            ebs.func_150818_a(lx, groundLevel & 15, lz, centerBlock);
+                            ebs.setExtBlockMetadata(lx, groundLevel & 15, lz, centerMeta);
+                        }
+                    }
+                }
             }
         }
 
@@ -104,6 +298,151 @@ public class PersonalChunkProvider implements IChunkProvider {
         chunk.generateSkylightMap();
 
         return chunk;
+    }
+
+    @Desugar
+    private record StripeBlock(Block block, int meta) {}
+
+    private StripeBlock getStripeBlock(int worldX, int worldZ, Block blockA, int metaA, Block blockB, int metaB) {
+        boolean useA = ((worldX + worldZ) & 1) == 0;
+
+        if (useA) {
+            if (blockA != null && blockA != Blocks.air) {
+                return new StripeBlock(blockA, metaA);
+            }
+            if (blockB != null && blockB != Blocks.air) {
+                return new StripeBlock(blockB, metaB);
+            }
+        } else {
+            if (blockB != null && blockB != Blocks.air) {
+                return new StripeBlock(blockB, metaB);
+            }
+            if (blockA != null && blockA != Blocks.air) {
+                return new StripeBlock(blockA, metaA);
+            }
+        }
+
+        return new StripeBlock(null, 0);
+    }
+
+    private int mod(int a, int b) {
+        int m = a % b;
+        return m < 0 ? m + b : m;
+    }
+
+    private void generateGapInChunk(Chunk chunk, int chunkX, int chunkZ, int groundLevel, int bYChunk,
+            DimensionConfig cfg, boolean isGapX, boolean isGapZ, int periodX, int periodZ, int gapWidth, int intervalX,
+            int intervalZ) {
+        ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[bYChunk];
+        if (ebs == null) {
+            ebs = new ExtendedBlockStorage(groundLevel & ~15, true);
+            chunk.getBlockStorageArray()[bYChunk] = ebs;
+        }
+
+        DimensionConfig.GapPreset preset = cfg.getGapPreset();
+        Block gapBlockA = cfg.getGapBlockAResolved();
+        int gapMetaA = cfg.getGapMetaA();
+        Block gapBlockB = cfg.getGapBlockBResolved();
+        int gapMetaB = cfg.getGapMetaB();
+        Block gapBlockC = cfg.getGapBlockCResolved();
+        int gapMetaC = cfg.getGapMetaC();
+
+        if (gapBlockA == null || gapBlockA == Blocks.air) return;
+
+        int gapWidthBlocks = gapWidth * 16;
+        int yLocal = groundLevel & 15;
+
+        for (int localZ = 0; localZ < 16; localZ++) {
+            for (int localX = 0; localX < 16; localX++) {
+                int worldX = (chunkX << 4) + localX;
+                int worldZ = (chunkZ << 4) + localZ;
+
+                Block block = gapBlockA;
+                int meta = gapMetaA;
+
+                if (preset == DimensionConfig.GapPreset.ROAD) {
+                    boolean isIntersection = isGapX && isGapZ;
+                    boolean hasStripe = gapBlockB != null && gapBlockB != Blocks.air;
+                    if (isIntersection) {
+                        // At intersection: draw corner blocks where both edges meet
+                        if (hasStripe) {
+                            int gapOffsetX = mod(chunkX, periodX) - intervalX;
+                            int offsetX = gapOffsetX * 16 + localX;
+                            int gapOffsetZ = mod(chunkZ, periodZ) - intervalZ;
+                            int offsetZ = gapOffsetZ * 16 + localZ;
+                            boolean onEdgeX = offsetX == 0 || offsetX == gapWidthBlocks - 1;
+                            boolean onEdgeZ = offsetZ == 0 || offsetZ == gapWidthBlocks - 1;
+                            if (onEdgeX && onEdgeZ) {
+                                block = gapBlockB;
+                                meta = gapMetaB;
+                            }
+                        }
+                    } else {
+                        if (isGapX && periodX > 0) {
+                            int gapChunkOffset = mod(chunkX, periodX) - intervalX;
+                            int offsetInGap = gapChunkOffset * 16 + localX;
+                            StripeBlock road = getRoadBlock(
+                                    offsetInGap,
+                                    worldZ,
+                                    gapWidthBlocks,
+                                    gapBlockA,
+                                    gapMetaA,
+                                    gapBlockB,
+                                    gapMetaB,
+                                    gapBlockC,
+                                    gapMetaC);
+                            block = road.block;
+                            meta = road.meta;
+                        } else if (isGapZ && periodZ > 0) {
+                            int gapChunkOffset = mod(chunkZ, periodZ) - intervalZ;
+                            int offsetInGap = gapChunkOffset * 16 + localZ;
+                            StripeBlock road = getRoadBlock(
+                                    offsetInGap,
+                                    worldX,
+                                    gapWidthBlocks,
+                                    gapBlockA,
+                                    gapMetaA,
+                                    gapBlockB,
+                                    gapMetaB,
+                                    gapBlockC,
+                                    gapMetaC);
+                            block = road.block;
+                            meta = road.meta;
+                        }
+                    }
+                } else {
+                    // SOLID preset: use block A with configured meta
+                    block = gapBlockA;
+                    meta = gapMetaA;
+                }
+
+                if (block != null && block != Blocks.air) {
+                    ebs.func_150818_a(localX, yLocal, localZ, block);
+                    ebs.setExtBlockMetadata(localX, yLocal, localZ, meta);
+                }
+            }
+        }
+    }
+
+    private StripeBlock getRoadBlock(int offsetInGap, int alongRoad, int gapWidthBlocks, Block blockA, int metaA,
+            Block blockB, int metaB, Block blockC, int metaC) {
+        boolean hasStripe = blockB != null && blockB != Blocks.air;
+        boolean hasDash = blockC != null && blockC != Blocks.air;
+
+        // Edge lines (B block)
+        if (hasStripe && (offsetInGap == 0 || offsetInGap == gapWidthBlocks - 1)) {
+            return new StripeBlock(blockB, metaB);
+        }
+
+        // Center dashed line (C block)
+        if (hasDash && gapWidthBlocks >= 4) {
+            int center = gapWidthBlocks / 2;
+            if ((offsetInGap == center || offsetInGap == center - 1) && mod(alongRoad + 2, 8) < 4) {
+                return new StripeBlock(blockC, metaC);
+            }
+        }
+
+        return new StripeBlock(blockA, metaA);
     }
 
     @Override
