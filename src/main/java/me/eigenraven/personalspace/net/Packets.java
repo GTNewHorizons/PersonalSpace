@@ -93,6 +93,7 @@ public enum Packets {
             pkt.writeString(blockRule);
         }
 
+        // Send all dimconfigs
         synchronized (CommonProxy.getDimensionConfigObjects(false)) {
             pkt.writeVarInt(CommonProxy.getDimensionConfigObjects(false).size());
             CommonProxy.getDimensionConfigObjects(false).forEachEntry((dimId, dimCfg) -> {
@@ -117,6 +118,8 @@ public enum Packets {
 
     private static void handleWorldList(PacketCustom pkt) {
         int allowedBiomes = pkt.readVarInt();
+        // Use tmpList to only atomically swap references after the list is populated
+        // to prevent concurrent modification by the network thread
         List<String> tmpList = new ArrayList<>(allowedBiomes);
         for (int i = 0; i < allowedBiomes; ++i) {
             tmpList.add(pkt.readString());
