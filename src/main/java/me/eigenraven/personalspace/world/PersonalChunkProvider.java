@@ -16,7 +16,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
-import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraft.world.gen.FlatLayerInfo;
 import net.minecraft.world.gen.feature.WorldGenAbstractTree;
@@ -152,12 +151,6 @@ public class PersonalChunkProvider implements IChunkProvider {
                 if (ebs == null) {
                     ebs = new ExtendedBlockStorage(groundLevel & ~15, true);
                     chunk.getBlockStorageArray()[bYChunk] = ebs;
-                }
-
-                NibbleArray metaArray = ebs.getMetadataArray();
-                if (metaArray == null) {
-                    metaArray = new NibbleArray(4096, 4);
-                    ebs.setBlockMetadataArray(metaArray);
                 }
 
                 for (int localZ = 0; localZ < 16; localZ++) {
