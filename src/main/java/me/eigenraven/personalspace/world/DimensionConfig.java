@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.biome.BiomeGenBase;
@@ -26,13 +27,34 @@ import codechicken.lib.data.MCDataInput;
 import codechicken.lib.data.MCDataOutput;
 import cpw.mods.fml.common.registry.GameRegistry;
 import me.eigenraven.personalspace.CommonProxy;
-import me.eigenraven.personalspace.Config;
 import me.eigenraven.personalspace.PersonalSpaceMod;
+import me.eigenraven.personalspace.config.AllowedBlock;
+import me.eigenraven.personalspace.config.AllowedBlockRules;
+import me.eigenraven.personalspace.config.Config;
 
 /**
  * Current world generation settings for a given dimension
  */
 public class DimensionConfig {
+
+    public static class ParsedBlock {
+
+        private final String blockName;
+        private final int meta;
+
+        private ParsedBlock(String blockName, int meta) {
+            this.blockName = blockName;
+            this.meta = meta;
+        }
+
+        public String blockName() {
+            return blockName;
+        }
+
+        public int meta() {
+            return meta;
+        }
+    }
 
     public enum SkyType {
 
@@ -115,6 +137,32 @@ public class DimensionConfig {
         }
     }
 
+    public enum GapPreset {
+
+        ROAD,
+        SOLID;
+
+        GapPreset() {}
+
+        public static GapPreset fromOrdinal(int ordinal) {
+            return (ordinal < 0 || ordinal >= values().length) ? GapPreset.ROAD : values()[ordinal];
+        }
+    }
+
+    public enum CenterDirection {
+
+        SE, // x+ z+ (default)
+        SW, // x- z+
+        NE, // x+ z-
+        NW; // x- z-
+
+        CenterDirection() {}
+
+        public static CenterDirection fromOrdinal(int ordinal) {
+            return (ordinal < 0 || ordinal >= values().length) ? CenterDirection.SE : values()[ordinal];
+        }
+    }
+
     private String saveDirOverride = "";
     private int skyColor = 0xc0d8ff;
     private float starBrightness = 1.0F;
@@ -128,60 +176,43 @@ public class DimensionConfig {
     private String biomeId = "Plains";
     private ArrayList<FlatLayerInfo> layers = Lists.newArrayList();
 
+    private String boundaryBlockA = "minecraft:wool";
+    private int boundaryMetaA = 4;
+    private String boundaryBlockB = "minecraft:wool";
+    private int boundaryMetaB = 15;
+    private int boundaryChunkIntervalX = 0;
+    private int boundaryChunkIntervalZ = 0;
+
+    private int gapWidth = 0;
+    private GapPreset gapPreset = GapPreset.ROAD;
+    private String gapBlockA = "minecraft:wool";
+    private int gapMetaA = 15;
+    private String gapBlockB = "minecraft:wool";
+    private int gapMetaB = 0;
+    private String gapBlockC = "minecraft:wool";
+    private int gapMetaC = 0;
+
+    private boolean centerEnabled = false;
+    private CenterDirection centerDirection = CenterDirection.SE;
+    private String centerBlock = "minecraft:wool";
+    private int centerMeta = 14;
+
     private boolean needsSaving = true;
 
     public static final String PRESET_UW_VOID = "";
     public static final String PRESET_UW_GARDEN = "minecraft:bedrock;minecraft:dirt*3;minecraft:grass";
     public static final String PRESET_UW_MINING = "minecraft:bedrock*4;minecraft:stone*58;minecraft:dirt;minecraft:grass";
     public static final Pattern PRESET_VALIDATION_PATTERN = Pattern
-            .compile("^([^:\\*;]+:[^:\\*;]+(\\*\\d+)?;)*([^:\\*;]+:[^:\\*;]+(\\*\\d+)?)?$");
+            .compile("^([^:\\*;]+:[^:\\*;]+(:\\d+)?(\\*\\d+)?;)*([^:\\*;]+:[^:\\*;]+(:\\d+)?(\\*\\d+)?)?$");
 
     public DimensionConfig() {}
 
     public void writeToPacket(MCDataOutput pkt) {
-        pkt.writeString(saveDirOverride);
-        pkt.writeInt(skyColor);
-        pkt.writeFloat(starBrightness);
-        pkt.writeVarInt(getRawBiomeId());
-        pkt.writeVarInt(daylightCycle.ordinal());
-        pkt.writeBoolean(cloudsEnabled);
-        pkt.writeVarInt(skyType.ordinal());
-        pkt.writeBoolean(weatherEnabled);
-        pkt.writeBoolean(generatingVegetation);
-        pkt.writeBoolean(generatingTrees);
-        pkt.writeBoolean(allowGenerationChanges);
-        pkt.writeVarInt(layers.size());
-        for (FlatLayerInfo info : layers) {
-            pkt.writeVarInt(Block.getIdFromBlock(info.func_151536_b()));
-            pkt.writeVarInt(info.getLayerCount());
-        }
+        DimensionConfigPackets.write(this, pkt);
     }
 
     public void readFromPacket(MCDataInput pkt) {
-        this.saveDirOverride = pkt.readString();
-        this.needsSaving = true;
-        this.setSkyColor(pkt.readInt());
-        this.setStarBrightness(pkt.readFloat());
-        this.setBiomeId(BiomeGenBase.getBiomeGenArray()[pkt.readVarInt()].biomeName);
-        this.setDaylightCycle(DaylightCycle.fromOrdinal(pkt.readVarInt()));
-        this.setCloudsEnabled(pkt.readBoolean());
-        this.setSkyType(SkyType.fromOrdinal(pkt.readVarInt()));
-        this.setWeatherEnabled(pkt.readBoolean());
-        this.setGeneratingVegetation(pkt.readBoolean());
-        this.setGeneratingTrees(pkt.readBoolean());
-        this.setAllowGenerationChanges(pkt.readBoolean());
-        int layerCount = pkt.readVarInt();
-        ArrayList<FlatLayerInfo> layers = new ArrayList<>(layerCount);
-        int y = 0;
-        for (int layerI = 0; layerI < layerCount; ++layerI) {
-            int blockId = pkt.readVarInt();
-            int count = pkt.readVarInt();
-            FlatLayerInfo info = new FlatLayerInfo(count, Block.getBlockById(blockId));
-            info.setMinY(y);
-            layers.add(info);
-            y += count;
-        }
-        this.layers = layers;
+        DimensionConfigPackets.readInto(this, pkt);
     }
 
     /**
@@ -190,38 +221,45 @@ public class DimensionConfig {
     public int syncWithFile(File file, boolean write, int dimId) {
         final String VISUAL = "visual";
         final String WORLDGEN = "worldgen";
+        final String BOUNDARY = "boundary";
         Configuration cfg = new Configuration(file);
         Property cur;
+
         cur = cfg.get(VISUAL, "skyColor", skyColor, "", 0, 0xFFFFFF);
         if (write) {
             cur.set(skyColor);
         } else {
             setSkyColor(cur.getInt());
         }
+
         cur = cfg.get(VISUAL, "starBrightness", starBrightness, "", 0.0F, 1.0F);
         if (write) {
             cur.set(starBrightness);
         } else {
             setStarBrightness((float) cur.getDouble());
         }
+
         cur = cfg.get(WORLDGEN, "biomeId", getBiomeId());
         if (write) {
             cur.set(getBiomeId());
         } else {
             setBiomeId(cur.getString());
         }
+
         cur = cfg.get(VISUAL, "weatherEnabled", weatherEnabled, "");
         if (write) {
             cur.set(weatherEnabled);
         } else {
             setWeatherEnabled(cur.getBoolean());
         }
+
         cur = cfg.get(VISUAL, "daylightCycle", daylightCycle.ordinal(), "");
         if (write) {
             cur.set(daylightCycle.ordinal());
         } else {
             setDaylightCycle(DaylightCycle.fromOrdinal(cur.getInt()));
         }
+
         // handle old nightTime config
         if (cfg.hasKey(VISUAL, "nightTime")) {
             if (write) {
@@ -232,30 +270,35 @@ public class DimensionConfig {
                 needsSaving = true;
             }
         }
+
         cur = cfg.get(VISUAL, "cloudsEnabled", cloudsEnabled, "");
         if (write) {
             cur.set(cloudsEnabled);
         } else {
             setCloudsEnabled(cur.getBoolean());
         }
+
         cur = cfg.get(VISUAL, "skyType", skyType.ordinal(), "");
         if (write) {
             cur.set(skyType.ordinal());
         } else {
             setSkyType(SkyType.fromOrdinal(cur.getInt()));
         }
+
         cur = cfg.get(WORLDGEN, "generatingTrees", generatingTrees, "");
         if (write) {
             cur.set(generatingTrees);
         } else {
             setGeneratingTrees(cur.getBoolean());
         }
+
         cur = cfg.get(WORLDGEN, "generatingVegetation", generatingVegetation, "");
         if (write) {
             cur.set(generatingVegetation);
         } else {
             setGeneratingVegetation(cur.getBoolean());
         }
+
         cur = cfg.get(
                 WORLDGEN,
                 "allowGenerationChanges",
@@ -266,18 +309,151 @@ public class DimensionConfig {
         } else {
             setAllowGenerationChanges(cur.getBoolean());
         }
+
         cur = cfg.get(WORLDGEN, "layers", getLayersAsString());
         if (write) {
             cur.set(getLayersAsString());
         } else {
             setLayers(cur.getString());
         }
+
+        cur = cfg.get(BOUNDARY, "blockA", getBoundaryBlockA());
+        if (write) {
+            cur.set(getBoundaryBlockA());
+        } else {
+            setBoundaryBlockA(cur.getString());
+        }
+
+        cur = cfg.get(BOUNDARY, "metaA", getBoundaryMetaA(), "", 0, 15);
+        if (write) {
+            cur.set(getBoundaryMetaA());
+        } else {
+            setBoundaryMetaA(cur.getInt());
+        }
+
+        cur = cfg.get(BOUNDARY, "blockB", getBoundaryBlockB());
+        if (write) {
+            cur.set(getBoundaryBlockB());
+        } else {
+            setBoundaryBlockB(cur.getString());
+        }
+
+        cur = cfg.get(BOUNDARY, "metaB", getBoundaryMetaB(), "", 0, 15);
+        if (write) {
+            cur.set(getBoundaryMetaB());
+        } else {
+            setBoundaryMetaB(cur.getInt());
+        }
+
+        cur = cfg.get(BOUNDARY, "chunkIntervalX", getBoundaryChunkIntervalX(), "", 0, 20);
+        if (write) {
+            cur.set(getBoundaryChunkIntervalX());
+        } else {
+            setBoundaryChunkIntervalX(cur.getInt());
+        }
+
+        cur = cfg.get(BOUNDARY, "chunkIntervalZ", getBoundaryChunkIntervalZ(), "", 0, 20);
+        if (write) {
+            cur.set(getBoundaryChunkIntervalZ());
+        } else {
+            setBoundaryChunkIntervalZ(cur.getInt());
+        }
+
+        final String GAP = "gap";
+
+        cur = cfg.get(GAP, "width", getGapWidth(), "", 0, 5);
+        if (write) {
+            cur.set(getGapWidth());
+        } else {
+            setGapWidth(cur.getInt());
+        }
+
+        cur = cfg.get(GAP, "preset", getGapPreset().ordinal(), "");
+        if (write) {
+            cur.set(getGapPreset().ordinal());
+        } else {
+            setGapPreset(GapPreset.fromOrdinal(cur.getInt()));
+        }
+
+        cur = cfg.get(GAP, "blockA", getGapBlockA());
+        if (write) {
+            cur.set(getGapBlockA());
+        } else {
+            setGapBlockA(cur.getString());
+        }
+
+        cur = cfg.get(GAP, "metaA", getGapMetaA(), "", 0, 15);
+        if (write) {
+            cur.set(getGapMetaA());
+        } else {
+            setGapMetaA(cur.getInt());
+        }
+
+        cur = cfg.get(GAP, "blockB", getGapBlockB());
+        if (write) {
+            cur.set(getGapBlockB());
+        } else {
+            setGapBlockB(cur.getString());
+        }
+
+        cur = cfg.get(GAP, "metaB", getGapMetaB(), "", 0, 15);
+        if (write) {
+            cur.set(getGapMetaB());
+        } else {
+            setGapMetaB(cur.getInt());
+        }
+
+        cur = cfg.get(GAP, "blockC", getGapBlockC());
+        if (write) {
+            cur.set(getGapBlockC());
+        } else {
+            setGapBlockC(cur.getString());
+        }
+
+        cur = cfg.get(GAP, "metaC", getGapMetaC(), "", 0, 15);
+        if (write) {
+            cur.set(getGapMetaC());
+        } else {
+            setGapMetaC(cur.getInt());
+        }
+
+        final String CENTER = "center";
+
+        cur = cfg.get(CENTER, "enabled", isCenterEnabled(), "");
+        if (write) {
+            cur.set(isCenterEnabled());
+        } else {
+            setCenterEnabled(cur.getBoolean());
+        }
+
+        cur = cfg.get(CENTER, "direction", getCenterDirection().ordinal(), "");
+        if (write) {
+            cur.set(getCenterDirection().ordinal());
+        } else {
+            setCenterDirection(CenterDirection.fromOrdinal(cur.getInt()));
+        }
+
+        cur = cfg.get(CENTER, "block", getCenterBlock());
+        if (write) {
+            cur.set(getCenterBlock());
+        } else {
+            setCenterBlock(cur.getString());
+        }
+
+        cur = cfg.get(CENTER, "meta", getCenterMeta(), "", 0, 15);
+        if (write) {
+            cur.set(getCenterMeta());
+        } else {
+            setCenterMeta(cur.getInt());
+        }
+
         cur = cfg.get(WORLDGEN, "dimId", dimId);
         if (write) {
             cur.set(dimId);
         } else {
             dimId = cur.getInt();
         }
+
         if (write) {
             cfg.save();
             needsSaving = false;
@@ -286,9 +462,19 @@ public class DimensionConfig {
     }
 
     public static DimensionConfig fromPacket(MCDataInput pkt) {
-        DimensionConfig cfg = new DimensionConfig();
-        cfg.readFromPacket(pkt);
-        return cfg;
+        return DimensionConfigPackets.fromPacket(pkt);
+    }
+
+    String getSaveDirOverrideForPacket() {
+        return saveDirOverride == null ? "" : saveDirOverride;
+    }
+
+    void setLayersFromPacket(ArrayList<FlatLayerInfo> layers) {
+        this.layers = layers;
+    }
+
+    void setNeedsSavingForPacket(boolean needsSaving) {
+        this.needsSaving = needsSaving;
     }
 
     public boolean copyFrom(DimensionConfig source, boolean copySaveInfo, boolean copyVisualInfo,
@@ -311,6 +497,28 @@ public class DimensionConfig {
             this.setGeneratingTrees(source.isGeneratingTrees());
             this.setGeneratingVegetation(source.isGeneratingVegetation());
             this.layers = source.layers;
+
+            this.setBoundaryBlockA(source.getBoundaryBlockA());
+            this.setBoundaryMetaA(source.getBoundaryMetaA());
+            this.setBoundaryBlockB(source.getBoundaryBlockB());
+            this.setBoundaryMetaB(source.getBoundaryMetaB());
+            this.setBoundaryChunkIntervalX(source.getBoundaryChunkIntervalX());
+            this.setBoundaryChunkIntervalZ(source.getBoundaryChunkIntervalZ());
+
+            this.setGapWidth(source.getGapWidth());
+            this.setGapPreset(source.getGapPreset());
+            this.setGapBlockA(source.getGapBlockA());
+            this.setGapMetaA(source.getGapMetaA());
+            this.setGapBlockB(source.getGapBlockB());
+            this.setGapMetaB(source.getGapMetaB());
+            this.setGapBlockC(source.getGapBlockC());
+            this.setGapMetaC(source.getGapMetaC());
+
+            this.setCenterEnabled(source.isCenterEnabled());
+            this.setCenterDirection(source.getCenterDirection());
+            this.setCenterBlock(source.getCenterBlock());
+            this.setCenterMeta(source.getCenterMeta());
+
             this.needsSaving = true;
         }
         boolean modified = this.needsSaving;
@@ -382,7 +590,7 @@ public class DimensionConfig {
     }
 
     public String getSaveDir(int dimId) {
-        return (saveDirOverride != null && saveDirOverride.length() > 0) ? saveDirOverride
+        return (saveDirOverride != null && !saveDirOverride.isEmpty()) ? saveDirOverride
                 : String.format("PERSONAL_DIM_%d", dimId);
     }
 
@@ -522,7 +730,7 @@ public class DimensionConfig {
             return Lists.newArrayList();
         }
         preset = preset.replaceAll("\\s+", "");
-        if (preset.length() < 1 || !PRESET_VALIDATION_PATTERN.matcher(preset).matches()) {
+        if (preset.isEmpty() || !PRESET_VALIDATION_PATTERN.matcher(preset).matches()) {
             return Lists.newArrayList();
         }
         ArrayList<FlatLayerInfo> infos = new ArrayList<>();
@@ -531,11 +739,9 @@ public class DimensionConfig {
             if (layerStr.isEmpty()) {
                 continue;
             }
+            // Format: modid:block:meta*count or modid:block*count (meta defaults to 0)
             String[] components = layerStr.split("\\*", 2);
-            String[] blockName = components[0].split(":");
-            if (blockName.length != 2) {
-                return Lists.newArrayList();
-            }
+            String blockPart = components[0];
             int blockCount = 1;
             if (components.length > 1) {
                 try {
@@ -545,11 +751,13 @@ public class DimensionConfig {
                 }
             }
             blockCount = MathHelper.clamp_int(blockCount, 1, 255);
-            Block block = GameRegistry.findBlock(blockName[0], blockName[1]);
+
+            ParsedBlock parsedBlock = parseBlock(blockPart);
+            Block block = blockFromParsedBlock(parsedBlock);
             if (block == null) {
                 return Lists.newArrayList();
             }
-            FlatLayerInfo info = new FlatLayerInfo(blockCount, block, 0);
+            FlatLayerInfo info = new FlatLayerInfo(blockCount, block, parsedBlock.meta());
             info.setMinY(currY);
             infos.add(info);
             currY += blockCount;
@@ -582,6 +790,11 @@ public class DimensionConfig {
             b.append(block.modId);
             b.append(':');
             b.append(block.name);
+            int meta = info.getFillBlockMeta();
+            if (meta != 0) {
+                b.append(':');
+                b.append(meta);
+            }
             if (count > 1) {
                 b.append('*');
                 b.append(count);
@@ -598,6 +811,159 @@ public class DimensionConfig {
         return layersToString(this.layers);
     }
 
+    /**
+     * Encodes a block name and meta into modid:name:meta format (meta omitted if 0).
+     */
+    private static String encodeBlock(String blockName, int meta) {
+        return meta != 0 ? blockName + ":" + meta : blockName;
+    }
+
+    /**
+     * Parses a block string in modid:name or modid:name:meta format.
+     */
+    private static ParsedBlock parseBlock(String blockStr) {
+        // blockStr is like "minecraft:stone" or "minecraft:stone:3"
+        int lastColon = blockStr.lastIndexOf(':');
+        int firstColon = blockStr.indexOf(':');
+        if (lastColon > firstColon && lastColon >= 0) {
+            // Has meta part
+            String name = blockStr.substring(0, lastColon);
+            try {
+                int meta = Integer.parseInt(blockStr.substring(lastColon + 1));
+                return new ParsedBlock(name, meta);
+            } catch (NumberFormatException e) {
+                // Not a valid meta, treat whole string as block name
+                return new ParsedBlock(blockStr, 0);
+            }
+        }
+        return new ParsedBlock(blockStr, 0);
+    }
+
+    private static Block blockFromParsedBlock(ParsedBlock parsedBlock) {
+        String blockName = parsedBlock.blockName();
+        int separator = blockName.indexOf(':');
+        if (separator <= 0 || separator != blockName.lastIndexOf(':') || separator >= blockName.length() - 1) {
+            return null;
+        }
+        return GameRegistry.findBlock(blockName.substring(0, separator), blockName.substring(separator + 1));
+    }
+
+    /**
+     * Encodes all generation settings (layers + boundary + gap + center) into a single string for copy/paste
+     * convenience. Format:
+     * layers_part|B,blockA,blockB,intervalX,intervalZ|G,width,preset,blockA,blockB,blockC|C,enabled,dir,block where
+     * each block is modid:name or modid:name:meta (meta omitted if 0).
+     */
+    public String getFullPresetString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getLayersAsString());
+        // Boundary section
+        sb.append("|B,");
+        sb.append(encodeBlock(getBoundaryBlockA(), getBoundaryMetaA())).append(',');
+        sb.append(encodeBlock(getBoundaryBlockB(), getBoundaryMetaB())).append(',');
+        sb.append(getBoundaryChunkIntervalX()).append(',').append(getBoundaryChunkIntervalZ());
+        // Gap section
+        sb.append("|G,");
+        sb.append(getGapWidth()).append(',').append(getGapPreset().ordinal()).append(',');
+        sb.append(encodeBlock(getGapBlockA(), getGapMetaA())).append(',');
+        sb.append(encodeBlock(getGapBlockB(), getGapMetaB())).append(',');
+        sb.append(encodeBlock(getGapBlockC(), getGapMetaC()));
+        // Center section
+        sb.append("|C,");
+        sb.append(isCenterEnabled() ? 1 : 0).append(',').append(getCenterDirection().ordinal()).append(',');
+        sb.append(encodeBlock(getCenterBlock(), getCenterMeta()));
+        return sb.toString();
+    }
+
+    /**
+     * Extracts the layers-only part from a full preset string (before the first '|').
+     */
+    public static String extractLayersPart(String fullPreset) {
+        if (fullPreset == null) return "";
+        int pipe = fullPreset.indexOf('|');
+        return pipe >= 0 ? fullPreset.substring(0, pipe) : fullPreset;
+    }
+
+    /**
+     * Returns true if the string contains extended settings (boundary/gap/center sections).
+     */
+    public static boolean hasExtendedSettings(String fullPreset) {
+        return fullPreset != null && fullPreset.contains("|");
+    }
+
+    /**
+     * Applies extended settings (boundary/gap/center) from a full preset string. Either all present sections are
+     * applied or none of them are.
+     */
+    public void applyExtendedSettings(String fullPreset) {
+        if (fullPreset == null || !fullPreset.contains("|")) return;
+
+        DimensionConfig parsedConfig = new DimensionConfig();
+        parsedConfig.copyFrom(this, false, false, true);
+        if (!applyExtendedSettingsSections(fullPreset.split("\\|"), parsedConfig)) {
+            return;
+        }
+
+        copyFrom(parsedConfig, false, false, true);
+    }
+
+    private static boolean applyExtendedSettingsSections(String[] sections, DimensionConfig target) {
+        for (int i = 1; i < sections.length; i++) {
+            String section = sections[i];
+            if (section.isEmpty()) continue;
+            String[] parts = section.split(",");
+            String type = parts[0];
+            try {
+                switch (type) {
+                    case "B":
+                        if (parts.length < 5) {
+                            return false;
+                        }
+                        ParsedBlock bA = parseBlock(parts[1]);
+                        target.setBoundaryBlockA(bA.blockName());
+                        target.setBoundaryMetaA(bA.meta());
+                        ParsedBlock bB = parseBlock(parts[2]);
+                        target.setBoundaryBlockB(bB.blockName());
+                        target.setBoundaryMetaB(bB.meta());
+                        target.setBoundaryChunkIntervalX(Integer.parseInt(parts[3]));
+                        target.setBoundaryChunkIntervalZ(Integer.parseInt(parts[4]));
+                        break;
+                    case "G":
+                        if (parts.length < 6) {
+                            return false;
+                        }
+                        target.setGapWidth(Integer.parseInt(parts[1]));
+                        target.setGapPreset(GapPreset.fromOrdinal(Integer.parseInt(parts[2])));
+                        ParsedBlock gA = parseBlock(parts[3]);
+                        target.setGapBlockA(gA.blockName());
+                        target.setGapMetaA(gA.meta());
+                        ParsedBlock gB = parseBlock(parts[4]);
+                        target.setGapBlockB(gB.blockName());
+                        target.setGapMetaB(gB.meta());
+                        ParsedBlock gC = parseBlock(parts[5]);
+                        target.setGapBlockC(gC.blockName());
+                        target.setGapMetaC(gC.meta());
+                        break;
+                    case "C":
+                        if (parts.length < 4) {
+                            return false;
+                        }
+                        target.setCenterEnabled(Integer.parseInt(parts[1]) != 0);
+                        target.setCenterDirection(CenterDirection.fromOrdinal(Integer.parseInt(parts[2])));
+                        ParsedBlock cB = parseBlock(parts[3]);
+                        target.setCenterBlock(cB.blockName());
+                        target.setCenterMeta(cB.meta());
+                        break;
+                    default:
+                        return false;
+                }
+            } catch (NumberFormatException ignored) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static boolean canUseLayers(String preset, boolean onClient) {
         if (preset == null) {
             preset = "";
@@ -609,10 +975,24 @@ public class DimensionConfig {
         if (infos.isEmpty() && !preset.trim().isEmpty()) {
             return false;
         }
+        List<String> rawRules = onClient ? PersonalSpaceMod.clientAllowedBlocks : new ArrayList<>(Config.allowedBlocks);
+        List<AllowedBlock> rules = AllowedBlockRules.parseAll(rawRules);
         for (FlatLayerInfo info : infos) {
-            String block = GameRegistry.findUniqueIdentifierFor(info.func_151536_b()).toString();
-            if (!(onClient ? PersonalSpaceMod.clientAllowedBlocks.contains(block)
-                    : Config.allowedBlocks.contains(block))) {
+            Block block = info.func_151536_b();
+            if (block == null) {
+                return false;
+            }
+            if (block == Blocks.air) {
+                continue;
+            }
+            GameRegistry.UniqueIdentifier blockId = GameRegistry.findUniqueIdentifierFor(block);
+            if (blockId == null) {
+                return false;
+            }
+            String blockName = blockId.toString();
+            int meta = info.getFillBlockMeta();
+            AllowedBlock rule = AllowedBlockRules.findByBlockName(rules, blockName);
+            if (rule == null || !rule.isMetaAllowed(meta)) {
                 return false;
             }
         }
@@ -678,5 +1058,272 @@ public class DimensionConfig {
             y += info.getLayerCount();
         }
         return MathHelper.clamp_int(y, 0, 255);
+    }
+
+    public static String blockToString(Block block) {
+        if (block == null) {
+            return "";
+        }
+        GameRegistry.UniqueIdentifier uid = GameRegistry.findUniqueIdentifierFor(block);
+        if (uid == null) {
+            return "";
+        }
+        return uid.modId + ":" + uid.name;
+    }
+
+    public static Block blockFromString(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return null;
+        }
+        return blockFromParsedBlock(parseBlock(name.trim()));
+    }
+
+    public String getBoundaryBlockA() {
+        return boundaryBlockA == null ? "" : boundaryBlockA;
+    }
+
+    public void setBoundaryBlockA(String boundaryBlockA) {
+        if (boundaryBlockA == null) {
+            boundaryBlockA = "";
+        }
+        if (!this.getBoundaryBlockA().equals(boundaryBlockA)) {
+            this.needsSaving = true;
+            this.boundaryBlockA = boundaryBlockA;
+        }
+    }
+
+    public int getBoundaryMetaA() {
+        return boundaryMetaA;
+    }
+
+    public void setBoundaryMetaA(int boundaryMetaA) {
+        int v = Math.max(boundaryMetaA, 0);
+        if (this.boundaryMetaA != v) {
+            this.needsSaving = true;
+            this.boundaryMetaA = v;
+        }
+    }
+
+    public String getBoundaryBlockB() {
+        return boundaryBlockB == null ? "" : boundaryBlockB;
+    }
+
+    public void setBoundaryBlockB(String boundaryBlockB) {
+        if (boundaryBlockB == null) {
+            boundaryBlockB = "";
+        }
+        if (!this.getBoundaryBlockB().equals(boundaryBlockB)) {
+            this.needsSaving = true;
+            this.boundaryBlockB = boundaryBlockB;
+        }
+    }
+
+    public int getBoundaryMetaB() {
+        return boundaryMetaB;
+    }
+
+    public void setBoundaryMetaB(int boundaryMetaB) {
+        int v = Math.max(boundaryMetaB, 0);
+        if (this.boundaryMetaB != v) {
+            this.needsSaving = true;
+            this.boundaryMetaB = v;
+        }
+    }
+
+    public int getBoundaryChunkIntervalX() {
+        return boundaryChunkIntervalX;
+    }
+
+    public void setBoundaryChunkIntervalX(int boundaryChunkIntervalX) {
+        int v = MathHelper.clamp_int(boundaryChunkIntervalX, 0, 20);
+        if (this.boundaryChunkIntervalX != v) {
+            this.needsSaving = true;
+            this.boundaryChunkIntervalX = v;
+        }
+    }
+
+    public int getBoundaryChunkIntervalZ() {
+        return boundaryChunkIntervalZ;
+    }
+
+    public void setBoundaryChunkIntervalZ(int boundaryChunkIntervalZ) {
+        int v = MathHelper.clamp_int(boundaryChunkIntervalZ, 0, 20);
+        if (this.boundaryChunkIntervalZ != v) {
+            this.needsSaving = true;
+            this.boundaryChunkIntervalZ = v;
+        }
+    }
+
+    public Block getBoundaryBlockAResolved() {
+        return blockFromString(boundaryBlockA);
+    }
+
+    public Block getBoundaryBlockBResolved() {
+        return blockFromString(boundaryBlockB);
+    }
+
+    public int getGapWidth() {
+        return gapWidth;
+    }
+
+    public void setGapWidth(int gapWidth) {
+        int v = MathHelper.clamp_int(gapWidth, 0, 5);
+        if (this.gapWidth != v) {
+            this.needsSaving = true;
+            this.gapWidth = v;
+        }
+    }
+
+    public GapPreset getGapPreset() {
+        return gapPreset;
+    }
+
+    public void setGapPreset(GapPreset gapPreset) {
+        if (this.gapPreset != gapPreset) {
+            this.needsSaving = true;
+            this.gapPreset = gapPreset;
+        }
+    }
+
+    public String getGapBlockA() {
+        return gapBlockA == null ? "" : gapBlockA;
+    }
+
+    public void setGapBlockA(String gapBlockA) {
+        if (gapBlockA == null) {
+            gapBlockA = "";
+        }
+        if (!this.getGapBlockA().equals(gapBlockA)) {
+            this.needsSaving = true;
+            this.gapBlockA = gapBlockA;
+        }
+    }
+
+    public int getGapMetaA() {
+        return gapMetaA;
+    }
+
+    public void setGapMetaA(int gapMetaA) {
+        int v = Math.max(gapMetaA, 0);
+        if (this.gapMetaA != v) {
+            this.needsSaving = true;
+            this.gapMetaA = v;
+        }
+    }
+
+    public String getGapBlockB() {
+        return gapBlockB == null ? "" : gapBlockB;
+    }
+
+    public void setGapBlockB(String gapBlockB) {
+        if (gapBlockB == null) {
+            gapBlockB = "";
+        }
+        if (!this.getGapBlockB().equals(gapBlockB)) {
+            this.needsSaving = true;
+            this.gapBlockB = gapBlockB;
+        }
+    }
+
+    public int getGapMetaB() {
+        return gapMetaB;
+    }
+
+    public void setGapMetaB(int gapMetaB) {
+        int v = Math.max(gapMetaB, 0);
+        if (this.gapMetaB != v) {
+            this.needsSaving = true;
+            this.gapMetaB = v;
+        }
+    }
+
+    public Block getGapBlockAResolved() {
+        return blockFromString(gapBlockA);
+    }
+
+    public Block getGapBlockBResolved() {
+        return blockFromString(gapBlockB);
+    }
+
+    public String getGapBlockC() {
+        return gapBlockC == null ? "" : gapBlockC;
+    }
+
+    public void setGapBlockC(String gapBlockC) {
+        if (gapBlockC == null) {
+            gapBlockC = "";
+        }
+        if (!this.getGapBlockC().equals(gapBlockC)) {
+            this.needsSaving = true;
+            this.gapBlockC = gapBlockC;
+        }
+    }
+
+    public int getGapMetaC() {
+        return gapMetaC;
+    }
+
+    public void setGapMetaC(int gapMetaC) {
+        int v = Math.max(gapMetaC, 0);
+        if (this.gapMetaC != v) {
+            this.needsSaving = true;
+            this.gapMetaC = v;
+        }
+    }
+
+    public Block getGapBlockCResolved() {
+        return blockFromString(gapBlockC);
+    }
+
+    public boolean isCenterEnabled() {
+        return centerEnabled;
+    }
+
+    public void setCenterEnabled(boolean centerEnabled) {
+        if (this.centerEnabled != centerEnabled) {
+            this.needsSaving = true;
+            this.centerEnabled = centerEnabled;
+        }
+    }
+
+    public CenterDirection getCenterDirection() {
+        return centerDirection;
+    }
+
+    public void setCenterDirection(CenterDirection centerDirection) {
+        if (this.centerDirection != centerDirection) {
+            this.needsSaving = true;
+            this.centerDirection = centerDirection;
+        }
+    }
+
+    public String getCenterBlock() {
+        return centerBlock == null ? "" : centerBlock;
+    }
+
+    public void setCenterBlock(String centerBlock) {
+        if (centerBlock == null) {
+            centerBlock = "";
+        }
+        if (!this.getCenterBlock().equals(centerBlock)) {
+            this.needsSaving = true;
+            this.centerBlock = centerBlock;
+        }
+    }
+
+    public int getCenterMeta() {
+        return centerMeta;
+    }
+
+    public void setCenterMeta(int centerMeta) {
+        int v = Math.max(centerMeta, 0);
+        if (this.centerMeta != v) {
+            this.needsSaving = true;
+            this.centerMeta = v;
+        }
+    }
+
+    public Block getCenterBlockResolved() {
+        return blockFromString(centerBlock);
     }
 }

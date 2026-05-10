@@ -17,6 +17,7 @@ import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
 
+import me.eigenraven.personalspace.config.Config;
 import me.eigenraven.personalspace.net.Packets;
 import me.eigenraven.personalspace.world.DimensionConfig;
 import me.eigenraven.personalspace.world.PersonalTeleporter;
@@ -154,6 +155,17 @@ public class PersonalSpaceCommand extends CommandBase {
                             dim));
             return;
         }
+        if (args[0].equalsIgnoreCase("reload-config")) {
+            java.io.File configFile = Config.getSavedConfigFile();
+            if (configFile == null) {
+                throw new CommandException("commands.pspace.reload-config.fail");
+            }
+            Config.synchronizeConfiguration(configFile);
+            Config.validateBlocks();
+            Packets.INSTANCE.sendWorldList().sendToClients();
+            sender.addChatMessage(new ChatComponentTranslation("commands.pspace.reload-config.success"));
+            return;
+        }
 
         throw new WrongUsageException("commands.pspace.usage");
     }
@@ -170,7 +182,8 @@ public class PersonalSpaceCommand extends CommandBase {
                     "where",
                     "tpx",
                     "give-portal",
-                    "allow-worldgen-change");
+                    "allow-worldgen-change",
+                    "reload-config");
             case 2 -> getListOfStringsMatchingLastWord(args, this.getPlayers());
             default -> null;
         };

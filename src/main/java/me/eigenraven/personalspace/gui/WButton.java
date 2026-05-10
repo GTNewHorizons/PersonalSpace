@@ -14,7 +14,7 @@ import org.lwjgl.opengl.GL11;
 public class WButton extends Widget {
 
     @Nonnull
-    String text = "";
+    public String text = "";
 
     public boolean dropShadow = true;
     public static final int DEFAULT_COLOR = 0xFFFFFF;
@@ -39,7 +39,6 @@ public class WButton extends Widget {
         setText(text);
     }
 
-    @Nonnull
     public String getText() {
         return text;
     }
@@ -87,7 +86,9 @@ public class WButton extends Widget {
 
     @Override
     protected void drawForegroundImpl(int mouseX, int mouseY, float partialTicks) {
-        if (tooltip != null && !tooltip.isEmpty() && this.testPoint(mouseX, mouseY)) {
+        if (tooltip != null && !tooltip.isEmpty()
+                && this.testPoint(mouseX, mouseY)
+                && !WBlockDropdown.isAnyDropdownOpen()) {
             this.drawTooltip(mouseX - position.x, mouseY - position.y, tooltip);
         }
     }

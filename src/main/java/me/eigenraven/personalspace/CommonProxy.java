@@ -3,6 +3,7 @@ package me.eigenraven.personalspace;
 import net.minecraft.world.World;
 
 import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
@@ -12,6 +13,7 @@ import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import me.eigenraven.personalspace.block.PortalTileEntity;
+import me.eigenraven.personalspace.config.Config;
 import me.eigenraven.personalspace.world.DimensionConfig;
 
 public class CommonProxy {
@@ -38,6 +40,8 @@ public class CommonProxy {
 
     // postInit "Handle interaction with other mods, complete your setup based on this."
     public void postInit(FMLPostInitializationEvent event) {}
+
+    public void completeInit(FMLLoadCompleteEvent event) {}
 
     public void serverAboutToStart(FMLServerAboutToStartEvent event) {}
 

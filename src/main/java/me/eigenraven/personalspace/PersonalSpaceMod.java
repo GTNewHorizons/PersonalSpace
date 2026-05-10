@@ -31,6 +31,7 @@ import cpw.mods.fml.common.Optional;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLInterModComms;
+import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLMissingMappingsEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
@@ -52,6 +53,7 @@ import me.eigenraven.personalspace.block.PortalBlock;
 import me.eigenraven.personalspace.block.PortalEntityItem;
 import me.eigenraven.personalspace.block.PortalItem;
 import me.eigenraven.personalspace.block.PortalTileEntity;
+import me.eigenraven.personalspace.config.Config;
 import me.eigenraven.personalspace.net.Packets;
 import me.eigenraven.personalspace.world.DimensionConfig;
 import me.eigenraven.personalspace.world.PersonalWorldProvider;
@@ -83,7 +85,11 @@ public class PersonalSpaceMod {
 
     public static final String CHANNEL = MODID;
 
-    public static List<String> clientAllowedBlocks = Lists.newArrayList(), clientAllowedBiomes = Lists.newArrayList();
+    public static List<String> clientAllowedBlocks = Lists.newArrayList();
+    public static List<String> clientAllowedBiomes = Lists.newArrayList();
+    public static List<String> clientAllowedBoundaryBlocks = Lists.newArrayList();
+    public static List<String> clientAllowedGapBlocks = Lists.newArrayList();
+    public static List<String> clientAllowedCenterBlocks = Lists.newArrayList();
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -138,6 +144,12 @@ public class PersonalSpaceMod {
     // postInit "Handle interaction with other mods, complete your setup based on this."
     public void postInit(FMLPostInitializationEvent event) {
         proxy.postInit(event);
+    }
+
+    @Mod.EventHandler
+    public void completeInit(FMLLoadCompleteEvent event) {
+        proxy.completeInit(event);
+        Config.validateBlocks();
     }
 
     @Mod.EventHandler
