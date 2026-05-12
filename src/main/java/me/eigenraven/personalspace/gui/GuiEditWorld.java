@@ -327,6 +327,9 @@ public class GuiEditWorld extends GuiScreen {
 
         boolean centerVisible = desiredConfig.isCenterEnabled();
 
+        if (centerEnabledToggle != null) {
+            centerEnabledToggle.setValue(centerVisible);
+        }
         if (centerDirectionButton != null) {
             centerDirectionButton.visible = centerVisible;
             centerDirectionButton.text = getCenterDirectionText();

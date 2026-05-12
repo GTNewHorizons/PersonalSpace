@@ -852,7 +852,8 @@ public class DimensionConfig {
      * Encodes all generation settings (layers + boundary + gap + center) into a single string for copy/paste
      * convenience. Format:
      * layers_part|B,blockA,blockB,intervalX,intervalZ|G,width,preset,blockA,blockB,blockC|C,enabled,dir,block where
-     * each block is modid:name or modid:name:meta (meta omitted if 0).
+     * each block is modid:name or modid:name:meta (meta omitted if 0). The center section is omitted when no center
+     * marker block is configured.
      */
     public String getFullPresetString() {
         StringBuilder sb = new StringBuilder();
@@ -869,9 +870,11 @@ public class DimensionConfig {
         sb.append(encodeBlock(getGapBlockB(), getGapMetaB())).append(',');
         sb.append(encodeBlock(getGapBlockC(), getGapMetaC()));
         // Center section
-        sb.append("|C,");
-        sb.append(isCenterEnabled() ? 1 : 0).append(',').append(getCenterDirection().ordinal()).append(',');
-        sb.append(encodeBlock(getCenterBlock(), getCenterMeta()));
+        if (isCenterEnabled() && !getCenterBlock().isEmpty()) {
+            sb.append("|C,");
+            sb.append(1).append(',').append(getCenterDirection().ordinal()).append(',');
+            sb.append(encodeBlock(getCenterBlock(), getCenterMeta()));
+        }
         return sb.toString();
     }
 
@@ -911,7 +914,7 @@ public class DimensionConfig {
         for (int i = 1; i < sections.length; i++) {
             String section = sections[i];
             if (section.isEmpty()) continue;
-            String[] parts = section.split(",");
+            String[] parts = section.split(",", -1);
             String type = parts[0];
             try {
                 switch (type) {
@@ -945,14 +948,17 @@ public class DimensionConfig {
                         target.setGapMetaC(gC.meta());
                         break;
                     case "C":
-                        if (parts.length < 4) {
-                            return false;
+                        if (parts.length < 4 || parts[1].isEmpty() || parts[2].isEmpty() || parts[3].isEmpty()) {
+                            break;
                         }
-                        target.setCenterEnabled(Integer.parseInt(parts[1]) != 0);
-                        target.setCenterDirection(CenterDirection.fromOrdinal(Integer.parseInt(parts[2])));
-                        ParsedBlock cB = parseBlock(parts[3]);
-                        target.setCenterBlock(cB.blockName());
-                        target.setCenterMeta(cB.meta());
+                        int centerEnabled = Integer.parseInt(parts[1]);
+                        if (centerEnabled != 0) {
+                            target.setCenterEnabled(true);
+                            target.setCenterDirection(CenterDirection.fromOrdinal(Integer.parseInt(parts[2])));
+                            ParsedBlock cB = parseBlock(parts[3]);
+                            target.setCenterBlock(cB.blockName());
+                            target.setCenterMeta(cB.meta());
+                        }
                         break;
                     default:
                         return false;
