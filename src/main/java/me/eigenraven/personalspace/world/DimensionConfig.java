@@ -948,17 +948,17 @@ public class DimensionConfig {
                         target.setGapMetaC(gC.meta());
                         break;
                     case "C":
-                        if (parts.length < 4) {
-                            return false;
-                        }
-                        if ("0".equals(parts[1]) && parts[3].isEmpty()) {
+                        if (parts.length < 4 || parts[1].isEmpty() || parts[2].isEmpty() || parts[3].isEmpty()) {
                             break;
                         }
-                        target.setCenterEnabled(Integer.parseInt(parts[1]) != 0);
-                        target.setCenterDirection(CenterDirection.fromOrdinal(Integer.parseInt(parts[2])));
-                        ParsedBlock cB = parseBlock(parts[3]);
-                        target.setCenterBlock(cB.blockName());
-                        target.setCenterMeta(cB.meta());
+                        int centerEnabled = Integer.parseInt(parts[1]);
+                        if (centerEnabled != 0) {
+                            target.setCenterEnabled(true);
+                            target.setCenterDirection(CenterDirection.fromOrdinal(Integer.parseInt(parts[2])));
+                            ParsedBlock cB = parseBlock(parts[3]);
+                            target.setCenterBlock(cB.blockName());
+                            target.setCenterMeta(cB.meta());
+                        }
                         break;
                     default:
                         return false;
