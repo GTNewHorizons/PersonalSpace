@@ -34,6 +34,7 @@ import cpw.mods.fml.common.Optional;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLInterModComms;
+import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLMissingMappingsEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
@@ -56,6 +57,7 @@ import me.eigenraven.personalspace.block.PortalBlock;
 import me.eigenraven.personalspace.block.PortalEntityItem;
 import me.eigenraven.personalspace.block.PortalItem;
 import me.eigenraven.personalspace.block.PortalTileEntity;
+import me.eigenraven.personalspace.config.Config;
 import me.eigenraven.personalspace.net.Packets;
 import me.eigenraven.personalspace.world.DimensionConfig;
 import me.eigenraven.personalspace.world.PersonalWorldProvider;
@@ -87,9 +89,14 @@ public class PersonalSpaceMod {
 
     public static final String CHANNEL = MODID;
 
-    public static List<String> clientAllowedBlocks = Lists.newArrayList(), clientAllowedBiomes = Lists.newArrayList();
+    public static List<String> clientAllowedBlocks = Lists.newArrayList();
+    public static List<String> clientAllowedBiomes = Lists.newArrayList();
+    public static List<String> clientAllowedBoundaryBlocks = Lists.newArrayList();
+    public static List<String> clientAllowedGapBlocks = Lists.newArrayList();
+    public static List<String> clientAllowedCenterBlocks = Lists.newArrayList();
 
     private boolean stopping = false;
+    private static Field worldInfoField = null;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -144,6 +151,12 @@ public class PersonalSpaceMod {
     // postInit "Handle interaction with other mods, complete your setup based on this."
     public void postInit(FMLPostInitializationEvent event) {
         proxy.postInit(event);
+    }
+
+    @Mod.EventHandler
+    public void completeInit(FMLLoadCompleteEvent event) {
+        proxy.completeInit(event);
+        Config.validateBlocks();
     }
 
     @Mod.EventHandler
@@ -222,38 +235,27 @@ public class PersonalSpaceMod {
         DimensionConfig config = provider.getConfig();
         if (config == null) return;
         try {
-            // Clone DerivedWorldInfo into standalone WorldInfo
             WorldInfo standaloneInfo = new WorldInfo(event.world.getWorldInfo().cloneNBTCompound(null));
 
             if (config.isTimeDataPersisted()) {
-                // Config has saved time/weather — apply persisted values
-                standaloneInfo.setWorldTime(config.getWorldTime());
-                standaloneInfo.setRaining(config.isRaining());
-                standaloneInfo.setRainTime(config.getRainTime());
-                standaloneInfo.setThundering(config.isThundering());
-                standaloneInfo.setThunderTime(config.getThunderTime());
+                config.applyTimeTo(standaloneInfo);
+                LOG.info("Restored persisted time/weather for personal dimension {}", provider.dimensionId);
             } else {
-                // First load after patch OR corrupted config — no valid persisted data.
-                // Populate config FROM the cloned WorldInfo (inherits Overworld's current state).
-                config.setWorldTime(standaloneInfo.getWorldTime());
-                config.setRaining(standaloneInfo.isRaining());
-                config.setRainTime(standaloneInfo.getRainTime());
-                config.setThundering(standaloneInfo.isThundering());
-                config.setThunderTime(standaloneInfo.getThunderTime());
-                config.markTimeDataInitialized();
+                config.captureTimeFrom(standaloneInfo);
+                LOG.info(
+                        "Initialized time/weather from overworld for personal dimension {} (first load)",
+                        provider.dimensionId);
             }
 
-            // If weather is disabled, force-clear flags to avoid brief inconsistent state
-            // before updateWeather() runs on the next tick
             if (!config.isWeatherEnabled()) {
                 standaloneInfo.setRaining(false);
                 standaloneInfo.setThundering(false);
             }
 
-            // Replace worldInfo field via reflection (MCP name + SRG name for prod)
-            Field worldInfoField = ReflectionHelper.findField(World.class, "worldInfo", "field_72986_A");
+            if (worldInfoField == null) {
+                worldInfoField = ReflectionHelper.findField(World.class, "worldInfo", "field_72986_A");
+            }
             worldInfoField.set(event.world, standaloneInfo);
-            LOG.info("Decoupled WorldInfo for personal dimension {}", provider.dimensionId);
         } catch (Exception e) {
             LOG.error("Failed to decouple WorldInfo for dimension " + provider.dimensionId, e);
         }
@@ -261,19 +263,12 @@ public class PersonalSpaceMod {
 
     @SubscribeEvent
     public void worldSave(WorldEvent.Save event) {
+        if (event.world.isRemote) return;
+        if (!(event.world.provider instanceof PersonalWorldProvider provider)) return;
+        DimensionConfig config = provider.getConfig();
+        if (config == null) return;
         try {
-            if (!(event.world.provider instanceof PersonalWorldProvider provider)) return;
-            DimensionConfig config = provider.getConfig();
-            if (config == null) return;
-            // Capture current weather/time and mark dirty for hard crash resilience
-            if (!event.world.isRemote) {
-                config.setWorldTime(event.world.getWorldInfo().getWorldTime());
-                config.setRaining(event.world.getWorldInfo().isRaining());
-                config.setRainTime(event.world.getWorldInfo().getRainTime());
-                config.setThundering(event.world.getWorldInfo().isThundering());
-                config.setThunderTime(event.world.getWorldInfo().getThunderTime());
-                config.markDirty();
-            }
+            config.captureTimeFrom(event.world.getWorldInfo());
             if (!config.needsSaving()) return;
             saveConfig(provider.dimensionId, config);
         } catch (Exception e) {
@@ -288,12 +283,7 @@ public class PersonalSpaceMod {
         if (!(event.world.provider instanceof PersonalWorldProvider provider)) return;
         DimensionConfig config = provider.getConfig();
         if (config == null) return;
-        config.setWorldTime(event.world.getWorldInfo().getWorldTime());
-        config.setRaining(event.world.getWorldInfo().isRaining());
-        config.setRainTime(event.world.getWorldInfo().getRainTime());
-        config.setThundering(event.world.getWorldInfo().isThundering());
-        config.setThunderTime(event.world.getWorldInfo().getThunderTime());
-        config.markTimeDataInitialized();
+        config.captureTimeFrom(event.world.getWorldInfo());
         config.markDirty();
         try {
             saveConfig(provider.dimensionId, config);
@@ -418,18 +408,11 @@ public class PersonalSpaceMod {
         stopping = true;
         proxy.serverStopping(event);
         TIntObjectHashMap<DimensionConfig> configs = CommonProxy.getDimensionConfigObjects(false);
-        // Capture final time/weather from all loaded personal worlds unconditionally.
-        // No isTimeDataPersisted() gate — if the world is loaded, we have valid data.
         configs.forEachEntry((dimId, dimCfg) -> {
             if (dimCfg == null) return true;
             WorldServer world = DimensionManager.getWorld(dimId);
             if (world != null && !world.isRemote) {
-                dimCfg.setWorldTime(world.getWorldInfo().getWorldTime());
-                dimCfg.setRaining(world.getWorldInfo().isRaining());
-                dimCfg.setRainTime(world.getWorldInfo().getRainTime());
-                dimCfg.setThundering(world.getWorldInfo().isThundering());
-                dimCfg.setThunderTime(world.getWorldInfo().getThunderTime());
-                dimCfg.markTimeDataInitialized();
+                dimCfg.captureTimeFrom(world.getWorldInfo());
                 dimCfg.markDirty();
             }
             return true;

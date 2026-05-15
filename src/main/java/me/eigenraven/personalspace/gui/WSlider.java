@@ -25,6 +25,7 @@ public class WSlider extends Widget {
     public double rawValue = 0.5;
     public double step = 0.1;
     public DoubleConsumer onChange = null;
+    private boolean sliderActive = false;
 
     public WSlider() {}
 
@@ -98,14 +99,7 @@ public class WSlider extends Widget {
         }
     }
 
-    @Override
-    protected boolean mouseClickedImpl(int x, int y, int button) {
-        clickSound();
-        return mouseMovedOrUpImpl(x, y, button);
-    }
-
-    @Override
-    protected boolean mouseMovedOrUpImpl(int x, int y, int button) {
+    private void updateValueFromMouse(int x) {
         double newVal01 = MathHelper.clamp_double((double) (x - position.x - 3) / (double) (position.width - 6), 0, 1);
         double newVal = minValue + (newVal01 * (maxValue - minValue));
         double oldVal = rawValue;
@@ -114,11 +108,28 @@ public class WSlider extends Widget {
         if (Math.abs(newVal - oldVal) > 1.0e-6 && onChange != null) {
             onChange.accept(rawValue);
         }
+    }
+
+    @Override
+    protected boolean mouseClickedImpl(int x, int y, int button) {
+        sliderActive = true;
+        clickSound();
+        updateValueFromMouse(x);
+        return true;
+    }
+
+    @Override
+    protected boolean mouseMovedOrUpImpl(int x, int y, int button) {
+        if (!sliderActive) return false;
+        sliderActive = false;
+        updateValueFromMouse(x);
         return true;
     }
 
     @Override
     protected boolean mouseClickMoveImpl(int x, int y, int lastBtn, long timeDragged) {
-        return dragged && mouseMovedOrUpImpl(x, y, lastBtn);
+        if (!sliderActive) return false;
+        updateValueFromMouse(x);
+        return true;
     }
 }

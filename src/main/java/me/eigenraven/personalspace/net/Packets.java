@@ -11,9 +11,9 @@ import net.minecraft.tileentity.TileEntity;
 
 import codechicken.lib.packet.PacketCustom;
 import me.eigenraven.personalspace.CommonProxy;
-import me.eigenraven.personalspace.Config;
 import me.eigenraven.personalspace.PersonalSpaceMod;
 import me.eigenraven.personalspace.block.PortalTileEntity;
+import me.eigenraven.personalspace.config.Config;
 import me.eigenraven.personalspace.world.DimensionConfig;
 
 public enum Packets {
@@ -35,10 +35,9 @@ public enum Packets {
             return;
         }
         switch (PacketIds.VALUES[id]) {
-            case UPDATE_WORLDLIST -> {
-                handleWorldList(packetCustom);
-            }
+            case UPDATE_WORLDLIST -> handleWorldList(packetCustom);
             case CHANGE_WORLD_SETTINGS -> {}
+            default -> {}
         }
     }
 
@@ -62,19 +61,38 @@ public enum Packets {
                     }
                 }
             }
+            default -> {}
         }
     }
 
     public PacketCustom sendWorldList() {
         PacketCustom pkt = new PacketCustom(PersonalSpaceMod.CHANNEL, PacketIds.UPDATE_WORLDLIST.ordinal());
+
         pkt.writeVarInt(Config.allowedBiomes.size());
         for (String biome : Config.allowedBiomes) {
             pkt.writeString(biome);
         }
+
         pkt.writeVarInt(Config.allowedBlocks.size());
         for (String block : Config.allowedBlocks) {
             pkt.writeString(block);
         }
+
+        pkt.writeVarInt(Config.allowedBoundaryBlocks.size());
+        for (String blockRule : Config.allowedBoundaryBlocks) {
+            pkt.writeString(blockRule);
+        }
+
+        pkt.writeVarInt(Config.allowedGapBlocks.size());
+        for (String blockRule : Config.allowedGapBlocks) {
+            pkt.writeString(blockRule);
+        }
+
+        pkt.writeVarInt(Config.allowedCenterBlocks.size());
+        for (String blockRule : Config.allowedCenterBlocks) {
+            pkt.writeString(blockRule);
+        }
+
         // Send all dimconfigs
         synchronized (CommonProxy.getDimensionConfigObjects(false)) {
             pkt.writeVarInt(CommonProxy.getDimensionConfigObjects(false).size());
@@ -84,6 +102,7 @@ public enum Packets {
                 return true;
             });
         }
+
         return pkt;
     }
 
@@ -106,12 +125,35 @@ public enum Packets {
             tmpList.add(pkt.readString());
         }
         PersonalSpaceMod.clientAllowedBiomes = tmpList;
+
         int allowedBlocks = pkt.readVarInt();
         tmpList = new ArrayList<>(allowedBlocks);
         for (int i = 0; i < allowedBlocks; ++i) {
             tmpList.add(pkt.readString());
         }
         PersonalSpaceMod.clientAllowedBlocks = tmpList;
+
+        int allowedBoundaryBlocks = pkt.readVarInt();
+        tmpList = new ArrayList<>(allowedBoundaryBlocks);
+        for (int i = 0; i < allowedBoundaryBlocks; ++i) {
+            tmpList.add(pkt.readString());
+        }
+        PersonalSpaceMod.clientAllowedBoundaryBlocks = tmpList;
+
+        int allowedGapBlocks = pkt.readVarInt();
+        tmpList = new ArrayList<>(allowedGapBlocks);
+        for (int i = 0; i < allowedGapBlocks; ++i) {
+            tmpList.add(pkt.readString());
+        }
+        PersonalSpaceMod.clientAllowedGapBlocks = tmpList;
+
+        int allowedCenterBlocks = pkt.readVarInt();
+        tmpList = new ArrayList<>(allowedCenterBlocks);
+        for (int i = 0; i < allowedCenterBlocks; ++i) {
+            tmpList.add(pkt.readString());
+        }
+        PersonalSpaceMod.clientAllowedCenterBlocks = tmpList;
+
         int dimConfigs = pkt.readVarInt();
         for (int i = 0; i < dimConfigs; i++) {
             int dimId = pkt.readVarInt();
