@@ -7,8 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetHandlerPlayServer;
+import net.minecraft.network.play.server.S2BPacketChangeGameState;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.storage.WorldInfo;
@@ -44,6 +46,7 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.network.FMLNetworkEvent;
 import cpw.mods.fml.common.network.NetworkHandshakeEstablished;
 import cpw.mods.fml.common.network.NetworkRegistry;
@@ -235,7 +238,15 @@ public class PersonalSpaceMod {
         DimensionConfig config = provider.getConfig();
         if (config == null) return;
         try {
-            WorldInfo standaloneInfo = new WorldInfo(event.world.getWorldInfo().cloneNBTCompound(null));
+            WorldInfo derivedInfo = event.world.getWorldInfo();
+            WorldInfo standaloneInfo = new WorldInfo(derivedInfo.cloneNBTCompound(null));
+            // DerivedWorldInfo.cloneNBTCompound writes its own default fields, not the
+            // delegate's values. Copy time/weather from the live getters which delegate correctly.
+            standaloneInfo.setWorldTime(derivedInfo.getWorldTime());
+            standaloneInfo.setRaining(derivedInfo.isRaining());
+            standaloneInfo.setRainTime(derivedInfo.getRainTime());
+            standaloneInfo.setThundering(derivedInfo.isThundering());
+            standaloneInfo.setThunderTime(derivedInfo.getThunderTime());
 
             if (config.isTimeDataPersisted()) {
                 config.applyTimeTo(standaloneInfo);
@@ -273,6 +284,26 @@ public class PersonalSpaceMod {
             saveConfig(provider.dimensionId, config);
         } catch (Exception e) {
             LOG.fatal("Couldn't save personal dimension data for " + event.world.provider.getDimensionName(), e);
+        }
+    }
+
+    @SubscribeEvent
+    public void playerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (!(event.player instanceof EntityPlayerMP player)) return;
+        WorldServer world = player.mcServer.worldServerForDimension(event.toDim);
+        if (world == null || !(world.provider instanceof PersonalWorldProvider)) return;
+        DimensionConfig config = ((PersonalWorldProvider) world.provider).getConfig();
+        if (config == null || !config.isWeatherEnabled()) return;
+        // Vanilla S2B(1) "begin rain" resets client rainingStrength to 0, and
+        // WorldClient.updateWeatherBody is a no-op so it never recovers.
+        // S2B(7) sets rainingStrength without the reset.
+        float rain = world.getRainStrength(1.0F);
+        float thunder = world.getWeightedThunderStrength(1.0F);
+        if (rain > 0.0F) {
+            player.playerNetServerHandler.sendPacket(new S2BPacketChangeGameState(7, rain));
+        }
+        if (thunder > 0.0F) {
+            player.playerNetServerHandler.sendPacket(new S2BPacketChangeGameState(8, thunder));
         }
     }
 
