@@ -7,8 +7,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetHandlerPlayServer;
+import net.minecraft.network.play.server.S2BPacketChangeGameState;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
@@ -41,11 +46,13 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.network.FMLNetworkEvent;
 import cpw.mods.fml.common.network.NetworkHandshakeEstablished;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
+import cpw.mods.fml.relauncher.ReflectionHelper;
 import cpw.mods.fml.relauncher.Side;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -90,6 +97,9 @@ public class PersonalSpaceMod {
     public static List<String> clientAllowedBoundaryBlocks = Lists.newArrayList();
     public static List<String> clientAllowedGapBlocks = Lists.newArrayList();
     public static List<String> clientAllowedCenterBlocks = Lists.newArrayList();
+
+    private boolean stopping = false;
+    private static Field worldInfoField = null;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -154,6 +164,7 @@ public class PersonalSpaceMod {
 
     @Mod.EventHandler
     public void serverAboutToStart(FMLServerAboutToStartEvent event) {
+        stopping = false;
         proxy.serverAboutToStart(event);
         loadDimensionConfigs();
     }
@@ -221,18 +232,94 @@ public class PersonalSpaceMod {
     }
 
     @SubscribeEvent
-    public void worldSave(WorldEvent.Save event) {
+    public void worldLoad(WorldEvent.Load event) {
+        if (event.world.isRemote) return;
+        if (!(event.world.provider instanceof PersonalWorldProvider provider)) return;
+        DimensionConfig config = provider.getConfig();
+        if (config == null) return;
         try {
-            if (!(event.world.provider instanceof PersonalWorldProvider provider)) {
-                return;
+            WorldInfo derivedInfo = event.world.getWorldInfo();
+            WorldInfo standaloneInfo = new WorldInfo(derivedInfo.cloneNBTCompound(null));
+            // DerivedWorldInfo.cloneNBTCompound writes its own default fields, not the
+            // delegate's values. Copy time/weather from the live getters which delegate correctly.
+            standaloneInfo.setWorldTime(derivedInfo.getWorldTime());
+            standaloneInfo.setRaining(derivedInfo.isRaining());
+            standaloneInfo.setRainTime(derivedInfo.getRainTime());
+            standaloneInfo.setThundering(derivedInfo.isThundering());
+            standaloneInfo.setThunderTime(derivedInfo.getThunderTime());
+
+            if (config.isTimeDataPersisted()) {
+                config.applyTimeTo(standaloneInfo);
+                LOG.info("Restored persisted time/weather for personal dimension {}", provider.dimensionId);
+            } else {
+                config.captureTimeFrom(standaloneInfo);
+                LOG.info(
+                        "Initialized time/weather from overworld for personal dimension {} (first load)",
+                        provider.dimensionId);
             }
-            DimensionConfig config = provider.getConfig();
-            if (config == null || !config.needsSaving()) {
-                return;
+
+            if (!config.isWeatherEnabled()) {
+                standaloneInfo.setRaining(false);
+                standaloneInfo.setThundering(false);
             }
+
+            if (worldInfoField == null) {
+                worldInfoField = ReflectionHelper.findField(World.class, "worldInfo", "field_72986_A");
+            }
+            worldInfoField.set(event.world, standaloneInfo);
+        } catch (Exception e) {
+            LOG.error("Failed to decouple WorldInfo for dimension " + provider.dimensionId, e);
+        }
+    }
+
+    @SubscribeEvent
+    public void worldSave(WorldEvent.Save event) {
+        if (event.world.isRemote) return;
+        if (!(event.world.provider instanceof PersonalWorldProvider provider)) return;
+        DimensionConfig config = provider.getConfig();
+        if (config == null) return;
+        try {
+            config.captureTimeFrom(event.world.getWorldInfo());
+            if (!config.needsSaving()) return;
             saveConfig(provider.dimensionId, config);
         } catch (Exception e) {
             LOG.fatal("Couldn't save personal dimension data for " + event.world.provider.getDimensionName(), e);
+        }
+    }
+
+    @SubscribeEvent
+    public void playerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (!(event.player instanceof EntityPlayerMP player)) return;
+        WorldServer world = player.mcServer.worldServerForDimension(event.toDim);
+        if (world == null || !(world.provider instanceof PersonalWorldProvider)) return;
+        DimensionConfig config = ((PersonalWorldProvider) world.provider).getConfig();
+        if (config == null || !config.isWeatherEnabled()) return;
+        // Vanilla S2B(1) "begin rain" resets client rainingStrength to 0, and
+        // WorldClient.updateWeatherBody is a no-op so it never recovers.
+        // S2B(7) sets rainingStrength without the reset.
+        float rain = world.getRainStrength(1.0F);
+        float thunder = world.getWeightedThunderStrength(1.0F);
+        if (rain > 0.0F) {
+            player.playerNetServerHandler.sendPacket(new S2BPacketChangeGameState(7, rain));
+        }
+        if (thunder > 0.0F) {
+            player.playerNetServerHandler.sendPacket(new S2BPacketChangeGameState(8, thunder));
+        }
+    }
+
+    @SubscribeEvent
+    public void worldUnload(WorldEvent.Unload event) {
+        if (stopping) return;
+        if (event.world.isRemote) return;
+        if (!(event.world.provider instanceof PersonalWorldProvider provider)) return;
+        DimensionConfig config = provider.getConfig();
+        if (config == null) return;
+        config.captureTimeFrom(event.world.getWorldInfo());
+        config.markDirty();
+        try {
+            saveConfig(provider.dimensionId, config);
+        } catch (IOException e) {
+            LOG.error("Couldn't save dimension " + provider.dimensionId + " on unload", e);
         }
     }
 
@@ -349,12 +436,21 @@ public class PersonalSpaceMod {
 
     @Mod.EventHandler
     public void serverStopping(FMLServerStoppingEvent event) {
+        stopping = true;
         proxy.serverStopping(event);
         TIntObjectHashMap<DimensionConfig> configs = CommonProxy.getDimensionConfigObjects(false);
         configs.forEachEntry((dimId, dimCfg) -> {
-            if (dimCfg == null || !dimCfg.needsSaving()) {
-                return true;
+            if (dimCfg == null) return true;
+            WorldServer world = DimensionManager.getWorld(dimId);
+            if (world != null && !world.isRemote) {
+                dimCfg.captureTimeFrom(world.getWorldInfo());
+                dimCfg.markDirty();
             }
+            return true;
+        });
+        // Save all dirty configs
+        configs.forEachEntry((dimId, dimCfg) -> {
+            if (dimCfg == null || !dimCfg.needsSaving()) return true;
             try {
                 saveConfig(dimId, dimCfg);
             } catch (IOException e) {
@@ -384,6 +480,7 @@ public class PersonalSpaceMod {
 
     @Mod.EventHandler
     public void serverStopped(FMLServerStoppedEvent event) {
+        stopping = false;
         proxy.serverStopped(event);
         deregisterDimensions(false);
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
