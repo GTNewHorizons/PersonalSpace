@@ -437,6 +437,37 @@ public class GuiEditWorld extends GuiScreen {
         }
     }
 
+    private void clearExtendedPresetInputs() {
+        this.desiredConfig.setBoundaryChunkIntervalX(0);
+        this.desiredConfig.setBoundaryChunkIntervalZ(0);
+        this.desiredConfig.setBoundaryBlockA("");
+        this.desiredConfig.setBoundaryMetaA(0);
+        this.desiredConfig.setBoundaryBlockB("");
+        this.desiredConfig.setBoundaryMetaB(0);
+        this.desiredConfig.setGapWidth(0);
+        this.desiredConfig.setGapBlockA("");
+        this.desiredConfig.setGapMetaA(0);
+        this.desiredConfig.setGapBlockB("");
+        this.desiredConfig.setGapMetaB(0);
+        this.desiredConfig.setGapBlockC("");
+        this.desiredConfig.setGapMetaC(0);
+        this.desiredConfig.setCenterEnabled(false);
+        this.desiredConfig.setCenterBlock("");
+        this.desiredConfig.setCenterMeta(0);
+        if (this.boundaryChunkXField != null) {
+            this.boundaryChunkXField.textField.setText("0");
+        }
+        if (this.boundaryChunkZField != null) {
+            this.boundaryChunkZField.textField.setText("0");
+        }
+        if (this.gapWidthField != null) {
+            this.gapWidthField.textField.setText("0");
+        }
+        updateBoundaryButtons();
+        updateGapButtons();
+        updateCenterButtons();
+    }
+
     private void syncPresetFromExtendedInputsIfChanged(int prevBoundaryX, int prevBoundaryZ, int prevGapWidth) {
         if (isTextFieldFocused(this.presetEntry)) {
             return;
@@ -668,7 +699,12 @@ public class GuiEditWorld extends GuiScreen {
                     true,
                     WButton.DEFAULT_COLOR,
                     null,
-                    () -> this.presetEntry.textField.setText(finalPreset));
+                    () -> {
+                        this.presetEntry.textField.setText(finalPreset);
+                        if (!DimensionConfig.hasExtendedSettings(finalPreset)) {
+                            clearExtendedPresetInputs();
+                        }
+                    });
             presetButtons.add(btn);
             rootWidget.addChild(btn);
             ++pi;
