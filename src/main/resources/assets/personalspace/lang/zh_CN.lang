@@ -60,6 +60,7 @@ gui.personalWorld.gap.c.short=C
 gui.personalWorld.gap.widthRange=0-5
 gui.personalWorld.gap.preset.ROAD=马路
 gui.personalWorld.gap.preset.SOLID=纯方块
+gui.personalWorld.applyToAllSurfaceLayers=应用到所有表面层
 gui.personalWorld.gap.blockNotAllowed.a=隔段 A 方块不被允许
 gui.personalWorld.gap.blockNotAllowed.b=隔段 B 方块不被允许
 gui.personalWorld.gap.blockNotAllowed.c=隔段 C 方块不被允许
