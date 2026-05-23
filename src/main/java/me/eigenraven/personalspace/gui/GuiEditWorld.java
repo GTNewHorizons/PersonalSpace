@@ -1359,6 +1359,8 @@ public class GuiEditWorld extends GuiScreen {
                 updateBoundaryButtons();
                 updateGapButtons();
                 updateCenterButtons();
+            } else {
+                clearExtendedPresetInputs();
             }
             this.regeneratePresetEditor();
         }
