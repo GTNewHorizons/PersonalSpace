@@ -320,13 +320,15 @@ public class PersonalChunkProvider implements IChunkProvider {
             }
         }
 
-        List<Integer> exposed = new ArrayList<>();
+        List<Integer> surfaceLevels = new ArrayList<>();
+        // A surface layer is a non-air layer with air directly above it.
+        // In air;stone*3;air, only the top stone layer is a surface layer.
         for (int y = 0; y < worldHeight; y++) {
             if (solid[y] && (y + 1 >= worldHeight || !solid[y + 1])) {
-                exposed.add(y);
+                surfaceLevels.add(y);
             }
         }
-        return exposed;
+        return surfaceLevels;
     }
 
     @Desugar

@@ -336,7 +336,7 @@ public class DimensionConfig {
                 WORLDGEN,
                 "applyToAllSurfaceLayers",
                 applyToAllSurfaceLayersDefault,
-                "Apply boundary, gap, and center marker generation to every solid layer with air above it instead of only at ground level");
+                "Apply boundary, gap, and center marker generation to every surface layer instead of only at ground level. A surface layer is a non-air layer with air directly above it");
         if (write) {
             cur.set(isApplyToAllSurfaceLayers());
         } else {
