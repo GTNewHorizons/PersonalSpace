@@ -1050,6 +1050,7 @@ public class DimensionConfig {
 
         DimensionConfig parsedConfig = new DimensionConfig();
         parsedConfig.copyFrom(this, false, false, true);
+        parsedConfig.setApplyToAllSurfaceLayers(false);
         if (!applyExtendedSettingsSections(fullPreset.split("\\|"), parsedConfig)) {
             return;
         }
