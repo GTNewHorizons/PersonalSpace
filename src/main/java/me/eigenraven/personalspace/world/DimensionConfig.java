@@ -199,6 +199,7 @@ public class DimensionConfig {
     private int gapMetaB = 0;
     private String gapBlockC = "minecraft:wool";
     private int gapMetaC = 0;
+    private boolean applyToAllSurfaceLayers = false;
 
     private boolean centerEnabled = false;
     private CenterDirection centerDirection = CenterDirection.SE;
@@ -230,6 +231,7 @@ public class DimensionConfig {
         final String VISUAL = "visual";
         final String WORLDGEN = "worldgen";
         final String BOUNDARY = "boundary";
+        final String GAP = "gap";
         Configuration cfg = new Configuration(file);
         Property cur;
 
@@ -325,6 +327,22 @@ public class DimensionConfig {
             setLayers(cur.getString());
         }
 
+        boolean applyToAllSurfaceLayersDefault = isApplyToAllSurfaceLayers();
+        if (!write && cfg.hasKey(GAP, "onExposedSurfaces")) {
+            applyToAllSurfaceLayersDefault = cfg.getCategory(GAP).get("onExposedSurfaces").getBoolean();
+            needsSaving = true;
+        }
+        cur = cfg.get(
+                WORLDGEN,
+                "applyToAllSurfaceLayers",
+                applyToAllSurfaceLayersDefault,
+                "Apply boundary, gap, and center marker generation to every surface layer instead of only at ground level. A surface layer is a non-air layer with air directly above it");
+        if (write) {
+            cur.set(isApplyToAllSurfaceLayers());
+        } else {
+            setApplyToAllSurfaceLayers(cur.getBoolean());
+        }
+
         cur = cfg.get(BOUNDARY, "blockA", getBoundaryBlockA());
         if (write) {
             cur.set(getBoundaryBlockA());
@@ -366,8 +384,6 @@ public class DimensionConfig {
         } else {
             setBoundaryChunkIntervalZ(cur.getInt());
         }
-
-        final String GAP = "gap";
 
         cur = cfg.get(GAP, "width", getGapWidth(), "", 0, 5);
         if (write) {
@@ -423,6 +439,10 @@ public class DimensionConfig {
             cur.set(getGapMetaC());
         } else {
             setGapMetaC(cur.getInt());
+        }
+
+        if (write && cfg.hasKey(GAP, "onExposedSurfaces")) {
+            cfg.getCategory(GAP).remove("onExposedSurfaces");
         }
 
         final String CENTER = "center";
@@ -554,6 +574,7 @@ public class DimensionConfig {
             this.setGapMetaB(source.getGapMetaB());
             this.setGapBlockC(source.getGapBlockC());
             this.setGapMetaC(source.getGapMetaC());
+            this.setApplyToAllSurfaceLayers(source.isApplyToAllSurfaceLayers());
 
             this.setCenterEnabled(source.isCenterEnabled());
             this.setCenterDirection(source.getCenterDirection());
@@ -973,9 +994,10 @@ public class DimensionConfig {
     /**
      * Encodes all generation settings (layers + boundary + gap + center) into a single string for copy/paste
      * convenience. Format:
-     * layers_part|B,blockA,blockB,intervalX,intervalZ|G,width,preset,blockA,blockB,blockC|C,enabled,dir,block where
-     * each block is modid:name or modid:name:meta (meta omitted if 0). The center section is omitted when no center
-     * marker block is configured.
+     * layers_part|B,blockA,blockB,intervalX,intervalZ|G,width,preset,blockA,blockB,blockC|S,allSurfaces|C,enabled,dir,block
+     * where each block is modid:name or modid:name:meta (meta omitted if 0), and allSurfaces is 0 or 1. The center
+     * section is omitted when no center marker block is configured. For compatibility, old preset strings may omit the
+     * S section.
      */
     public String getFullPresetString() {
         StringBuilder sb = new StringBuilder();
@@ -991,6 +1013,9 @@ public class DimensionConfig {
         sb.append(encodeBlock(getGapBlockA(), getGapMetaA())).append(',');
         sb.append(encodeBlock(getGapBlockB(), getGapMetaB())).append(',');
         sb.append(encodeBlock(getGapBlockC(), getGapMetaC()));
+        // Apply-to-surfaces section
+        sb.append("|S,");
+        sb.append(isApplyToAllSurfaceLayers() ? 1 : 0);
         // Center section
         if (isCenterEnabled() && !getCenterBlock().isEmpty()) {
             sb.append("|C,");
@@ -1025,6 +1050,7 @@ public class DimensionConfig {
 
         DimensionConfig parsedConfig = new DimensionConfig();
         parsedConfig.copyFrom(this, false, false, true);
+        parsedConfig.setApplyToAllSurfaceLayers(false);
         if (!applyExtendedSettingsSections(fullPreset.split("\\|"), parsedConfig)) {
             return;
         }
@@ -1068,6 +1094,12 @@ public class DimensionConfig {
                         ParsedBlock gC = parseBlock(parts[5]);
                         target.setGapBlockC(gC.blockName());
                         target.setGapMetaC(gC.meta());
+                        break;
+                    case "S":
+                        if (parts.length < 2 || parts[1].isEmpty()) {
+                            return false;
+                        }
+                        target.setApplyToAllSurfaceLayers(Integer.parseInt(parts[1]) != 0);
                         break;
                     case "C":
                         if (parts.length < 4 || parts[1].isEmpty() || parts[2].isEmpty() || parts[3].isEmpty()) {
@@ -1401,6 +1433,17 @@ public class DimensionConfig {
 
     public Block getGapBlockCResolved() {
         return blockFromString(gapBlockC);
+    }
+
+    public boolean isApplyToAllSurfaceLayers() {
+        return applyToAllSurfaceLayers;
+    }
+
+    public void setApplyToAllSurfaceLayers(boolean applyToAllSurfaceLayers) {
+        if (this.applyToAllSurfaceLayers != applyToAllSurfaceLayers) {
+            this.needsSaving = true;
+            this.applyToAllSurfaceLayers = applyToAllSurfaceLayers;
+        }
     }
 
     public boolean isCenterEnabled() {

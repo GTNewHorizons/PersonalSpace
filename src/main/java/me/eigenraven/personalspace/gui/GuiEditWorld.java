@@ -77,6 +77,7 @@ public class GuiEditWorld extends GuiScreen {
     public WBlockDropdown gapBlockADropdown;
     public WBlockDropdown gapBlockBDropdown;
     public WBlockDropdown gapBlockCDropdown;
+    public WToggleButton applyToAllSurfaceLayersToggle;
 
     public WToggleButton centerEnabledToggle;
     public WButton centerDirectionButton;
@@ -411,6 +412,12 @@ public class GuiEditWorld extends GuiScreen {
         }
     }
 
+    private void updateApplyToAllSurfaceLayersButton() {
+        if (applyToAllSurfaceLayersToggle != null) {
+            applyToAllSurfaceLayersToggle.setValue(desiredConfig.isApplyToAllSurfaceLayers());
+        }
+    }
+
     private int parseIntOrDefault(String s, int def) {
         try {
             return Integer.parseInt(s.trim());
@@ -451,6 +458,7 @@ public class GuiEditWorld extends GuiScreen {
         this.desiredConfig.setGapMetaB(0);
         this.desiredConfig.setGapBlockC("");
         this.desiredConfig.setGapMetaC(0);
+        this.desiredConfig.setApplyToAllSurfaceLayers(false);
         this.desiredConfig.setCenterEnabled(false);
         this.desiredConfig.setCenterBlock("");
         this.desiredConfig.setCenterMeta(0);
@@ -465,6 +473,7 @@ public class GuiEditWorld extends GuiScreen {
         }
         updateBoundaryButtons();
         updateGapButtons();
+        updateApplyToAllSurfaceLayersButton();
         updateCenterButtons();
     }
 
@@ -1030,6 +1039,25 @@ public class GuiEditWorld extends GuiScreen {
         rootWidget.addChild(this.gapBlockCDropdown);
 
         this.ySize += 24;
+
+        this.applyToAllSurfaceLayersToggle = new WToggleButton(
+                new Rectangle(0, this.ySize, 18, 18),
+                "",
+                false,
+                0,
+                desiredConfig.isApplyToAllSurfaceLayers(),
+                () -> {
+                    desiredConfig.setApplyToAllSurfaceLayers(applyToAllSurfaceLayersToggle.getValue());
+                    configToPreset();
+                });
+        WLabel applyToAllSurfaceLayersLabel = new WLabel(
+                24,
+                4,
+                I18n.format("gui.personalWorld.applyToAllSurfaceLayers"),
+                false);
+        this.applyToAllSurfaceLayersToggle.addChild(applyToAllSurfaceLayersLabel);
+        addWidget(this.applyToAllSurfaceLayersToggle);
+
         updateGapButtons();
 
         // Center marker section
@@ -1326,6 +1354,7 @@ public class GuiEditWorld extends GuiScreen {
         this.gapBlockADropdown.enabled = gapEnabled && !gapIsSolid;
         this.gapBlockBDropdown.enabled = gapEnabled && !gapIsSolid;
         this.gapBlockCDropdown.enabled = gapEnabled && !gapIsSolid;
+        this.applyToAllSurfaceLayersToggle.enabled = generationEnabled;
 
         boolean centerCanEnable = generationEnabled && !boundaryIsZero;
         this.centerEnabledToggle.enabled = centerCanEnable;
@@ -1358,6 +1387,7 @@ public class GuiEditWorld extends GuiScreen {
                 this.syncExtendedInputsFromDesiredConfig();
                 updateBoundaryButtons();
                 updateGapButtons();
+                updateApplyToAllSurfaceLayersButton();
                 updateCenterButtons();
             } else {
                 clearExtendedPresetInputs();

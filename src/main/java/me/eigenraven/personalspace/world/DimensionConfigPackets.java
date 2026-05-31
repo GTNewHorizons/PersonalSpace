@@ -47,6 +47,7 @@ public class DimensionConfigPackets {
         pkt.writeVarInt(config.getGapMetaB());
         pkt.writeString(config.getGapBlockC());
         pkt.writeVarInt(config.getGapMetaC());
+        pkt.writeBoolean(config.isApplyToAllSurfaceLayers());
 
         pkt.writeBoolean(config.isCenterEnabled());
         pkt.writeVarInt(config.getCenterDirection().ordinal());
@@ -84,6 +85,7 @@ public class DimensionConfigPackets {
         config.setGapMetaB(pkt.readVarInt());
         config.setGapBlockC(pkt.readString());
         config.setGapMetaC(pkt.readVarInt());
+        config.setApplyToAllSurfaceLayers(pkt.readBoolean());
 
         config.setCenterEnabled(pkt.readBoolean());
         config.setCenterDirection(DimensionConfig.CenterDirection.fromOrdinal(pkt.readVarInt()));

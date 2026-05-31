@@ -1,5 +1,6 @@
 package me.eigenraven.personalspace.world;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -91,7 +92,8 @@ public class PersonalChunkProvider implements IChunkProvider {
 
         int groundLevel = cfg.getGroundLevel() - 1;
         if (groundLevel >= 0 && groundLevel < worldHeight) {
-            int bYChunk = groundLevel >> 4;
+            List<Integer> surfaceLevels = cfg.isApplyToAllSurfaceLayers() ? getExposedSurfaceLevels(layers, worldHeight)
+                    : Collections.singletonList(groundLevel);
 
             int intervalX = MathHelper.clamp_int(cfg.getBoundaryChunkIntervalX(), 0, 20);
             int intervalZ = MathHelper.clamp_int(cfg.getBoundaryChunkIntervalZ(), 0, 20);
@@ -103,20 +105,21 @@ public class PersonalChunkProvider implements IChunkProvider {
             boolean isGapChunkZ = gapWidth > 0 && intervalZ > 0 && mod(chunkZ, periodZ) >= intervalZ;
 
             if (isGapChunkX || isGapChunkZ) {
-                generateGapInChunk(
-                        chunk,
-                        chunkX,
-                        chunkZ,
-                        groundLevel,
-                        bYChunk,
-                        cfg,
-                        isGapChunkX,
-                        isGapChunkZ,
-                        periodX,
-                        periodZ,
-                        gapWidth,
-                        intervalX,
-                        intervalZ);
+                for (int surfaceLevel : surfaceLevels) {
+                    generateGapInChunk(
+                            chunk,
+                            chunkX,
+                            chunkZ,
+                            surfaceLevel,
+                            cfg,
+                            isGapChunkX,
+                            isGapChunkZ,
+                            periodX,
+                            periodZ,
+                            gapWidth,
+                            intervalX,
+                            intervalZ);
+                }
             }
 
             boolean isBoundaryX, prevBoundaryX, isBoundaryZ, prevBoundaryZ;
@@ -147,84 +150,88 @@ public class PersonalChunkProvider implements IChunkProvider {
             if (canDrawBoundary && !isGapChunkX
                     && !isGapChunkZ
                     && (isBoundaryX || prevBoundaryX || isBoundaryZ || prevBoundaryZ)) {
-                ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[bYChunk];
-                if (ebs == null) {
-                    ebs = new ExtendedBlockStorage(groundLevel & ~15, true);
-                    chunk.getBlockStorageArray()[bYChunk] = ebs;
-                }
+                for (int surfaceLevel : surfaceLevels) {
+                    int yChunk = surfaceLevel >> 4;
+                    int yLocal = surfaceLevel & 15;
+                    ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[yChunk];
+                    if (ebs == null) {
+                        ebs = new ExtendedBlockStorage(surfaceLevel & ~15, true);
+                        chunk.getBlockStorageArray()[yChunk] = ebs;
+                    }
 
-                for (int localZ = 0; localZ < 16; localZ++) {
-                    if (isBoundaryX) {
-                        int localX = 0;
-                        int worldX = (chunkX << 4) + localX;
-                        int worldZ = (chunkZ << 4) + localZ;
+                    for (int localZ = 0; localZ < 16; localZ++) {
+                        if (isBoundaryX) {
+                            int localX = 0;
+                            int worldX = (chunkX << 4) + localX;
+                            int worldZ = (chunkZ << 4) + localZ;
 
-                        StripeBlock stripe = getStripeBlock(
-                                worldX,
-                                worldZ,
-                                boundaryBlockA,
-                                boundaryMetaA,
-                                boundaryBlockB,
-                                boundaryMetaB);
-                        if (stripe.block != null && stripe.block != Blocks.air) {
-                            ebs.func_150818_a(localX, groundLevel & 15, localZ, stripe.block);
-                            ebs.setExtBlockMetadata(localX, groundLevel & 15, localZ, stripe.meta);
+                            StripeBlock stripe = getStripeBlock(
+                                    worldX,
+                                    worldZ,
+                                    boundaryBlockA,
+                                    boundaryMetaA,
+                                    boundaryBlockB,
+                                    boundaryMetaB);
+                            if (stripe.block != null && stripe.block != Blocks.air) {
+                                ebs.func_150818_a(localX, yLocal, localZ, stripe.block);
+                                ebs.setExtBlockMetadata(localX, yLocal, localZ, stripe.meta);
+                            }
+                        }
+
+                        if (prevBoundaryX) {
+                            int localX = 15;
+                            int worldX = (chunkX << 4) + localX;
+                            int worldZ = (chunkZ << 4) + localZ;
+
+                            StripeBlock stripe = getStripeBlock(
+                                    worldX,
+                                    worldZ,
+                                    boundaryBlockA,
+                                    boundaryMetaA,
+                                    boundaryBlockB,
+                                    boundaryMetaB);
+                            if (stripe.block != null && stripe.block != Blocks.air) {
+                                ebs.func_150818_a(localX, yLocal, localZ, stripe.block);
+                                ebs.setExtBlockMetadata(localX, yLocal, localZ, stripe.meta);
+                            }
                         }
                     }
 
-                    if (prevBoundaryX) {
-                        int localX = 15;
-                        int worldX = (chunkX << 4) + localX;
-                        int worldZ = (chunkZ << 4) + localZ;
+                    for (int localX = 0; localX < 16; localX++) {
+                        if (isBoundaryZ) {
+                            int localZ = 0;
+                            int worldX = (chunkX << 4) + localX;
+                            int worldZ = (chunkZ << 4) + localZ;
 
-                        StripeBlock stripe = getStripeBlock(
-                                worldX,
-                                worldZ,
-                                boundaryBlockA,
-                                boundaryMetaA,
-                                boundaryBlockB,
-                                boundaryMetaB);
-                        if (stripe.block != null && stripe.block != Blocks.air) {
-                            ebs.func_150818_a(localX, groundLevel & 15, localZ, stripe.block);
-                            ebs.setExtBlockMetadata(localX, groundLevel & 15, localZ, stripe.meta);
+                            StripeBlock stripe = getStripeBlock(
+                                    worldX,
+                                    worldZ,
+                                    boundaryBlockA,
+                                    boundaryMetaA,
+                                    boundaryBlockB,
+                                    boundaryMetaB);
+                            if (stripe.block != null && stripe.block != Blocks.air) {
+                                ebs.func_150818_a(localX, yLocal, localZ, stripe.block);
+                                ebs.setExtBlockMetadata(localX, yLocal, localZ, stripe.meta);
+                            }
                         }
-                    }
-                }
 
-                for (int localX = 0; localX < 16; localX++) {
-                    if (isBoundaryZ) {
-                        int localZ = 0;
-                        int worldX = (chunkX << 4) + localX;
-                        int worldZ = (chunkZ << 4) + localZ;
+                        if (prevBoundaryZ) {
+                            int localZ = 15;
+                            int worldX = (chunkX << 4) + localX;
+                            int worldZ = (chunkZ << 4) + localZ;
 
-                        StripeBlock stripe = getStripeBlock(
-                                worldX,
-                                worldZ,
-                                boundaryBlockA,
-                                boundaryMetaA,
-                                boundaryBlockB,
-                                boundaryMetaB);
-                        if (stripe.block != null && stripe.block != Blocks.air) {
-                            ebs.func_150818_a(localX, groundLevel & 15, localZ, stripe.block);
-                            ebs.setExtBlockMetadata(localX, groundLevel & 15, localZ, stripe.meta);
-                        }
-                    }
-
-                    if (prevBoundaryZ) {
-                        int localZ = 15;
-                        int worldX = (chunkX << 4) + localX;
-                        int worldZ = (chunkZ << 4) + localZ;
-
-                        StripeBlock stripe = getStripeBlock(
-                                worldX,
-                                worldZ,
-                                boundaryBlockA,
-                                boundaryMetaA,
-                                boundaryBlockB,
-                                boundaryMetaB);
-                        if (stripe.block != null && stripe.block != Blocks.air) {
-                            ebs.func_150818_a(localX, groundLevel & 15, localZ, stripe.block);
-                            ebs.setExtBlockMetadata(localX, groundLevel & 15, localZ, stripe.meta);
+                            StripeBlock stripe = getStripeBlock(
+                                    worldX,
+                                    worldZ,
+                                    boundaryBlockA,
+                                    boundaryMetaA,
+                                    boundaryBlockB,
+                                    boundaryMetaB);
+                            if (stripe.block != null && stripe.block != Blocks.air) {
+                                ebs.func_150818_a(localX, yLocal, localZ, stripe.block);
+                                ebs.setExtBlockMetadata(localX, yLocal, localZ, stripe.meta);
+                            }
                         }
                     }
                 }
@@ -254,13 +261,17 @@ public class PersonalChunkProvider implements IChunkProvider {
                                 && centerLocalZ < blockStartZ + 16) {
                             int lx = centerLocalX - blockStartX;
                             int lz = centerLocalZ - blockStartZ;
-                            ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[bYChunk];
-                            if (ebs == null) {
-                                ebs = new ExtendedBlockStorage(groundLevel & ~15, true);
-                                chunk.getBlockStorageArray()[bYChunk] = ebs;
+                            for (int surfaceLevel : surfaceLevels) {
+                                int yChunk = surfaceLevel >> 4;
+                                int yLocal = surfaceLevel & 15;
+                                ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[yChunk];
+                                if (ebs == null) {
+                                    ebs = new ExtendedBlockStorage(surfaceLevel & ~15, true);
+                                    chunk.getBlockStorageArray()[yChunk] = ebs;
+                                }
+                                ebs.func_150818_a(lx, yLocal, lz, centerBlock);
+                                ebs.setExtBlockMetadata(lx, yLocal, lz, centerMeta);
                             }
-                            ebs.func_150818_a(lx, groundLevel & 15, lz, centerBlock);
-                            ebs.setExtBlockMetadata(lx, groundLevel & 15, lz, centerMeta);
                         }
                     }
                 }
@@ -293,6 +304,33 @@ public class PersonalChunkProvider implements IChunkProvider {
         return chunk;
     }
 
+    private List<Integer> getExposedSurfaceLevels(List<FlatLayerInfo> layers, int worldHeight) {
+        boolean[] solid = new boolean[worldHeight];
+
+        for (FlatLayerInfo info : layers) {
+            Block block = info.func_151536_b();
+            if (block == null || block == Blocks.air) {
+                continue;
+            }
+
+            int startY = MathHelper.clamp_int(info.getMinY(), 0, worldHeight);
+            int endY = MathHelper.clamp_int(info.getMinY() + info.getLayerCount(), 0, worldHeight);
+            for (int y = startY; y < endY; y++) {
+                solid[y] = true;
+            }
+        }
+
+        List<Integer> surfaceLevels = new ArrayList<>();
+        // A surface layer is a non-air layer with air directly above it.
+        // In air;stone*3;air, only the top stone layer is a surface layer.
+        for (int y = 0; y < worldHeight; y++) {
+            if (solid[y] && (y + 1 >= worldHeight || !solid[y + 1])) {
+                surfaceLevels.add(y);
+            }
+        }
+        return surfaceLevels;
+    }
+
     @Desugar
     private record StripeBlock(Block block, int meta) {}
 
@@ -323,13 +361,13 @@ public class PersonalChunkProvider implements IChunkProvider {
         return m < 0 ? m + b : m;
     }
 
-    private void generateGapInChunk(Chunk chunk, int chunkX, int chunkZ, int groundLevel, int bYChunk,
-            DimensionConfig cfg, boolean isGapX, boolean isGapZ, int periodX, int periodZ, int gapWidth, int intervalX,
-            int intervalZ) {
-        ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[bYChunk];
+    private void generateGapInChunk(Chunk chunk, int chunkX, int chunkZ, int surfaceLevel, DimensionConfig cfg,
+            boolean isGapX, boolean isGapZ, int periodX, int periodZ, int gapWidth, int intervalX, int intervalZ) {
+        int yChunk = surfaceLevel >> 4;
+        ExtendedBlockStorage ebs = chunk.getBlockStorageArray()[yChunk];
         if (ebs == null) {
-            ebs = new ExtendedBlockStorage(groundLevel & ~15, true);
-            chunk.getBlockStorageArray()[bYChunk] = ebs;
+            ebs = new ExtendedBlockStorage(surfaceLevel & ~15, true);
+            chunk.getBlockStorageArray()[yChunk] = ebs;
         }
 
         DimensionConfig.GapPreset preset = cfg.getGapPreset();
@@ -343,7 +381,7 @@ public class PersonalChunkProvider implements IChunkProvider {
         if (gapBlockA == null || gapBlockA == Blocks.air) return;
 
         int gapWidthBlocks = gapWidth * 16;
-        int yLocal = groundLevel & 15;
+        int yLocal = surfaceLevel & 15;
 
         for (int localZ = 0; localZ < 16; localZ++) {
             for (int localX = 0; localX < 16; localX++) {
