@@ -70,7 +70,10 @@ public class PersonalWorldProvider extends WorldProvider {
     @Override
     public void registerWorldChunkManager() {
         getConfig();
-        this.worldChunkMgr = new WorldChunkManagerHell(BiomeGenBase.plains, 1.0F);
+        int biomeId = config.getRawBiomeId();
+        BiomeGenBase biome = BiomeGenBase.getBiome(biomeId);
+        if (biome == null) biome = BiomeGenBase.plains;
+        this.worldChunkMgr = new WorldChunkManagerHell(biome, 1.0F);
     }
 
     public IChunkProvider createChunkGenerator() {
