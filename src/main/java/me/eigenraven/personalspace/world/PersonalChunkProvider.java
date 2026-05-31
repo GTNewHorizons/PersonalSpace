@@ -1,9 +1,7 @@
 package me.eigenraven.personalspace.world;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 
 import net.minecraft.block.Block;
@@ -34,8 +32,6 @@ public class PersonalChunkProvider implements IChunkProvider {
     private long seed;
     private Random random;
     private WorldGenTrees treeGen = new WorldGenTrees(false, 4, 0, 0, false);
-    private String savedBiomeName = null;
-    private int savedBiomeId = -1;
 
     public PersonalChunkProvider(PersonalWorldProvider world, long seed) {
         this.world = world;
@@ -282,12 +278,6 @@ public class PersonalChunkProvider implements IChunkProvider {
             }
         }
 
-        if (savedBiomeId < 0 || !Objects.equals(savedBiomeName, world.getConfig().getBiomeId())) {
-            savedBiomeName = world.getConfig().getBiomeId();
-            savedBiomeId = world.getConfig().getRawBiomeId();
-        }
-
-        Arrays.fill(chunk.getBiomeArray(), (byte) savedBiomeId);
         chunk.generateSkylightMap();
 
         return chunk;
