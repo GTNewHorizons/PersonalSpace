@@ -21,23 +21,25 @@ public class RenderPortal extends TileEntitySpecialRenderer {
         }
         GL11.glPushMatrix();
         GL11.glTranslatef((float) x + 0.5F, (float) y + 0.75F, (float) z + 0.5F);
-        float time = ((float) tile.getWorldObj().getWorldInfo().getWorldTotalTime() + partialTickTime) / 100.0F;
-        GL11.glTranslatef(0.0F, 0.1F + MathHelper.sin(time * 0.1F) * 0.01F, 0.0F);
+
+        float f1 = (float) portal.tickCount + partialTickTime;
+        GL11.glTranslatef(0.0F, 0.1F + MathHelper.sin(f1 * 0.1F) * 0.01F, 0.0F);
 
         float f3 = (float) Math.atan2(portal.facing.offsetZ, portal.facing.offsetX);
         GL11.glRotatef(-f3 * 180.0F / (float) Math.PI, 0.0F, 1.0F, 0.0F);
         GL11.glRotatef(80.0F, 0.0F, 0.0F, 1.0F);
         this.bindTexture(field_147540_b);
-        float pageRightAngle = 0.3F;
-        float pageLeftAngle = 0.9F;
-        pageRightAngle = (pageRightAngle - (float) MathHelper.truncateDoubleToInt(pageRightAngle)) * 1.6F - 0.3F;
-        pageLeftAngle = (pageLeftAngle - (float) MathHelper.truncateDoubleToInt(pageLeftAngle)) * 1.6F - 0.3F;
-        pageRightAngle = MathHelper.clamp_float(pageRightAngle, 0.0F, 1.0F);
-        pageLeftAngle = MathHelper.clamp_float(pageLeftAngle, 0.0F, 1.0F);
 
-        float f6 = 0.75F + 0.1F * (float) Math.sin(time);
+        float interpPage = portal.prevPagePosition + (portal.pagePosition - portal.prevPagePosition) * partialTickTime;
+        float f4 = interpPage + 0.25F;
+        float f5 = interpPage + 0.75F;
+        f4 = (f4 - (float) MathHelper.truncateDoubleToInt(f4)) * 1.6F - 0.3F;
+        f5 = (f5 - (float) MathHelper.truncateDoubleToInt(f5)) * 1.6F - 0.3F;
+        f4 = MathHelper.clamp_float(f4, 0.0F, 1.0F);
+        f5 = MathHelper.clamp_float(f5, 0.0F, 1.0F);
+
         GL11.glEnable(GL11.GL_CULL_FACE);
-        this.bookModel.render(null, time, pageRightAngle, pageLeftAngle, f6, 0.0F, 0.0625F);
+        this.bookModel.render(null, f1, f4, f5, 1.0F, 0.0F, 0.0625F);
         GL11.glPopMatrix();
     }
 }
