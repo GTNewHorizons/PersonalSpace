@@ -1,5 +1,7 @@
 package me.eigenraven.personalspace.block;
 
+import java.util.Random;
+
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
@@ -7,15 +9,12 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.util.MathHelper;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.event.world.BlockEvent;
-
-import java.util.Random;
-
-import net.minecraft.util.MathHelper;
 
 import me.eigenraven.personalspace.PersonalSpaceMod;
 import me.eigenraven.personalspace.config.Config;
