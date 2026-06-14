@@ -1,5 +1,7 @@
 package me.eigenraven.personalspace.block;
 
+import java.util.Random;
+
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
@@ -7,6 +9,7 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.util.MathHelper;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
@@ -24,6 +27,14 @@ public class PortalTileEntity extends TileEntity {
 
     public static final ForgeDirection DEFAULT_FACING = ForgeDirection.NORTH;
 
+    // Client-side book animation state (matches TileEntityEnchantmentTable fields)
+    public int tickCount;
+    public float pagePosition;
+    public float prevPagePosition;
+    public float pageTarget;
+    public float pageVelocity;
+    private static final Random RAND = new Random();
+
     public boolean active = false;
     public int targetDimId = 0;
     public int targetPosX = 8;
@@ -33,6 +44,27 @@ public class PortalTileEntity extends TileEntity {
     public ForgeDirection facing = DEFAULT_FACING;
 
     public PortalTileEntity() {}
+
+    @Override
+    public void updateEntity() {
+        super.updateEntity();
+        if (!worldObj.isRemote) return;
+
+        prevPagePosition = pagePosition;
+
+        if (RAND.nextInt(40) == 0) {
+            float prev = pageTarget;
+            do {
+                pageTarget += (float) (RAND.nextInt(4) - RAND.nextInt(4));
+            } while (prev == pageTarget);
+        }
+
+        ++tickCount;
+        float delta = (pageTarget - pagePosition) * 0.4F;
+        delta = MathHelper.clamp_float(delta, -0.2F, 0.2F);
+        pageVelocity += (delta - pageVelocity) * 0.9F;
+        pagePosition += pageVelocity;
+    }
 
     @Override
     public void readFromNBT(NBTTagCompound tag) {
