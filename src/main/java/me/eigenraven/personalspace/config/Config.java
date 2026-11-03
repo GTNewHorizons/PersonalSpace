@@ -33,6 +33,7 @@ public class Config {
                 "Forest", "Taiga", "Swampland", "River", "MushroomIsland", "Swampland", "Jungle", "Savanna", "Mesa" };
 
         public static final int firstDimensionId = 180;
+        public static final int providerId = 180;
         public static final boolean debugLogging = false;
         public static final boolean useBlockEventChecks = true;
         public static final int dropdownMaxVisibleRows = 6;
@@ -51,6 +52,7 @@ public class Config {
     public static HashSet<String> allowedCenterBlocks = new HashSet<>(Arrays.asList(Defaults.allowedCenterBlocks));
     public static HashSet<String> allowedBiomes = new HashSet<>(Arrays.asList(Defaults.allowedBiomes));
     public static int firstDimensionId = Defaults.firstDimensionId;
+    public static int providerId = Defaults.providerId;
     public static boolean debugLogging = Defaults.debugLogging;
     public static boolean useBlockEventChecks = true;
     public static int dropdownMaxVisibleRows = Defaults.dropdownMaxVisibleRows;
@@ -121,6 +123,14 @@ public class Config {
                 0,
                 Integer.MAX_VALUE,
                 "First dimension ID to use for newly generated worlds");
+
+        providerId = configuration.getInt(
+                "providerId",
+                Categories.general,
+                Defaults.providerId,
+                0,
+                Integer.MAX_VALUE,
+                "Provider type ID to register with DimensionManager for personal dimensions");
 
         debugLogging = configuration
                 .getBoolean("debugLogging", Categories.general, Defaults.debugLogging, "Debug logging toggle");
