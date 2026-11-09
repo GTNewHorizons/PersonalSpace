@@ -893,7 +893,7 @@ public class DimensionConfig {
                     return Lists.newArrayList();
                 }
             }
-            blockCount = MathHelper.clamp_int(blockCount, 1, 255);
+            blockCount = MathHelper.clamp_int(blockCount, 1, 253);
 
             ParsedBlock parsedBlock = parseBlock(blockPart);
             Block block = blockFromParsedBlock(parsedBlock);
@@ -904,7 +904,7 @@ public class DimensionConfig {
             info.setMinY(currY);
             infos.add(info);
             currY += blockCount;
-            if (currY > 255) {
+            if (currY > 253) {
                 break;
             }
         }
@@ -1217,7 +1217,7 @@ public class DimensionConfig {
         for (FlatLayerInfo info : layers) {
             y += info.getLayerCount();
         }
-        return MathHelper.clamp_int(y, 0, 255);
+        return MathHelper.clamp_int(y, 0, 253);
     }
 
     public static String blockToString(Block block) {

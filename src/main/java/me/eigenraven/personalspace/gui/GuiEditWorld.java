@@ -1230,7 +1230,7 @@ public class GuiEditWorld extends GuiScreen {
                 boolean ctrlHeld = Keyboard.isKeyDown(Keyboard.KEY_LCONTROL);
                 int newCnt = ctrlHeld ? 64 : (shiftHeld ? 10 : 1);
                 newCnt *= mul;
-                newCnt = MathHelper.clamp_int(orig.getLayerCount() + newCnt, 1, 255);
+                newCnt = MathHelper.clamp_int(orig.getLayerCount() + newCnt, 1, 253);
                 this.desiredConfig.getMutableLayers()
                         .set(finalI, new FlatLayerInfo(newCnt, orig.func_151536_b(), orig.getFillBlockMeta()));
                 this.desiredConfig.setLayers(this.desiredConfig.getLayersAsString());
