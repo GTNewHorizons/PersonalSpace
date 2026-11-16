@@ -100,6 +100,11 @@ public class PersonalSpaceMod {
 
     private boolean stopping = false;
     private static Field worldInfoField = null;
+    private static int providerId;
+
+    public static int getProviderId() {
+        return providerId;
+    }
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -127,6 +132,14 @@ public class PersonalSpaceMod {
                 "personalspace:personalPortal",
                 "uw_portal_te");
         EntityRegistry.registerModEntity(PortalEntityItem.class, "PortalItem", 1, this, 64, 20, true);
+
+        for (int id = Config.providerId; id < Integer.MAX_VALUE; id++) {
+            if (DimensionManager.registerProviderType(id, PersonalWorldProvider.class, false)) {
+                providerId = id;
+                LOG.info("Registered PersonalSpace provider type at ID {}", id);
+                break;
+            }
+        }
     }
 
     @Mod.EventHandler
@@ -464,12 +477,9 @@ public class PersonalSpaceMod {
         synchronized (CommonProxy.getDimensionConfigObjects(isClient)) {
             CommonProxy.getDimensionConfigObjects(isClient).forEachEntry((dimId, dimCfg) -> {
                 if (DimensionManager.isDimensionRegistered(dimId)) {
-                    FMLLog.info("Deregistering PersonalSpace dimension %d", dimId);
-                    DimensionManager.unregisterDimension(dimId);
-                    if (DimensionManager.unregisterProviderType(dimId).length > 0) {
-                        FMLLog.severe(
-                                "PersonalSpace dimension id %d has other dimension ids registered for the same provider",
-                                dimId);
+                    if (DimensionManager.getProviderType(dimId) == getProviderId()) {
+                        FMLLog.info("Deregistering PersonalSpace dimension %d", dimId);
+                        DimensionManager.unregisterDimension(dimId);
                     }
                 }
                 return true;
