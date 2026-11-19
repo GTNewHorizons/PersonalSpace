@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.gen.FlatLayerInfo;
@@ -63,7 +64,8 @@ public class DimensionConfig {
         VANILLA(null, null),
         BARNADA_C("galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.SkyProviderBarnardaC",
                 "galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.CloudProviderBarnardaC"),
-        GARDEN_OF_GLASS("vazkii.botania.client.render.world.SkyblockSkyRenderer", null),;
+        GARDEN_OF_GLASS("vazkii.botania.client.render.world.SkyblockSkyRenderer", null),
+        OUTER_SPACE("micdoodle8.mods.galacticraft.core.client.SkyProviderOrbit", null),;
 
         public final String skyProvider, cloudProvider;
         private Boolean isLoaded = null;
@@ -108,7 +110,25 @@ public class DimensionConfig {
             }
         }
 
+        // Outer Space sky type inherits from GalacticCraft's orbit sky renderer,
+        // which doesn't have an empty constructor
+        private Object makeOuterSpaceSkyClass() {
+            try {
+                Class<?> klass = Class.forName(skyProvider);
+                return klass.getDeclaredConstructor(ResourceLocation.class, boolean.class, boolean.class)
+                        .newInstance(null, false, false); // No planet texture, no sun and no moon.
+
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
+                    | InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         public Object makeSkyProvider() {
+            if (this == OUTER_SPACE) {
+                return makeOuterSpaceSkyClass();
+            }
+
             return makeClass(skyProvider);
         }
 
