@@ -2,6 +2,7 @@ package me.eigenraven.personalspace.world;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -100,8 +101,9 @@ public class DimensionConfig {
             }
             try {
                 Class<?> klass = Class.forName(name);
-                return klass.newInstance();
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                return klass.getDeclaredConstructor().newInstance();
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
+                    | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
         }
