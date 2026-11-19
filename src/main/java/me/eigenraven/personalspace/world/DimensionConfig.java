@@ -31,6 +31,7 @@ import codechicken.lib.data.MCDataOutput;
 import cpw.mods.fml.common.registry.GameRegistry;
 import me.eigenraven.personalspace.CommonProxy;
 import me.eigenraven.personalspace.PersonalSpaceMod;
+import me.eigenraven.personalspace.client.sky.EndSkyRenderer;
 import me.eigenraven.personalspace.config.AllowedBlock;
 import me.eigenraven.personalspace.config.AllowedBlockRules;
 import me.eigenraven.personalspace.config.Config;
@@ -65,6 +66,7 @@ public class DimensionConfig {
         BARNADA_C("galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.SkyProviderBarnardaC",
                 "galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.CloudProviderBarnardaC"),
         GARDEN_OF_GLASS("vazkii.botania.client.render.world.SkyblockSkyRenderer", null),
+        END(EndSkyRenderer.class.getCanonicalName(), null),
         OUTER_SPACE("micdoodle8.mods.galacticraft.core.client.SkyProviderOrbit", null),;
 
         public final String skyProvider, cloudProvider;
