@@ -2,6 +2,7 @@ package me.eigenraven.personalspace.world;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.regex.Pattern;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.gen.FlatLayerInfo;
@@ -29,6 +31,7 @@ import codechicken.lib.data.MCDataOutput;
 import cpw.mods.fml.common.registry.GameRegistry;
 import me.eigenraven.personalspace.CommonProxy;
 import me.eigenraven.personalspace.PersonalSpaceMod;
+import me.eigenraven.personalspace.client.sky.EndSkyRenderer;
 import me.eigenraven.personalspace.config.AllowedBlock;
 import me.eigenraven.personalspace.config.AllowedBlockRules;
 import me.eigenraven.personalspace.config.Config;
@@ -62,7 +65,9 @@ public class DimensionConfig {
         VANILLA(null, null),
         BARNADA_C("galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.SkyProviderBarnardaC",
                 "galaxyspace.BarnardsSystem.planets.barnardaC.dimension.sky.CloudProviderBarnardaC"),
-        GARDEN_OF_GLASS("vazkii.botania.client.render.world.SkyblockSkyRenderer", null),;
+        GARDEN_OF_GLASS("vazkii.botania.client.render.world.SkyblockSkyRenderer", null),
+        END(EndSkyRenderer.class.getCanonicalName(), null),
+        OUTER_SPACE("micdoodle8.mods.galacticraft.core.client.SkyProviderOrbit", null),;
 
         public final String skyProvider, cloudProvider;
         private Boolean isLoaded = null;
@@ -100,13 +105,34 @@ public class DimensionConfig {
             }
             try {
                 Class<?> klass = Class.forName(name);
-                return klass.newInstance();
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                return klass.getDeclaredConstructor().newInstance();
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
+                    | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
         }
 
+        // Outer Space sky type inherits from GalacticCraft's orbit sky renderer,
+        // which doesn't have an empty constructor
+        private Object makeOuterSpaceSkyClass() {
+            try {
+                Class<?> klass = Class.forName(skyProvider);
+                return klass.getDeclaredConstructor(ResourceLocation.class, boolean.class, boolean.class)
+                        .newInstance(null, false, false); // No planet texture, no sun and no moon.
+
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
+                    | InvocationTargetException e) {
+                PersonalSpaceMod.LOG
+                        .error("Tried use Outer Space sky without GalacticCraft being present, using vanilla...");
+                return null;
+            }
+        }
+
         public Object makeSkyProvider() {
+            if (this == OUTER_SPACE) {
+                return makeOuterSpaceSkyClass();
+            }
+
             return makeClass(skyProvider);
         }
 
