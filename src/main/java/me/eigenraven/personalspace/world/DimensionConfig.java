@@ -122,7 +122,9 @@ public class DimensionConfig {
 
             } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
                     | InvocationTargetException e) {
-                throw new RuntimeException(e);
+                PersonalSpaceMod.LOG
+                        .error("Tried use Outer Space sky without GalacticCraft being present, using vanilla...");
+                return null;
             }
         }
 
