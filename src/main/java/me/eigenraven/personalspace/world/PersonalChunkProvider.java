@@ -59,7 +59,7 @@ public class PersonalChunkProvider implements IChunkProvider {
 
         List<FlatLayerInfo> layers = world.getConfig().getLayers();
         int y = 0;
-        int worldHeight = world.getHeight();
+        int worldHeight = 253;
         for (FlatLayerInfo info : layers) {
             Block block = info.func_151536_b();
             if (block == null || block == Blocks.air) {
