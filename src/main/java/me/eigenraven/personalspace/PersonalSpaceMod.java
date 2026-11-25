@@ -280,7 +280,6 @@ public class PersonalSpaceMod {
         if (config == null) return;
         try {
             config.captureTimeFrom(event.world.getWorldInfo());
-            if (!config.needsSaving()) return;
             saveConfig(provider.dimensionId, config);
         } catch (Exception e) {
             LOG.fatal("Couldn't save personal dimension data for " + event.world.provider.getDimensionName(), e);
